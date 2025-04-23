@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Community Purple */
+    --primary: 265 70% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Wealth Gold/Amber */
+    --secondary: 45 93% 47%;
+    --secondary-foreground: 0 0% 10%;
+
+    /* Security Teal */
+    --accent: 175 70% 41%;
+    --accent-foreground: 0 0% 100%;
+
+    /* UI Elements */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 265 70% 45%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Community Purple - darker for dark mode */
+    --primary: 265 70% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Wealth Gold/Amber - adjusted for dark mode */
+    --secondary: 45 93% 55%;
+    --secondary-foreground: 0 0% 10%;
+
+    /* Security Teal - adjusted for dark mode */
+    --accent: 175 70% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    /* UI Elements for dark mode */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 265 70% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom styles for the landing page */
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
+}
+
+.community-pattern {
+  background-color: hsl(var(--background));
+  background-image: radial-gradient(at 47% 33%, hsl(var(--primary) / 0.1) 0, transparent 59%),
+    radial-gradient(at 82% 65%, hsl(var(--secondary) / 0.08) 0, transparent 55%);
+}
