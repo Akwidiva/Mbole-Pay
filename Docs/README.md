@@ -121,15 +121,13 @@ git clone https://github.com/yourUsername/Mbole-Pay.git
 2. Navigate into the client directory and install dependencies:
 
 ```bash
-cd clients
 npm install
 ```
 
 3. Start the React app:
 
 ```bash
-cd clients
-npm start
+npm run dev
 ```
 
 4. To commit to github and gitlab 
