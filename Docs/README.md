@@ -127,7 +127,7 @@ npm install
 3. Start the React app:
 
 ```bash
-npm run dev
+npx next dev
 ```
 
 4. To commit to github and gitlab 
