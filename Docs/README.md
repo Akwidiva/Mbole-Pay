@@ -96,7 +96,7 @@ Mbole Pay provides:
 
 ## 🗂 Product Backlog (Agile User Stories)
 
-> See the full backlog in [`/Docs/product-backlog.md`](./Docs/product-backlog.md)
+> See the full backlog in [`/Docs/Product Backlog.md`](./Docs/Product Backlog.md)
 
 **Sample Epics:**
 
