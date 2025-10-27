@@ -84,11 +84,11 @@ Mbole Pay provides:
 
 ## 📊 UML Diagrams
 
-- ✅![Use Case Diagram](./Use%20Case%20Diagram.png)
-- 🧱 [Class Diagram](./Class%20Diagram.png)
-- 🔁 [Sequence Diagram](./Sequence%20Diagram.png)
-- 🔄 [Activity Diagram](./Activity%20Diagram.png)
-- 🌐 [Deployment Diagram](./Deployment%20Diagram.png)
+- ✅![Use Case Daigram](./Use%20Case%20Daigram.png)
+- 🧱 [Class Daigram](./Class%20Daigram.png)
+- 🔁 [Sequence Daigram](./Sequence%20Daigram.png)
+- 🔄 [Activity Daigram](./Activity%20Daigram.png)
+- 🌐 [Deployment Daigram](./Deployment%20Daigram.png)
 
 *(All visuals are located in the **`/docs`** folder)*
 
