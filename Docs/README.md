@@ -84,11 +84,11 @@ Mbole Pay provides:
 
 ## 📊 UML Diagrams
 
-- ✅ Use Case Diagram
-- 🧱 Class Diagram
-- 🔁 Sequence Diagram
-- 🔄 Activity Diagram
-- 🌐 Deployment Diagram
+- ✅![Use Case Daigram](./Use%20Case%20Daigram.png)
+- 🧱 [Class Daigram](./Class%20Daigram.png)
+- 🔁 [Sequence Daigram](./Sequence%20Daigram.png)
+- 🔄 [Activity Daigram](./Activity%20Daigram.png)
+- 🌐 [Deployment Daigram](./Deployment%20Daigram.png)
 
 *(All visuals are located in the **`/docs`** folder)*
 
@@ -96,7 +96,10 @@ Mbole Pay provides:
 
 ## 🗂 Product Backlog (Agile User Stories)
 
-> See the full backlog in [`/docs/product-backlog.md`](./docs/product-backlog.md)
+>[See Product Backlog](./Product%20Backlog.md)
+
+
+
 
 **Sample Epics:**
 
