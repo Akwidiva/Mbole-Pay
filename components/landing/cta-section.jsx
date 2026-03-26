@@ -16,17 +16,20 @@ export function CTASection() {
           </div>
           <div className="flex flex-col gap-2 min-[400px]:flex-row">
             <Link href="/dashboard">
-              <Button size="lg" variant="secondary" className="gap-1.5 font-bold">
-                Get Started Now
+              <Button
+                size="lg"
+                variant="secondary"
+                className="flex flex-col items-center justify-center gap-1.5 font-bold px-8 py-4 text-base min-w-[200px]"
+              >
+                <span className="text-center font-bold">Get Started Now</span>
               </Button>
             </Link>
             <Link href="#features">
               <Button
                 size="lg"
-                variant="outline"
-                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10"
+                className="flex flex-col items-center justify-center font-bold px-8 py-4 text-base min-w-[200px] bg-primary text-primary-foreground hover:bg-primary/80 border-2 border-white"
               >
-                Explore Features
+                <span className="text-center font-bold">Explore Features</span>
               </Button>
             </Link>
           </div>

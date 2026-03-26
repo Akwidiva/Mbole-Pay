@@ -2,11 +2,37 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import { Wallet } from "lucide-react"
 
 export function MainNav() {
   const pathname = usePathname()
+  const { data: session } = useSession()
+  const isAuthenticated = Boolean(session?.user)
+
+  const protectedLinks = [
+    {
+      href: "/dashboard",
+      label: "Dashboard",
+      active: pathname === "/dashboard",
+    },
+    {
+      href: "/groups",
+      label: "Groups",
+      active: pathname?.startsWith("/groups"),
+    },
+    {
+      href: "/transactions",
+      label: "Transactions",
+      active: pathname?.startsWith("/transactions"),
+    },
+    {
+      href: "/disputes",
+      label: "Disputes",
+      active: pathname?.startsWith("/disputes"),
+    },
+  ]
 
   return (
     <div className="mr-4 flex">
@@ -28,42 +54,19 @@ export function MainNav() {
         >
           Home
         </Link>
-        <Link
-          href="/dashboard"
-          className={cn(
-            "transition-colors hover:text-foreground/80",
-            pathname === "/dashboard" ? "text-primary font-bold" : "text-foreground/60",
-          )}
-        >
-          Dashboard
-        </Link>
-        <Link
-          href="/groups"
-          className={cn(
-            "transition-colors hover:text-foreground/80",
-            pathname?.startsWith("/groups") ? "text-primary font-bold" : "text-foreground/60",
-          )}
-        >
-          Groups
-        </Link>
-        <Link
-          href="/transactions"
-          className={cn(
-            "transition-colors hover:text-foreground/80",
-            pathname?.startsWith("/transactions") ? "text-primary font-bold" : "text-foreground/60",
-          )}
-        >
-          Transactions
-        </Link>
-        <Link
-          href="/disputes"
-          className={cn(
-            "transition-colors hover:text-foreground/80",
-            pathname?.startsWith("/disputes") ? "text-primary font-bold" : "text-foreground/60",
-          )}
-        >
-          Disputes
-        </Link>
+        {isAuthenticated &&
+          protectedLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={cn(
+                "transition-colors hover:text-foreground/80",
+                link.active ? "text-primary font-bold" : "text-foreground/60",
+              )}
+            >
+              {link.label}
+            </Link>
+          ))}
       </nav>
     </div>
   )

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mbole Pay — Corrected Class Diagram</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f9f9f7;
+      color: #2c2c2a;
+      margin: 0;
+      padding: 32px;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    p.sub {
+      font-size: 13px;
+      color: #5f5e5a;
+      margin-bottom: 24px;
+    }
+    #cd {
+      background: #fff;
+      border: 1px solid #d3d1c7;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 900px;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #1e1e1c; color: #c2c0b6; }
+      #cd { background: #2c2c2a; border-color: #444441; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Mbole Pay — Corrected Class Diagram</h1>
+  <p class="sub">Generated from analysis of the original class diagram. Fixes duplicate Contribution class, misplaced methods, typos, and missing relationships.</p>
+  <div id="cd"></div>
+
+  <script type="module">
+    import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      fontFamily: 'sans-serif',
+      themeVariables: {
+        darkMode: dark,
+        fontSize: '13px',
+        lineColor: dark ? '#9c9a92' : '#73726c',
+        textColor: dark ? '#c2c0b6' : '#3d3d3a',
+        classText: dark ? '#c2c0b6' : '#3d3d3a',
+      },
+    });
+
+    const diagram = `classDiagram
+  class User{
+    +String userID
+    +String name
+    +String email
+    +String role
+    +String phoneNumber
+    +register()
+    +login()
+    +vote()
+  }
+  class Group{
+    +String groupID
+    +String name
+    +String rules
+    +String adminPhone
+    +createGroup()
+    +addMember()
+    +removeMember()
+  }
+  class Contribution{
+    +String contributionID
+    +Float amount
+    +Date date
+    +String memberID
+    +String groupID
+    +addMemberContribution()
+    +schedulePayout()
+  }
+  class SmartContract{
+    +String contractID
+    +String rules
+    +Queue payoutQueue
+    +enforcePayoutRule()
+    +handleDispute()
+  }
+  class Dispute{
+    +String disputeID
+    +String description
+    +Array votes
+    +raiseDispute()
+    +voteOnDispute()
+  }
+  class Notification{
+    +String notifID
+    +String message
+    +String channel
+    +send()
+  }
+
+  User "1" --> "*" Contribution : makes
+  User "*" --o "*" Group : member of
+  Group "1" --> "*" Contribution : tracks
+  Group "1" ..> "1" SmartContract : governed by
+  SmartContract "1" --> "*" Dispute : handles
+  User "*" --> "*" Notification : receives
+`;
+
+    const { svg } = await mermaid.render('cd-svg', diagram);
+    document.getElementById('cd').innerHTML = svg;
+
+    document.querySelectorAll('#cd svg .classBox, #cd svg .node').forEach(node => {
+      const path = node.querySelector('path[d], rect');
+      if (path) {
+        path.setAttribute('rx', '8');
+        path.setAttribute('ry', '8');
+      }
+    });
+  </script>
+</body>
+</html>

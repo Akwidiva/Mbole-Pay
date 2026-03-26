@@ -1,0 +1,256 @@
+
+<style>
+  .wrap { padding: 20px 16px; font-family: var(--font-sans); }
+  .tier { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+  .tier-label { width: 62px; min-width: 62px; font-size: 11px; color: var(--color-text-tertiary); padding-top: 14px; text-align: right; line-height: 1.3; }
+  .tier-body { flex: 1; }
+  .zone { border: 1px dashed var(--color-border-secondary); border-radius: 10px; padding: 10px 12px; }
+  .zone-title { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 8px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .node { border-radius: 8px; padding: 9px 14px; flex: 1; min-width: 120px; cursor: pointer; transition: opacity .15s; border-width: 1px; border-style: solid; }
+  .node:hover { opacity: .82; }
+  .node-title { font-size: 13px; font-weight: 500; line-height: 1.3; }
+  .node-sub { font-size: 11px; margin-top: 2px; line-height: 1.3; }
+  .new-badge { font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 4px; display: inline-block; margin-left: 6px; vertical-align: middle; }
+
+  /* teal */
+  .c-teal { background: #E1F5EE; border-color: #0F6E56; }
+  .c-teal .node-title { color: #085041; }
+  .c-teal .node-sub { color: #0F6E56; }
+  /* gray */
+  .c-gray { background: #F1EFE8; border-color: #888780; }
+  .c-gray .node-title { color: #2C2C2A; }
+  .c-gray .node-sub { color: #5F5E5A; }
+  /* blue */
+  .c-blue { background: #E6F1FB; border-color: #185FA5; }
+  .c-blue .node-title { color: #0C447C; }
+  .c-blue .node-sub { color: #185FA5; }
+  /* coral */
+  .c-coral { background: #FAECE7; border-color: #993C1D; }
+  .c-coral .node-title { color: #712B13; }
+  .c-coral .node-sub { color: #993C1D; }
+  /* pink */
+  .c-pink { background: #FBEAF0; border-color: #993556; }
+  .c-pink .node-title { color: #72243E; }
+  .c-pink .node-sub { color: #993556; }
+  /* purple */
+  .c-purple { background: #EEEDFE; border-color: #534AB7; }
+  .c-purple .node-title { color: #3C3489; }
+  .c-purple .node-sub { color: #534AB7; }
+  /* amber */
+  .c-amber { background: #FAEEDA; border-color: #854F0B; }
+  .c-amber .node-title { color: #633806; }
+  .c-amber .node-sub { color: #854F0B; }
+
+  /* badge colors */
+  .badge-blue { background: #B5D4F4; color: #0C447C; }
+  .badge-pink { background: #F4C0D1; color: #72243E; }
+  .badge-amber { background: #FAC775; color: #633806; }
+
+  .arrow { text-align: center; color: var(--color-text-tertiary); font-size: 11px; padding: 2px 0; line-height: 1; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .arrow svg { opacity: .4; }
+
+  .legend { border: 1px solid var(--color-border-tertiary); border-radius: 8px; padding: 12px 14px; margin-top: 8px; }
+  .legend-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 8px; }
+  .legend-item { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 5px; font-size: 12px; color: var(--color-text-secondary); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+
+  @media (prefers-color-scheme: dark) {
+    .c-teal  { background: #085041; border-color: #5DCAA5; }
+    .c-teal .node-title { color: #9FE1CB; } .c-teal .node-sub { color: #5DCAA5; }
+    .c-gray  { background: #444441; border-color: #B4B2A9; }
+    .c-gray .node-title { color: #D3D1C7; } .c-gray .node-sub { color: #B4B2A9; }
+    .c-blue  { background: #0C447C; border-color: #85B7EB; }
+    .c-blue .node-title { color: #B5D4F4; } .c-blue .node-sub { color: #85B7EB; }
+    .c-coral { background: #712B13; border-color: #F0997B; }
+    .c-coral .node-title { color: #F5C4B3; } .c-coral .node-sub { color: #F0997B; }
+    .c-pink  { background: #72243E; border-color: #ED93B1; }
+    .c-pink .node-title { color: #F4C0D1; } .c-pink .node-sub { color: #ED93B1; }
+    .c-purple { background: #3C3489; border-color: #AFA9EC; }
+    .c-purple .node-title { color: #CECBF6; } .c-purple .node-sub { color: #AFA9EC; }
+    .c-amber  { background: #633806; border-color: #EF9F27; }
+    .c-amber .node-title { color: #FAC775; } .c-amber .node-sub { color: #EF9F27; }
+    .badge-blue  { background: #0C447C; color: #B5D4F4; }
+    .badge-pink  { background: #72243E; color: #F4C0D1; }
+    .badge-amber { background: #633806; color: #FAC775; }
+  }
+</style>
+
+<div class="wrap">
+
+  <!-- T1 CLIENT -->
+  <div class="tier">
+    <div class="tier-label">Client</div>
+    <div class="tier-body">
+      <div class="row">
+        <div class="node c-teal" style="max-width:260px">
+          <div class="node-title">Client device</div>
+          <div class="node-sub">Web browser · mobile / desktop</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">
+    <svg width="10" height="14" viewBox="0 0 10 14"><path d="M5 0v12M1 9l4 4 4-4" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    HTTPS
+  </div>
+
+  <!-- T2 INFRA -->
+  <div class="tier">
+    <div class="tier-label">Infra</div>
+    <div class="tier-body">
+      <div class="zone">
+        <div class="zone-title">Cloud infra — AWS / GCP / Azure</div>
+        <div class="row">
+          <div class="node c-gray">
+            <div class="node-title">IaC</div>
+            <div class="node-sub">Terraform · Ansible</div>
+          </div>
+          <div class="node c-gray">
+            <div class="node-title">CI/CD</div>
+            <div class="node-sub">GitHub Actions</div>
+          </div>
+          <div class="node c-blue">
+            <div class="node-title">Kubernetes (K8s) <span class="new-badge badge-blue">new</span></div>
+            <div class="node-sub">Container orchestration · pod scaling</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">
+    <svg width="10" height="14" viewBox="0 0 10 14"><path d="M5 0v12M1 9l4 4 4-4" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    provision / deploy
+  </div>
+
+  <!-- T3 EDGE -->
+  <div class="tier">
+    <div class="tier-label">Edge <span class="new-badge badge-blue" style="font-size:9px">new</span></div>
+    <div class="tier-body">
+      <div class="zone">
+        <div class="zone-title">Edge / gateway layer</div>
+        <div class="row">
+          <div class="node c-coral">
+            <div class="node-title">API gateway <span class="new-badge badge-blue">new</span></div>
+            <div class="node-sub">TLS termination · rate limiting · routing</div>
+          </div>
+          <div class="node c-coral">
+            <div class="node-title">Load balancer <span class="new-badge badge-blue">new</span></div>
+            <div class="node-sub">Nginx · traffic distribution · health checks</div>
+          </div>
+          <div class="node c-pink">
+            <div class="node-title">Auth service <span class="new-badge badge-pink">new</span></div>
+            <div class="node-sub">JWT · OAuth2 · session management</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">
+    <svg width="10" height="14" viewBox="0 0 10 14"><path d="M5 0v12M1 9l4 4 4-4" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    authenticated requests
+  </div>
+
+  <!-- T4 BACKEND -->
+  <div class="tier">
+    <div class="tier-label">Backend</div>
+    <div class="tier-body">
+      <div class="zone">
+        <div class="zone-title">Backend pods (K8s managed)</div>
+        <div class="row">
+          <div class="node c-purple">
+            <div class="node-title">Backend API</div>
+            <div class="node-sub">Node.js · Express · REST</div>
+          </div>
+          <div class="node c-purple">
+            <div class="node-title">Notification service</div>
+            <div class="node-sub">Email · SMS dispatcher</div>
+          </div>
+          <div class="node c-amber">
+            <div class="node-title">Message queue <span class="new-badge badge-amber">new</span></div>
+            <div class="node-sub">Redis · async payouts · retries</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">
+    <svg width="10" height="14" viewBox="0 0 10 14"><path d="M5 0v12M1 9l4 4 4-4" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    SQL · store docs · send
+  </div>
+
+  <!-- T5 DATA -->
+  <div class="tier">
+    <div class="tier-label">Data</div>
+    <div class="tier-body">
+      <div class="zone">
+        <div class="zone-title">Data / payments / external services</div>
+        <div class="row">
+          <div class="node c-blue">
+            <div class="node-title">Database server</div>
+            <div class="node-sub">PostgreSQL · IPFS</div>
+          </div>
+          <div class="node c-amber">
+            <div class="node-title">Payment gateways</div>
+            <div class="node-sub">Flutterwave · Paystack · MTN MoMo</div>
+          </div>
+          <div class="node c-gray">
+            <div class="node-title">External services</div>
+            <div class="node-sub">Email / SMS gateway</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">
+    <svg width="10" height="14" viewBox="0 0 10 14"><path d="M5 0v12M1 9l4 4 4-4" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    JSON-RPC / Web3
+  </div>
+
+  <!-- T6 WEB3 -->
+  <div class="tier">
+    <div class="tier-label">Web3</div>
+    <div class="tier-body">
+      <div class="row">
+        <div class="node c-coral" style="max-width:280px">
+          <div class="node-title">Smart contract interface</div>
+          <div class="node-sub">Web3.js · JSON-RPC bridge</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow">
+    <svg width="10" height="14" viewBox="0 0 10 14"><path d="M5 0v12M1 9l4 4 4-4" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    deploy / invoke
+  </div>
+
+  <!-- T7 BLOCKCHAIN -->
+  <div class="tier">
+    <div class="tier-label">Chain</div>
+    <div class="tier-body">
+      <div class="row">
+        <div class="node c-teal" style="max-width:320px">
+          <div class="node-title">Blockchain network (Ethereum / BSC)</div>
+          <div class="node-sub">Smart contracts · Solidity · Hardhat</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend" style="margin-top:16px">
+    <div class="legend-title">What was added</div>
+    <div class="legend-item"><div class="dot" style="background:#185FA5"></div><strong>Kubernetes</strong> — container orchestration; was in the README but missing from the original diagram</div>
+    <div class="legend-item"><div class="dot" style="background:#D85A30"></div><strong>API gateway</strong> — handles TLS, rate limiting, and request routing before traffic hits the backend</div>
+    <div class="legend-item"><div class="dot" style="background:#D85A30"></div><strong>Load balancer (Nginx)</strong> — distributes traffic across backend pods, performs health checks</div>
+    <div class="legend-item"><div class="dot" style="background:#D4537E"></div><strong>Auth service</strong> — JWT/OAuth2 decoupled from the API so any service can verify tokens independently</div>
+    <div class="legend-item"><div class="dot" style="background:#BA7517"></div><strong>Message queue (Redis)</strong> — async payout scheduling and notification retries; decouples notification service from API</div>
+  </div>
+
+</div>

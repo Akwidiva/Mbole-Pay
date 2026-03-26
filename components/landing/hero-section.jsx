@@ -19,14 +19,21 @@ export function HeroSection() {
             </div>
             <div className="flex flex-col gap-2 min-[400px]:flex-row">
               <Link href="/dashboard">
-                <Button size="lg" className="gap-1.5">
-                  Get Started
+                <Button
+                  size="lg"
+                  className="flex flex-col items-center justify-center gap-1.5 px-8 py-4 text-base min-w-[200px]"
+                >
+                  <span className="font-bold text-center">Get Started</span>
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
               <Link href="#how-it-works">
-                <Button size="lg" variant="outline">
-                  Learn More
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="flex flex-col items-center justify-center font-bold px-8 py-4 text-base min-w-[200px]"
+                >
+                  <span className="text-center font-bold">Learn More</span>
                 </Button>
               </Link>
             </div>

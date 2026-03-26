@@ -1,0 +1,105 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  username  String?  @unique
+  password  String?  // Hashed password (optional for Google OAuth users)
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  memberships Membership[]
+  contributions Contribution[]
+  payouts   Payout[]
+}
+
+model Group {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  inviteCode      String   @unique
+  contributionAmount Int    // Amount each member must contribute
+  frequency       String   // "WEEKLY" | "MONTHLY" | "QUARTERLY"
+  cycleType       String   // "ROTATING" | "FIXED"
+  status          String   @default("ACTIVE") // "ACTIVE" | "INACTIVE"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  creator_id      String
+  memberships     Membership[]
+  contributions   Contribution[]
+  payouts         Payout[]
+  disputes        Dispute[]
+}
+
+model Membership {
+  id        String @id @default(cuid())
+  role      String // "ADMIN" | "TREASURER" | "MEMBER"
+  userId    String
+  groupId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  group Group @relation(fields: [groupId], references: [id])
+
+  @@unique([userId, groupId])
+}
+
+model Contribution {
+  id        String   @id @default(cuid())
+  amount    Int
+  status    String   @default("PENDING") // "PENDING" | "PAID" | "OVERDUE"
+  dueDate   DateTime
+  paidAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  groupId   String
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model Payout {
+  id        String   @id @default(cuid())
+  amount    Int
+  status    String   @default("PENDING") // "PENDING" | "COMPLETED"
+  recipient_id String
+  groupId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recipient User  @relation(fields: [recipient_id], references: [id], onDelete: Cascade)
+  group     Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model Dispute {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  status      String   @default("OPEN") // "OPEN" | "RESOLVED"
+  groupId     String
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  votes DisputeVote[]
+}
+
+model DisputeVote {
+  id        String   @id @default(cuid())
+  vote      String   // "UPHOLD" | "REJECT"
+  disputeId String
+  createdAt DateTime @default(now())
+
+  dispute Dispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+}
