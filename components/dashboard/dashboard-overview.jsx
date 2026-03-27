@@ -13,6 +13,7 @@ export function DashboardOverview() {
       change: "+1 from last month",
       icon: Users,
       iconClass: "text-primary bg-primary/10",
+      borderColor: "border-primary/20",
     },
     {
       title: "Total Contributions",
@@ -20,13 +21,15 @@ export function DashboardOverview() {
       change: "+XAF 150,000 from last month",
       icon: Wallet,
       iconClass: "text-secondary bg-secondary/10",
+      borderColor: "border-secondary/30",
     },
     {
       title: "Upcoming Payout",
       value: "XAF 250,000",
       change: "Due in 5 days",
       icon: CreditCard,
-      iconClass: "text-accent bg-accent/10",
+      iconClass: "text-secondary bg-secondary/10",
+      borderColor: "border-secondary/30",
     },
     {
       title: "Group Health",
@@ -34,6 +37,7 @@ export function DashboardOverview() {
       change: "All members in good standing",
       icon: TrendingUp,
       iconClass: "text-primary bg-primary/10",
+      borderColor: "border-primary/20",
     },
   ]
 
@@ -51,21 +55,15 @@ export function DashboardOverview() {
             transition={{ duration: 0.3 }}
             className="h-full"
           >
-            <Card className="border-none shadow-md hover:shadow-lg transition-shadow h-full">
+            <Card className={`border shadow-md hover:shadow-lg transition-shadow h-full ${card.borderColor}`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
                 <motion.div
                   whileHover={{ scale: 1.1, rotate: 5 }}
                   transition={{ duration: 0.2 }}
-                  className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                    index % 2 === 0 ? "bg-primary/10" : index % 3 === 0 ? "bg-accent/10" : "bg-secondary/10"
-                  }`}
+                  className={`h-8 w-8 rounded-full flex items-center justify-center ${card.iconClass}`}
                 >
-                  <card.icon
-                    className={`h-4 w-4 ${
-                      index % 2 === 0 ? "text-primary" : index % 3 === 0 ? "text-accent" : "text-secondary"
-                    }`}
-                  />
+                  <card.icon className="h-4 w-4" />
                 </motion.div>
               </CardHeader>
               <CardContent>

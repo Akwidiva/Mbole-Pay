@@ -105,8 +105,8 @@ export function TransactionsList() {
   ]
 
   return (
-    <Card className="border-none shadow-md">
-      <CardHeader className="pb-4">
+    <Card className="border border-secondary/20 shadow-md">
+      <CardHeader className="pb-4 border-b border-secondary/10">
         <CardTitle className="text-2xl font-bold">Transaction History</CardTitle>
       </CardHeader>
       <CardContent className="p-0 px-6 pb-6">
@@ -148,7 +148,7 @@ export function TransactionsList() {
                           transaction.type === "contribution"
                             ? "border-primary text-primary"
                             : transaction.type === "payout"
-                              ? "border-secondary text-secondary-foreground"
+                              ? "border-secondary text-secondary bg-secondary/5"
                               : "border-muted-foreground text-muted-foreground"
                         }`}
                       >
@@ -156,12 +156,12 @@ export function TransactionsList() {
                       </Badge>
                     </TableCell>
                     <TableCell
-                      className={`w-28 px-3 py-3 text-sm ${
+                      className={`w-28 px-3 py-3 text-sm font-bold ${
                         transaction.type === "payout"
-                          ? "text-secondary-foreground font-medium"
+                          ? "text-secondary"
                           : transaction.type === "fee"
-                            ? "text-destructive font-medium"
-                            : "font-medium"
+                            ? "text-destructive"
+                            : "text-foreground"
                       }`}
                     >
                       {transaction.type === "payout" ? "+" : "-"}
@@ -171,16 +171,16 @@ export function TransactionsList() {
                       <Badge
                         variant={
                           transaction.status === "completed"
-                            ? "default"
+                            ? "secondary"
                             : transaction.status === "pending"
                               ? "outline"
                               : "destructive"
                         }
                         className={`text-xs whitespace-nowrap ${
                           transaction.status === "completed"
-                            ? "bg-accent text-accent-foreground hover:bg-accent/80"
+                            ? ""
                             : transaction.status === "pending"
-                              ? "border-accent text-accent hover:bg-accent/10"
+                              ? "border-secondary text-secondary hover:bg-secondary/10"
                               : ""
                         }`}
                       >

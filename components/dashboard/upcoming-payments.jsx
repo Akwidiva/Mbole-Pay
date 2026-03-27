@@ -30,29 +30,36 @@ export function UpcomingPayments() {
   ]
 
   return (
-    <Card className="border-none shadow-md">
-      <CardHeader>
+    <Card className="border border-secondary/20 shadow-md">
+      <CardHeader className="border-b border-secondary/10">
         <CardTitle>Upcoming Payments</CardTitle>
         <CardDescription>Your scheduled contributions for this month.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {payments.map((payment) => (
-            <div key={payment.id} className="flex flex-col space-y-2">
+          {payments.map((payment, index) => (
+            <div 
+              key={payment.id} 
+              className={`flex flex-col space-y-2 pb-3 ${index !== payments.length - 1 ? 'border-b border-secondary/10' : ''}`}
+            >
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium">{payment.group}</p>
-                <p className="text-sm font-bold">{payment.amount}</p>
+                <p className="text-sm font-bold text-secondary">{payment.amount}</p>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-xs text-muted-foreground">Due in {payment.daysLeft} days</p>
+                  <Calendar className={`h-4 w-4 ${payment.daysLeft <= 5 ? 'text-secondary' : 'text-muted-foreground'}`} />
+                  <p className={`text-xs ${payment.daysLeft <= 5 ? 'text-secondary font-bold' : 'text-muted-foreground'}`}>
+                    Due in {payment.daysLeft} days
+                  </p>
                 </div>
                 <Button
                   size="sm"
                   variant={payment.daysLeft <= 5 ? "default" : "outline"}
                   className={
-                    payment.daysLeft <= 5 ? "bg-secondary text-secondary-foreground hover:bg-secondary/90" : ""
+                    payment.daysLeft <= 5 
+                      ? "bg-secondary text-secondary-foreground hover:bg-secondary/85 font-bold" 
+                      : "border-secondary text-secondary hover:bg-secondary/5"
                   }
                 >
                   Pay Now

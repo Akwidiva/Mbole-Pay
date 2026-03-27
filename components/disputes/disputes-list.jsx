@@ -113,8 +113,8 @@ export function DisputesList() {
       </TabsList>
       <TabsContent value="active" className="space-y-4">
         {activeDisputes.map((dispute) => (
-          <Card key={dispute.id} className="border-none shadow-md">
-            <CardHeader className="pb-2">
+          <Card key={dispute.id} className="border border-secondary/20 shadow-md hover:border-secondary/40 transition-colors">
+            <CardHeader className="pb-2 border-b border-secondary/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div
@@ -126,7 +126,7 @@ export function DisputesList() {
                           ? "bg-destructive/10"
                           : dispute.category === "rules"
                             ? "bg-secondary/10"
-                            : "bg-accent/10"
+                            : "bg-primary/10"
                     }`}
                   >
                     <AlertCircle
@@ -138,7 +138,7 @@ export function DisputesList() {
                             ? "text-destructive"
                             : dispute.category === "rules"
                               ? "text-secondary"
-                              : "text-accent"
+                              : "text-primary"
                       }`}
                     />
                   </div>
@@ -150,7 +150,7 @@ export function DisputesList() {
                     </CardDescription>
                   </div>
                 </div>
-                <Badge className="bg-accent text-accent-foreground">
+                <Badge className="bg-secondary text-secondary-foreground font-bold">
                   <Clock className="h-3 w-3 mr-1" />
                   {dispute.daysLeft} days left
                 </Badge>
@@ -162,8 +162,8 @@ export function DisputesList() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center">
-                      <Avatar className="h-5 w-5 mr-2">
-                        <AvatarFallback className="text-[10px]">{dispute.raisedBy.substring(0, 2)}</AvatarFallback>
+                      <Avatar className="h-5 w-5 mr-2 bg-secondary/10">
+                        <AvatarFallback className="text-[10px] text-secondary">{dispute.raisedBy.substring(0, 2)}</AvatarFallback>
                       </Avatar>
                       <span className="text-muted-foreground">
                         Raised by {dispute.raisedBy} on {new Date(dispute.raisedOn).toLocaleDateString()}
@@ -175,7 +175,7 @@ export function DisputesList() {
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-accent">For: {dispute.votesFor}</span>
+                      <span className="text-secondary font-bold">For: {dispute.votesFor}</span>
                       <span className="text-destructive">Against: {dispute.votesAgainst}</span>
                     </div>
                     <Progress
@@ -186,28 +186,28 @@ export function DisputesList() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between pt-4">
+            <CardFooter className="flex justify-between pt-4 border-t border-secondary/10">
               <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive/10">
                 Vote Against
               </Button>
-              <Button className="bg-accent text-accent-foreground hover:bg-accent/90">Vote For</Button>
+              <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/85 font-bold">Vote For</Button>
             </CardFooter>
           </Card>
         ))}
       </TabsContent>
       <TabsContent value="resolved" className="space-y-4">
         {resolvedDisputes.map((dispute) => (
-          <Card key={dispute.id} className="border-none shadow-md">
-            <CardHeader className="pb-2">
+          <Card key={dispute.id} className="border border-secondary/20 shadow-md hover:border-secondary/40 transition-colors">
+            <CardHeader className="pb-2 border-b border-secondary/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div
                     className={`p-2 rounded-full 
-                    ${dispute.resolution === "approved" ? "bg-accent/10" : "bg-destructive/10"}`}
+                    ${dispute.resolution === "approved" ? "bg-secondary/10" : "bg-destructive/10"}`}
                   >
                     <CheckCircle
                       className={`h-5 w-5 
-                      ${dispute.resolution === "approved" ? "text-accent" : "text-destructive"}`}
+                      ${dispute.resolution === "approved" ? "text-secondary" : "text-destructive"}`}
                     />
                   </div>
                   <div>
@@ -219,11 +219,11 @@ export function DisputesList() {
                   </div>
                 </div>
                 <Badge
-                  variant="outline"
+                  variant={dispute.resolution === "approved" ? "secondary" : "destructive"}
                   className={
                     dispute.resolution === "approved"
-                      ? "border-accent text-accent"
-                      : "border-destructive text-destructive"
+                      ? ""
+                      : ""
                   }
                 >
                   {dispute.resolution === "approved" ? "Approved" : "Rejected"}
@@ -236,8 +236,8 @@ export function DisputesList() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center">
-                      <Avatar className="h-5 w-5 mr-2">
-                        <AvatarFallback className="text-[10px]">{dispute.raisedBy.substring(0, 2)}</AvatarFallback>
+                      <Avatar className="h-5 w-5 mr-2 bg-secondary/10">
+                        <AvatarFallback className="text-[10px] text-secondary">{dispute.raisedBy.substring(0, 2)}</AvatarFallback>
                       </Avatar>
                       <span className="text-muted-foreground">
                         Raised by {dispute.raisedBy} on {new Date(dispute.raisedOn).toLocaleDateString()}
@@ -249,19 +249,19 @@ export function DisputesList() {
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-accent">For: {dispute.votesFor}</span>
+                      <span className="text-secondary font-bold">For: {dispute.votesFor}</span>
                       <span className="text-destructive">Against: {dispute.votesAgainst}</span>
                     </div>
                     <Progress
                       value={100}
-                      className={`h-2 ${dispute.resolution === "approved" ? "bg-accent" : "bg-destructive/50"}`}
+                      className={`h-2 ${dispute.resolution === "approved" ? "bg-secondary" : "bg-destructive/50"}`}
                     />
                   </div>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-end pt-4">
-              <Button variant="outline" className="border-primary text-primary hover:bg-primary/10">
+            <CardFooter className="flex justify-end pt-4 border-t border-secondary/10">
+              <Button variant="outline" className="border-secondary text-secondary hover:bg-secondary/10">
                 <MessageSquare className="mr-2 h-4 w-4" />
                 View Discussion
               </Button>

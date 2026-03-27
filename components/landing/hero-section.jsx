@@ -57,7 +57,7 @@ export function HeroSection() {
               <motion.div
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 4, repeat: Infinity }}
-                className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-full blur-[100px] opacity-20"
+                className="absolute inset-0 bg-gradient-to-br from-primary via-secondary to-accent rounded-full blur-[100px] opacity-20"
               ></motion.div>
               <div className="relative z-10 bg-muted border rounded-lg shadow-lg overflow-hidden h-full w-full flex items-center justify-center">
                 <div className="p-8 space-y-6 w-full max-w-md">
@@ -75,13 +75,13 @@ export function HeroSection() {
                         <span className="text-primary font-bold">15</span>
                       </div>
                     </div>
-                    <div className="bg-background rounded-md p-4 flex justify-between items-center">
+                    <div className="bg-background rounded-md p-4 flex justify-between items-center border border-secondary/30">
                       <div>
-                        <p className="text-sm font-medium">Your Balance</p>
-                        <p className="text-2xl font-bold">XAF 250,000</p>
+                        <p className="text-sm font-medium">Your Pending Payout</p>
+                        <p className="text-2xl font-bold text-secondary">XAF 250,000</p>
                       </div>
                       <div className="h-12 w-12 rounded-full bg-secondary/20 flex items-center justify-center">
-                        <span className="text-secondary-foreground font-bold">+</span>
+                        <span className="text-secondary font-bold">➜</span>
                       </div>
                     </div>
                     <Button className="w-full">Make Payment</Button>

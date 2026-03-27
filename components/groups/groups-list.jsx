@@ -103,13 +103,13 @@ export function GroupsList() {
                 transition={{ duration: 0.3 }}
                 className="h-full"
               >
-                <Card className="border-none shadow-md">
+                <Card className="border border-secondary/20 shadow-md hover:border-secondary/40 transition-colors">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <Avatar className="h-12 w-12 border-2 border-primary/20">
+                        <Avatar className="h-12 w-12 border-2 border-secondary/30">
                           <AvatarImage src={`/placeholder.svg?height=48&width=48`} alt={group.name} />
-                          <AvatarFallback className="bg-primary text-primary-foreground">
+                          <AvatarFallback className="bg-secondary text-secondary-foreground">
                             {group.name.substring(0, 2)}
                           </AvatarFallback>
                         </Avatar>
@@ -177,14 +177,14 @@ export function GroupsList() {
                         </div>
                       </div>
                     </div>
-                    <Progress value={group.progress} className="h-2 mt-4" />
+                    <Progress value={group.progress} className="h-2 mt-4 bg-secondary/20" />
                   </CardContent>
                   <CardFooter className="flex justify-between pt-4">
-                    <Button variant="outline" className="border-primary text-primary hover:bg-primary/10">
+                    <Button variant="outline" className="border-secondary text-secondary hover:bg-secondary/10 hover:border-secondary">
                       <Settings className="mr-2 h-4 w-4" />
                       Manage
                     </Button>
-                    <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+                    <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/85 font-bold">
                       <ArrowUpRight className="mr-2 h-4 w-4" />
                       Make Payment
                     </Button>

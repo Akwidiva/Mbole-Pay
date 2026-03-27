@@ -75,7 +75,7 @@ export function RecentTransactions() {
               </div>
               <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
                 <p
-                  className={`text-sm font-medium ${transaction.type === "payout" ? "text-secondary-foreground" : ""}`}
+                  className={`text-sm font-bold ${transaction.type === "payout" ? "text-secondary" : "text-foreground"}`}
                 >
                   {transaction.type === "payout" ? "+" : "-"}
                   {transaction.amount}
@@ -83,14 +83,14 @@ export function RecentTransactions() {
                 <Badge
                     variant={
                       transaction.status === "completed"
-                        ? "default"
+                        ? "secondary"
                         : transaction.status === "pending"
                           ? "outline"
                           : "destructive"
                     }
                     className={
                       transaction.status === "completed"
-                        ? "bg-accent text-accent-foreground hover:bg-accent/80"
+                        ? ""
                         : transaction.status === "pending"
                           ? "border-accent text-accent hover:bg-accent/10"
                           : ""
