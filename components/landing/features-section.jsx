@@ -1,5 +1,9 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, Wallet, Users, BarChart4, Vote, Clock } from "lucide-react"
+import { motion } from "framer-motion"
+import { containerVariants, itemVariants } from "@/lib/animations"
 
 export function FeaturesSection() {
   const features = [
@@ -59,21 +63,39 @@ export function FeaturesSection() {
             </p>
           </div>
         </div>
-        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 mt-8">
+        <motion.div
+          className="mx-auto grid max-w-5xl grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8"
+          variants={containerVariants}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true, margin: "-100px" }}
+        >
           {features.map((feature, index) => (
-            <Card key={index} className="bg-background border-none shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className={`${feature.bgColor} w-12 h-12 rounded-full flex items-center justify-center mb-4`}>
-                  <feature.icon className={`h-6 w-6 ${feature.color}`} />
-                </div>
-                <CardTitle>{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">{feature.description}</CardDescription>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              <motion.div key={index} variants={itemVariants}>
+                <motion.div
+                  whileHover={{ y: -8, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)" }}
+                  transition={{ duration: 0.3 }}
+                  className="h-full"
+                >
+                  <Card className="bg-background border-none shadow-md hover:shadow-lg transition-shadow h-full">
+                    <CardHeader>
+                      <motion.div
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ duration: 0.2 }}
+                        className={`${feature.bgColor} w-12 h-12 rounded-full flex items-center justify-center mb-4`}
+                      >
+                        <feature.icon className={`h-6 w-6 ${feature.color}`} />
+                      </motion.div>
+                      <CardTitle>{feature.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="text-base">{feature.description}</CardDescription>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </motion.div>
+            ))}
+        </motion.div>
       </div>
     </section>
   )

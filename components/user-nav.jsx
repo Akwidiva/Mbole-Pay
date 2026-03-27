@@ -32,10 +32,10 @@ export function UserNav() {
   }
 
   const profileBtnClasses = isLanding
-    ? "relative h-10 w-10 rounded-full bg-purple-600 hover:bg-purple-600 p-0"
+    ? "relative h-10 w-10 rounded-full bg-primary hover:bg-primary/90 p-0"
     : "relative h-10 w-10 rounded-full bg-primary hover:bg-primary/90 p-0"
-  const avatarClasses = isLanding ? "h-10 w-10 bg-purple-600" : "h-10 w-10 bg-primary"
-  const avatarFallbackClasses = isLanding ? "text-white font-semibold bg-purple-600" : "text-white font-semibold bg-primary"
+  const avatarClasses = isLanding ? "h-10 w-10 bg-primary" : "h-10 w-10 bg-primary"
+  const avatarFallbackClasses = isLanding ? "text-white font-semibold bg-primary" : "text-white font-semibold bg-primary"
 
   const user = session?.user
   const displayName = user?.name || user?.username || "User"

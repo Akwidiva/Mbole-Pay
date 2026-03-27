@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
+import { containerVariants, itemVariants } from "@/lib/animations"
 
 interface AuthFormProps {
   mode: "signin" | "signup"
@@ -98,19 +100,32 @@ export function AuthForm({ mode, redirectPath = "/dashboard", onSuccess, classNa
 
   return (
     <div className={cn("space-y-4", className)}>
-      <form onSubmit={mode === "signin" ? handleSignIn : handleSignUp} className="space-y-4">
-        {error && <div className="bg-red-100 text-red-700 p-3 rounded text-sm">{error}</div>}
+      <motion.form
+        onSubmit={mode === "signin" ? handleSignIn : handleSignUp}
+        className="space-y-4"
+        variants={containerVariants}
+        initial="initial"
+        animate="animate"
+      >
+        {error && (
+          <motion.div
+            variants={itemVariants}
+            className="bg-red-100 text-red-700 p-3 rounded text-sm"
+          >
+            {error}
+          </motion.div>
+        )}
         {mode === "signup" && (
-          <div>
+          <motion.div variants={itemVariants}>
             <Label htmlFor="name">Full Name</Label>
             <Input id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} />
-          </div>
+          </motion.div>
         )}
-        <div>
+        <motion.div variants={itemVariants}>
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
-        </div>
-        <div>
+        </motion.div>
+        <motion.div variants={itemVariants}>
           <Label htmlFor="password">Password {mode === "signup" && "(6+ characters)"}</Label>
           <Input
             id="password"
@@ -119,9 +134,9 @@ export function AuthForm({ mode, redirectPath = "/dashboard", onSuccess, classNa
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
           />
-        </div>
+        </motion.div>
         {mode === "signup" && (
-          <div>
+          <motion.div variants={itemVariants}>
             <Label htmlFor="confirm">Confirm Password</Label>
             <Input
               id="confirm"
@@ -130,23 +145,27 @@ export function AuthForm({ mode, redirectPath = "/dashboard", onSuccess, classNa
               onChange={(e) => setConfirmPassword(e.target.value)}
               disabled={loading}
             />
-          </div>
+          </motion.div>
         )}
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? (mode === "signin" ? "Signing in..." : "Creating...") : mode === "signin" ? "Sign In" : "Sign Up"}
-        </Button>
-      </form>
+        <motion.div variants={itemVariants}>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (mode === "signin" ? "Signing in..." : "Creating...") : mode === "signin" ? "Sign In" : "Sign Up"}
+          </Button>
+        </motion.div>
+      </motion.form>
       <div>
         <Separator className="my-4" />
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={() => signIn("google", { callbackUrl: redirectPath })}
-          disabled={loading}
-        >
-          Continue with Google
-        </Button>
+        <motion.div variants={itemVariants}>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => signIn("google", { callbackUrl: redirectPath })}
+            disabled={loading}
+          >
+            Continue with Google
+          </Button>
+        </motion.div>
       </div>
     </div>
   )

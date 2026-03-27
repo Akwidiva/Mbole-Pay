@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { ArrowLeft, ShieldCheck, Sparkles } from "lucide-react"
 import { AuthForm } from "@/components/auth/auth-form"
+import { MboleLogo } from "@/components/mbole-logo"
 
 const highlights = [
   "Encrypted member data",
@@ -14,15 +15,23 @@ export default function SignInPage() {
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.1fr_0.9fr]">
       <aside className="relative hidden bg-primary lg:flex">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-purple-700" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-green-800" />
         <div className="relative z-10 flex flex-col justify-between p-12 text-primary-foreground">
           <div>
             <Link href="/" className="inline-flex items-center text-sm font-semibold opacity-80 hover:opacity-100">
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to landing
             </Link>
-            <h1 className="mt-10 text-4xl font-semibold leading-tight">
-              Welcome back to Mbole Pay
-            </h1>
+            <div className="mt-10 mb-6 flex items-center gap-3">
+              <MboleLogo className="h-12 w-12" />
+              <div>
+                <h1 className="text-2xl font-bold">
+                  <span className="text-white">Mbole</span> Pay
+                </h1>
+              </div>
+            </div>
+            <h2 className="text-3xl font-semibold leading-tight">
+              Welcome back
+            </h2>
             <p className="mt-4 max-w-md text-primary-foreground/80">
               Continue orchestrating transparent Njangi cycles with live ledgers, payout automation, and dispute-proof member records.
             </p>
@@ -40,6 +49,15 @@ export default function SignInPage() {
       <section className="flex flex-col justify-center px-6 py-12 sm:px-10 lg:px-16">
         <div className="mx-auto w-full max-w-md space-y-8">
           <div>
+            <div className="lg:hidden flex items-center gap-3 mb-6">
+              <MboleLogo className="h-10 w-10" />
+              <div>
+                <h1 className="text-xl font-bold">
+                  <span className="text-primary">Mbole</span>
+                  <span className="text-secondary"> Pay</span>
+                </h1>
+              </div>
+            </div>
             <div className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               <Sparkles className="mr-2 h-3 w-3" /> Secure Sign In
             </div>

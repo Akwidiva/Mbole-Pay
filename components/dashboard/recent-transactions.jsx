@@ -49,28 +49,31 @@ export function RecentTransactions() {
   ]
 
   return (
-    <Card className="col-span-2 border-none shadow-md">
+    <Card className="border-none shadow-md w-full">
       <CardHeader>
         <CardTitle>Recent Transactions</CardTitle>
         <CardDescription>Your latest financial activities across all groups.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {transactions.map((transaction) => (
-            <div key={transaction.id} className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Avatar className="h-9 w-9 border-2 border-muted">
+            <div
+              key={transaction.id}
+              className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors">
+              <div
+                className="flex items-center space-x-3 flex-1">
+                <Avatar className="h-8 w-8 border-2 border-muted flex-shrink-0">
                   <AvatarImage src={`/placeholder.svg?height=36&width=36`} alt={transaction.name} />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                     {transaction.name.substring(0, 2)}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="text-sm font-medium leading-none">{transaction.name}</p>
-                  <p className="text-sm text-muted-foreground">{new Date(transaction.date).toLocaleDateString()}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{transaction.name}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(transaction.date).toLocaleDateString()}</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
                 <p
                   className={`text-sm font-medium ${transaction.type === "payout" ? "text-secondary-foreground" : ""}`}
                 >
@@ -78,23 +81,23 @@ export function RecentTransactions() {
                   {transaction.amount}
                 </p>
                 <Badge
-                  variant={
-                    transaction.status === "completed"
-                      ? "default"
-                      : transaction.status === "pending"
-                        ? "outline"
-                        : "destructive"
-                  }
-                  className={
-                    transaction.status === "completed"
-                      ? "bg-accent text-accent-foreground hover:bg-accent/80"
-                      : transaction.status === "pending"
-                        ? "border-accent text-accent hover:bg-accent/10"
-                        : ""
-                  }
-                >
-                  {transaction.status}
-                </Badge>
+                    variant={
+                      transaction.status === "completed"
+                        ? "default"
+                        : transaction.status === "pending"
+                          ? "outline"
+                          : "destructive"
+                    }
+                    className={
+                      transaction.status === "completed"
+                        ? "bg-accent text-accent-foreground hover:bg-accent/80"
+                        : transaction.status === "pending"
+                          ? "border-accent text-accent hover:bg-accent/10"
+                          : ""
+                    }
+                  >
+                    {transaction.status}
+                  </Badge>
               </div>
             </div>
           ))}

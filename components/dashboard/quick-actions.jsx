@@ -3,6 +3,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PlusCircle, Users, FileText, ArrowUpRight, Settings } from "lucide-react"
+import { motion } from "framer-motion"
+import { containerVariants, itemVariants } from "@/lib/animations"
 
 export function QuickActions() {
   const actions = [
@@ -50,25 +52,42 @@ export function QuickActions() {
         <CardDescription>Common tasks to help you manage your savings groups.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <motion.div
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+          variants={containerVariants}
+          initial="initial"
+          animate="animate"
+        >
           {actions.map((action, index) => (
-            <Button
-              key={index}
-              variant={action.variant}
-              className={`h-auto flex-col items-start gap-2 p-4 justify-start text-left ${action.className}`}
-            >
-              <action.icon className="h-5 w-5" />
-              <div>
-                <p className="font-medium">{action.title}</p>
-                <p
-                  className={`text-xs ${action.variant === "default" ? "text-primary-foreground/80" : "text-muted-foreground"}`}
+            <motion.div key={index} variants={itemVariants}>
+              <motion.div
+                whileHover={{ y: -6, boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }}
+                transition={{ duration: 0.2 }}
+                className="h-full"
+              >
+                <Button
+                  variant={action.variant}
+                  className={`h-auto flex-col items-start gap-2 p-4 justify-start text-left w-full ${action.className}`}
                 >
-                  {action.description}
-                </p>
-              </div>
-            </Button>
+                  <motion.div
+                    whileHover={{ scale: 1.2, rotate: 10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <action.icon className="h-5 w-5" />
+                  </motion.div>
+                  <div>
+                    <p className="font-medium">{action.title}</p>
+                    <p
+                      className={`text-xs ${action.variant === "default" ? "text-primary-foreground/80" : "text-muted-foreground"}`}
+                    >
+                      {action.description}
+                    </p>
+                  </div>
+                </Button>
+              </motion.div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </CardContent>
     </Card>
   )

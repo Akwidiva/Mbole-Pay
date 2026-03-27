@@ -18,19 +18,19 @@ export default async function DashboardPage() {
     <DashboardShell>
       <DashboardHeader heading="Dashboard" text="Manage your savings groups and track your contributions." />
       <Suspense fallback={<DashboardSkeleton />}>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <DashboardOverview />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
-          <div className="col-span-2">
+        <DashboardOverview />
+        <div className="grid gap-8 md:grid-cols-3 mt-8">
+          <div className="md:col-span-2">
             <RecentTransactions />
           </div>
-          <div className="space-y-4">
-            <UpcomingPayments />
-            <DisputeResolution />
+          <div className="md:col-span-1">
+            <div className="space-y-4">
+              <UpcomingPayments />
+              <DisputeResolution />
+            </div>
           </div>
         </div>
-        <div className="mt-4">
+        <div className="mt-8">
           <QuickActions />
         </div>
       </Suspense>

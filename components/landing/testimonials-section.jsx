@@ -1,6 +1,10 @@
+"use client"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { Quote } from "lucide-react"
+import { motion } from "framer-motion"
+import { containerVariants, itemVariants } from "@/lib/animations"
 
 export function TestimonialsSection() {
   const testimonials = [
@@ -39,26 +43,46 @@ export function TestimonialsSection() {
             </p>
           </div>
         </div>
-        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 mt-8">
+        <motion.div
+          className="mx-auto grid max-w-5xl grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8"
+          variants={containerVariants}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true, margin: "-100px" }}
+        >
           {testimonials.map((testimonial, index) => (
-            <Card key={index} className="bg-background border-none shadow-md">
-              <CardContent className="p-6">
-                <Quote className="h-8 w-8 text-primary/40 mb-4" />
-                <p className="mb-6 italic text-muted-foreground">{testimonial.quote}</p>
-                <div className="flex items-center gap-4">
-                  <Avatar className="border-2 border-secondary">
-                    <AvatarImage src={`/placeholder.svg?height=40&width=40`} alt={testimonial.author} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">{testimonial.avatar}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{testimonial.author}</p>
-                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              <motion.div key={index} variants={itemVariants}>
+                <motion.div
+                  whileHover={{ y: -8, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)" }}
+                  transition={{ duration: 0.3 }}
+                  className="h-full"
+                >
+                  <Card className="bg-background border-none shadow-md h-full">
+                    <CardContent className="p-6">
+                      <motion.div
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ duration: 0.2 }}
+                        className="inline-block"
+                      >
+                        <Quote className="h-8 w-8 text-primary/40 mb-4" />
+                      </motion.div>
+                      <p className="mb-6 italic text-muted-foreground">{testimonial.quote}</p>
+                      <div className="flex items-center gap-4">
+                        <Avatar className="border-2 border-secondary">
+                          <AvatarImage src={`/placeholder.svg?height=40&width=40`} alt={testimonial.author} />
+                          <AvatarFallback className="bg-primary text-primary-foreground">{testimonial.avatar}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{testimonial.author}</p>
+                          <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </motion.div>
+            ))}
+        </motion.div>
       </div>
     </section>
   )

@@ -1,4 +1,8 @@
+"use client"
+
 import { Card, CardContent } from "@/components/ui/card"
+import { motion } from "framer-motion"
+import { containerVariants, itemVariants } from "@/lib/animations"
 
 export function HowItWorksSection() {
   const steps = [
@@ -36,19 +40,39 @@ export function HowItWorksSection() {
             </p>
           </div>
         </div>
-        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 mt-8">
+        <motion.div
+          className="mx-auto grid max-w-5xl grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-8"
+          variants={containerVariants}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true, margin: "-100px" }}
+        >
           {steps.map((step, index) => (
-            <Card key={index} className="relative overflow-hidden border-none bg-background shadow-md">
-              <div className="absolute -top-6 -left-6 h-16 w-16 rounded-full bg-secondary/20 flex items-center justify-center">
-                <span className="text-secondary-foreground font-bold text-xl">{step.number}</span>
-              </div>
-              <CardContent className="pt-8 pb-6 px-6">
-                <h3 className="text-xl font-bold mb-2">{step.title}</h3>
-                <p className="text-muted-foreground">{step.description}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              <motion.div key={index} variants={itemVariants}>
+                <motion.div
+                  whileHover={{ y: -8, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)" }}
+                  transition={{ duration: 0.3 }}
+                  className="h-full"
+                >
+                  <Card className="relative overflow-hidden border-none bg-background shadow-md h-full">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      whileInView={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.4, delay: index * 0.1 }}
+                      viewport={{ once: true }}
+                      className="absolute -top-6 -left-6 h-16 w-16 rounded-full bg-secondary/20 flex items-center justify-center"
+                    >
+                      <span className="text-secondary-foreground font-bold text-xl">{step.number}</span>
+                    </motion.div>
+                    <CardContent className="pt-8 pb-6 px-6">
+                      <h3 className="text-xl font-bold mb-2">{step.title}</h3>
+                      <p className="text-muted-foreground">{step.description}</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              </motion.div>
+            ))}
+        </motion.div>
       </div>
     </section>
   )

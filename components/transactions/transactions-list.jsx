@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/pagination"
 import { Button } from "@/components/ui/button"
 import { Eye } from "lucide-react"
+import { motion } from "framer-motion"
 
 export function TransactionsList() {
   const [page, setPage] = useState(1)
@@ -104,96 +105,107 @@ export function TransactionsList() {
   ]
 
   return (
-    <Card className="border-none shadow-md mt-4">
-      <CardHeader className="pb-2">
-        <CardTitle>Transaction History</CardTitle>
+    <Card className="border-none shadow-md">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-2xl font-bold">Transaction History</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table>
+      <CardContent className="p-0 px-6 pb-6">
+        <div className="overflow-x-auto border rounded-lg">
+          <Table className="w-full" style={{ tableLayout: 'fixed' }}>
           <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Group</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Reference</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="border-b-2 bg-muted/40">
+              <TableHead className="w-24 px-3 py-3 text-left text-xs font-semibold">Date</TableHead>
+              <TableHead className="w-40 px-3 py-3 text-left text-xs font-semibold">Group</TableHead>
+              <TableHead className="w-28 px-3 py-3 text-left text-xs font-semibold">Type</TableHead>
+              <TableHead className="w-28 px-3 py-3 text-left text-xs font-semibold">Amount</TableHead>
+              <TableHead className="w-24 px-3 py-3 text-left text-xs font-semibold">Status</TableHead>
+              <TableHead className="w-28 px-3 py-3 text-left text-xs font-semibold">Reference</TableHead>
+              <TableHead className="w-16 px-3 py-3 text-center text-xs font-semibold">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {transactions.map((transaction) => (
-              <TableRow key={transaction.id}>
-                <TableCell className="font-medium">{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={`/placeholder.svg?height=24&width=24`} alt={transaction.group} />
-                      <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                        {transaction.group.substring(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm">{transaction.group}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={
-                      transaction.type === "contribution"
-                        ? "border-primary text-primary"
-                        : transaction.type === "payout"
-                          ? "border-secondary text-secondary-foreground"
-                          : "border-muted-foreground text-muted-foreground"
-                    }
-                  >
-                    {transaction.type}
-                  </Badge>
-                </TableCell>
-                <TableCell
-                  className={
-                    transaction.type === "payout"
-                      ? "text-secondary-foreground font-medium"
-                      : transaction.type === "fee"
-                        ? "text-destructive font-medium"
-                        : "font-medium"
-                  }
-                >
-                  {transaction.type === "payout" ? "+" : "-"}
-                  {transaction.amount}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={
-                      transaction.status === "completed"
-                        ? "default"
-                        : transaction.status === "pending"
-                          ? "outline"
-                          : "destructive"
-                    }
-                    className={
-                      transaction.status === "completed"
-                        ? "bg-accent text-accent-foreground hover:bg-accent/80"
-                        : transaction.status === "pending"
-                          ? "border-accent text-accent hover:bg-accent/10"
-                          : ""
-                    }
-                  >
-                    {transaction.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm">{transaction.reference}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon">
-                    <Eye className="h-4 w-4" />
-                    <span className="sr-only">View details</span>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+              <TableRow 
+                key={transaction.id} 
+                className="border-b hover:bg-muted/50 transition-all duration-200 cursor-pointer"
+              >
+                    <TableCell className="w-24 px-3 py-3 text-sm font-medium">{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                    <TableCell className="w-40 px-3 py-3">
+                      <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+                        <Avatar className="h-6 w-6 flex-shrink-0">
+                          <AvatarImage src={`/placeholder.svg?height=24&width=24`} alt={transaction.group} />
+                          <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                            {transaction.group.substring(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm truncate overflow-hidden">{transaction.group}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="w-28 px-3 py-3">
+                      <Badge
+                        variant="outline"
+                        className={`text-xs whitespace-nowrap ${
+                          transaction.type === "contribution"
+                            ? "border-primary text-primary"
+                            : transaction.type === "payout"
+                              ? "border-secondary text-secondary-foreground"
+                              : "border-muted-foreground text-muted-foreground"
+                        }`}
+                      >
+                        {transaction.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell
+                      className={`w-28 px-3 py-3 text-sm ${
+                        transaction.type === "payout"
+                          ? "text-secondary-foreground font-medium"
+                          : transaction.type === "fee"
+                            ? "text-destructive font-medium"
+                            : "font-medium"
+                      }`}
+                    >
+                      {transaction.type === "payout" ? "+" : "-"}
+                      {transaction.amount}
+                    </TableCell>
+                    <TableCell className="w-24 px-3 py-3">
+                      <Badge
+                        variant={
+                          transaction.status === "completed"
+                            ? "default"
+                            : transaction.status === "pending"
+                              ? "outline"
+                              : "destructive"
+                        }
+                        className={`text-xs whitespace-nowrap ${
+                          transaction.status === "completed"
+                            ? "bg-accent text-accent-foreground hover:bg-accent/80"
+                            : transaction.status === "pending"
+                              ? "border-accent text-accent hover:bg-accent/10"
+                              : ""
+                        }`}
+                      >
+                        {transaction.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm w-28 px-3 py-3 truncate">{transaction.reference}</TableCell>
+                    <TableCell className="w-16 px-3 py-3 text-center">
+                      <motion.div
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Button variant="ghost" size="icon">
+                          <Eye className="h-4 w-4" />
+                          <span className="sr-only">View details</span>
+                        </Button>
+                      </motion.div>
+                    </TableCell>
+                  </TableRow>
+              ))}
           </TableBody>
         </Table>
-        <Pagination className="mt-4">
+        </div>
+        <Pagination className="mt-6">
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious href="#" />
