@@ -9,7 +9,7 @@ export function RecentTransactions() {
     {
       id: "1",
       name: "Mbole Savings Group",
-      amount: "₦ 50,000",
+      amount: "XAF 50,000",
       date: "2023-04-05",
       status: "completed",
       type: "contribution",
@@ -17,7 +17,7 @@ export function RecentTransactions() {
     {
       id: "2",
       name: "Family Support Group",
-      amount: "₦ 25,000",
+      amount: "XAF 25,000",
       date: "2023-04-03",
       status: "completed",
       type: "contribution",
@@ -25,7 +25,7 @@ export function RecentTransactions() {
     {
       id: "3",
       name: "Mbole Savings Group",
-      amount: "₦ 200,000",
+      amount: "XAF 200,000",
       date: "2023-03-28",
       status: "completed",
       type: "payout",
@@ -33,7 +33,7 @@ export function RecentTransactions() {
     {
       id: "4",
       name: "Business Investment Group",
-      amount: "₦ 75,000",
+      amount: "XAF 75,000",
       date: "2023-03-25",
       status: "pending",
       type: "contribution",
@@ -41,7 +41,7 @@ export function RecentTransactions() {
     {
       id: "5",
       name: "Family Support Group",
-      amount: "₦ 25,000",
+      amount: "XAF 25,000",
       date: "2023-03-20",
       status: "failed",
       type: "contribution",

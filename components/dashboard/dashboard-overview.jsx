@@ -16,14 +16,14 @@ export function DashboardOverview() {
     },
     {
       title: "Total Contributions",
-      value: "₦ 1,250,000",
-      change: "+₦ 150,000 from last month",
+      value: "XAF 1,250,000",
+      change: "+XAF 150,000 from last month",
       icon: Wallet,
       iconClass: "text-secondary bg-secondary/10",
     },
     {
       title: "Upcoming Payout",
-      value: "₦ 250,000",
+      value: "XAF 250,000",
       change: "Due in 5 days",
       icon: CreditCard,
       iconClass: "text-accent bg-accent/10",

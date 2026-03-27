@@ -25,7 +25,7 @@ export function TransactionsList() {
     {
       id: "1",
       group: "Mbole Savings Group",
-      amount: "₦ 50,000",
+      amount: "XAF 50,000",
       date: "2023-04-05",
       status: "completed",
       type: "contribution",
@@ -35,7 +35,7 @@ export function TransactionsList() {
     {
       id: "2",
       group: "Family Support Group",
-      amount: "₦ 25,000",
+      amount: "XAF 25,000",
       date: "2023-04-03",
       status: "completed",
       type: "contribution",
@@ -45,7 +45,7 @@ export function TransactionsList() {
     {
       id: "3",
       group: "Mbole Savings Group",
-      amount: "₦ 200,000",
+      amount: "XAF 200,000",
       date: "2023-03-28",
       status: "completed",
       type: "payout",
@@ -55,7 +55,7 @@ export function TransactionsList() {
     {
       id: "4",
       group: "Business Investment Group",
-      amount: "₦ 75,000",
+      amount: "XAF 75,000",
       date: "2023-03-25",
       status: "pending",
       type: "contribution",
@@ -65,7 +65,7 @@ export function TransactionsList() {
     {
       id: "5",
       group: "Family Support Group",
-      amount: "₦ 25,000",
+      amount: "XAF 25,000",
       date: "2023-03-20",
       status: "failed",
       type: "contribution",
@@ -75,7 +75,7 @@ export function TransactionsList() {
     {
       id: "6",
       group: "Mbole Savings Group",
-      amount: "₦ 5,000",
+      amount: "XAF 5,000",
       date: "2023-03-15",
       status: "completed",
       type: "fee",
@@ -85,7 +85,7 @@ export function TransactionsList() {
     {
       id: "7",
       group: "Business Investment Group",
-      amount: "₦ 150,000",
+      amount: "XAF 150,000",
       date: "2023-03-10",
       status: "completed",
       type: "payout",
@@ -95,7 +95,7 @@ export function TransactionsList() {
     {
       id: "8",
       group: "Family Support Group",
-      amount: "₦ 25,000",
+      amount: "XAF 25,000",
       date: "2023-03-05",
       status: "completed",
       type: "contribution",

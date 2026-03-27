@@ -44,7 +44,7 @@ export function DisputesList() {
     {
       id: "3",
       title: "Change in Contribution Amount",
-      description: "Proposal to increase monthly contribution from ₦75,000 to ₦100,000",
+      description: "Proposal to increase monthly contribution from XAF75,000 to XAF100,000",
       group: "Business Investment Group",
       raisedBy: "Esther Nkongho",
       raisedOn: "2023-03-25",

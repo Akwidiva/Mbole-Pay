@@ -69,7 +69,7 @@ export function HeroSection() {
                     <div className="bg-background rounded-md p-4 flex justify-between items-center">
                       <div>
                         <p className="text-sm font-medium">Total Contributions</p>
-                        <p className="text-2xl font-bold">₦ 1,250,000</p>
+                        <p className="text-2xl font-bold">XAF 1,250,000</p>
                       </div>
                       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
                         <span className="text-primary font-bold">15</span>
@@ -78,7 +78,7 @@ export function HeroSection() {
                     <div className="bg-background rounded-md p-4 flex justify-between items-center">
                       <div>
                         <p className="text-sm font-medium">Your Balance</p>
-                        <p className="text-2xl font-bold">₦ 250,000</p>
+                        <p className="text-2xl font-bold">XAF 250,000</p>
                       </div>
                       <div className="h-12 w-12 rounded-full bg-secondary/20 flex items-center justify-center">
                         <span className="text-secondary-foreground font-bold">+</span>
