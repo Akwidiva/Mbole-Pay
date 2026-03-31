@@ -4,42 +4,63 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Wallet, CreditCard, TrendingUp } from "lucide-react"
 import { motion } from "framer-motion"
 import { containerVariants, itemVariants } from "@/lib/animations"
+import { useGroups } from "@/hooks/use-groups"
+import { useContributions } from "@/hooks/use-contributions"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function DashboardOverview() {
+  const { groups, loading: groupsLoading } = useGroups()
+  const { stats, loading: statsLoading } = useContributions()
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('fr-CM', {
+      style: 'currency',
+      currency: 'XAF',
+      minimumFractionDigits: 0,
+    }).format(amount || 0)
+  }
+
+  const totalContributions = stats?.totalAmount || 0
+  const completionRate = stats?.completionRate || 0
+  const activeGroups = groups.filter(g => g.status !== 'INACTIVE').length
+  const paidAmount = stats?.paidAmount || 0
+
   const cards = [
     {
       title: "Active Groups",
-      value: "3",
-      change: "+1 from last month",
+      value: activeGroups.toString(),
+      change: `${groups.length} total groups`,
       icon: Users,
       iconClass: "text-primary bg-primary/10",
       borderColor: "border-primary/20",
     },
     {
       title: "Total Contributions",
-      value: "XAF 1,250,000",
-      change: "+XAF 150,000 from last month",
+      value: formatCurrency(totalContributions),
+      change: `${formatCurrency(stats?.pendingAmount || 0)} pending`,
       icon: Wallet,
       iconClass: "text-secondary bg-secondary/10",
       borderColor: "border-secondary/30",
     },
     {
-      title: "Upcoming Payout",
-      value: "XAF 250,000",
-      change: "Due in 5 days",
+      title: "Amount Paid",
+      value: formatCurrency(paidAmount),
+      change: `${stats?.paidCount || 0} of ${stats?.totalCount || 0} paid`,
       icon: CreditCard,
       iconClass: "text-secondary bg-secondary/10",
       borderColor: "border-secondary/30",
     },
     {
-      title: "Group Health",
-      value: "98%",
-      change: "All members in good standing",
+      title: "Completion Rate",
+      value: `${completionRate.toFixed(1)}%`,
+      change: "Overall health score",
       icon: TrendingUp,
       iconClass: "text-primary bg-primary/10",
       borderColor: "border-primary/20",
     },
   ]
+
+  const isLoading = groupsLoading || statsLoading
 
   return (
     <motion.div
@@ -67,8 +88,17 @@ export function DashboardOverview() {
                 </motion.div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{card.value}</div>
-                <p className="text-xs text-muted-foreground">{card.change}</p>
+                {isLoading ? (
+                  <>
+                    <Skeleton className="h-8 w-24 mb-2" />
+                    <Skeleton className="h-4 w-32" />
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{card.value}</div>
+                    <p className="text-xs text-muted-foreground">{card.change}</p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </motion.div>
