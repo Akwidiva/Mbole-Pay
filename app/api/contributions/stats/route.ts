@@ -3,6 +3,7 @@ import { NextResponse, NextRequest } from "next/server"
 import { prisma } from "@/lib/db"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { userHasPermission } from "@/lib/rbac"
 
 /**
  * GET /api/contributions/stats
@@ -26,6 +27,17 @@ export async function GET(req: NextRequest) {
     // Get query parameters
     const url = new URL(req.url)
     const groupId = url.searchParams.get("groupId")
+
+    // Check permission to view stats
+    if (groupId) {
+      const hasPermission = await userHasPermission(user.id, groupId, "contributions:view")
+      if (!hasPermission) {
+        return NextResponse.json(
+          { error: "Forbidden: You do not have permission to view statistics for this group" },
+          { status: 403 }
+        )
+      }
+    }
 
     // Build filter
     const where: any = { userId: user.id }

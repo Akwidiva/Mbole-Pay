@@ -17,9 +17,10 @@ model User {
   phone     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  memberships Membership[]
+  memberships   Membership[]
   contributions Contribution[]
-  payouts   Payout[]
+  payments      Payment[]
+  payouts       Payout[]
 }
 
 model Group {
@@ -36,6 +37,7 @@ model Group {
   creator_id      String
   memberships     Membership[]
   contributions   Contribution[]
+  payments        Payment[]
   payouts         Payout[]
   disputes        Dispute[]
 }
@@ -66,19 +68,61 @@ model Contribution {
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  payment Payment?
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  groupId         String
+  group           Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  contributionId  String?  @unique
+  contribution    Contribution? @relation(fields: [contributionId], references: [id], onDelete: SetNull)
+  
+  amount          Float
+  currency        String   @default("XAF")
+  status          String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  
+  provider        String                        // MTN_MOMO or ORANGE_MONEY
+  providerRef     String?  @unique             // Reference from payment provider
+  phoneNumber     String                        // Phone number used for payment
+  
+  retryCount      Int      @default(0)
+  lastRetry       DateTime?
+  errorMessage    String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Payout {
-  id        String   @id @default(cuid())
-  amount    Int
-  status    String   @default("PENDING") // "PENDING" | "COMPLETED"
-  recipient_id String
-  groupId   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  recipient User  @relation(fields: [recipient_id], references: [id], onDelete: Cascade)
-  group     Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  groupId         String
+  group           Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  recipientId     String
+  recipient       User     @relation(fields: [recipientId], references: [id], onDelete: Restrict)
+  
+  amount          Float
+  currency        String   @default("XAF")
+  status          String   @default("PENDING") // PENDING, SCHEDULED, PROCESSING, COMPLETED, FAILED
+  
+  provider        String                        // MTN_MOMO or ORANGE_MONEY
+  providerRef     String?  @unique
+  phoneNumber     String
+  
+  scheduledDate   DateTime
+  processedDate   DateTime?
+  
+  retryCount      Int      @default(0)
+  lastRetry       DateTime?
+  errorMessage    String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Dispute {

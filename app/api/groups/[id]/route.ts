@@ -3,12 +3,15 @@ import { NextResponse, NextRequest } from "next/server"
 import { prisma } from "@/lib/db"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { userHasPermission } from "@/lib/rbac"
 
 /**
  * GET /api/groups/[id]
  * Get group details with members, contributions, and disputes
+ * Requires: group:view permission
  */
 export async function GET(_: Request, { params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
   try {
     const group = await prisma.group.findUnique({
       where: { id: params.id },
@@ -42,6 +45,19 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
       return NextResponse.json({ error: "Group not found" }, { status: 404 })
     }
 
+    // Check permission to view group
+    if (session?.user?.id) {
+      const hasPermission = await userHasPermission(session.user.id, params.id, "group:view")
+      if (!hasPermission) {
+        return NextResponse.json(
+          { error: "Forbidden: You do not have permission to view this group" },
+          { status: 403 }
+        )
+      }
+    } else {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     // Calculate group statistics
     const totalContributions = group.contributions.reduce(
       (sum, c) => sum + (c.status === "PAID" ? c.amount : 0),
@@ -72,6 +88,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 /**
  * PUT /api/groups/[id]
  * Update group details (admin only)
+ * Requires: group:edit permission (ADMIN only)
  */
 export async function PUT(
   req: NextRequest,
@@ -91,14 +108,11 @@ export async function PUT(
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Check if user is group admin
-    const membership = await prisma.membership.findUnique({
-      where: { userId_groupId: { userId: user.id, groupId: params.id } },
-    })
-
-    if (!membership || membership.role !== "ADMIN") {
+    // Check permission to edit group (requires group:edit permission)
+    const hasPermission = await userHasPermission(user.id, params.id, "group:edit")
+    if (!hasPermission) {
       return NextResponse.json(
-        { error: "Only group admins can update group settings" },
+        { error: "Forbidden: You do not have permission to edit this group" },
         { status: 403 }
       )
     }
@@ -161,6 +175,7 @@ export async function PUT(
 /**
  * DELETE /api/groups/[id]
  * Delete group (admin only)
+ * Requires: group:delete permission (ADMIN only)
  */
 export async function DELETE(
   req: NextRequest,
@@ -180,7 +195,15 @@ export async function DELETE(
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Check if user is group creator/admin
+    // Check permission to delete group (requires group:delete permission)
+    const hasPermission = await userHasPermission(user.id, params.id, "group:delete")
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: "Forbidden: You do not have permission to delete this group" },
+        { status: 403 }
+      )
+    }
+
     const group = await prisma.group.findUnique({
       where: { id: params.id },
       include: { memberships: true },
@@ -188,20 +211,6 @@ export async function DELETE(
 
     if (!group) {
       return NextResponse.json({ error: "Group not found" }, { status: 404 })
-    }
-
-    const membership = await prisma.membership.findUnique({
-      where: { userId_groupId: { userId: user.id, groupId: params.id } },
-    })
-
-    if (
-      !membership ||
-      (membership.role !== "ADMIN" && group.creator_id !== user.id)
-    ) {
-      return NextResponse.json(
-        { error: "Only group creator can delete this group" },
-        { status: 403 }
-      )
     }
 
     // Soft delete by setting status to INACTIVE

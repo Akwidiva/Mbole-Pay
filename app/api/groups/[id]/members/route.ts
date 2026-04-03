@@ -3,16 +3,32 @@ import { NextResponse, NextRequest } from "next/server"
 import { prisma } from "@/lib/db"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { userHasPermission } from "@/lib/rbac"
 
 /**
  * GET /api/groups/[id]/members
  * List all members of a group
+ * Requires: members:view permission (TREASURER+)
  */
 export async function GET(
   _: Request,
   { params }: { params: { id: string } }
 ) {
+  const session = await getServerSession(authOptions)
   try {
+    // Check permission to view members (requires members:view permission)
+    if (session?.user?.id) {
+      const hasPermission = await userHasPermission(session.user.id, params.id, "members:view")
+      if (!hasPermission) {
+        return NextResponse.json(
+          { error: "Forbidden: You do not have permission to view group members" },
+          { status: 403 }
+        )
+      }
+    } else {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const memberships = await prisma.membership.findMany({
       where: { groupId: params.id },
       include: {

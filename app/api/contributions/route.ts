@@ -3,6 +3,7 @@ import { NextResponse, NextRequest } from "next/server"
 import { prisma } from "@/lib/db"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { userHasPermission } from "@/lib/rbac"
 
 /**
  * GET /api/contributions
@@ -75,6 +76,7 @@ export async function GET(req: NextRequest) {
 /**
  * POST /api/contributions
  * Create new contribution (treasurer only)
+ * Requires: contributions:create permission (TREASURER+)
  */
 export async function POST(req: NextRequest) {
   try {
@@ -109,16 +111,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if requester is treasurer or admin
-    const membership = await prisma.membership.findUnique({
-      where: {
-        userId_groupId: { userId: user.id, groupId },
-      },
-    })
-
-    if (!membership || !["TREASURER", "ADMIN"].includes(membership.role)) {
+    // Check permission to create contribution (requires contributions:create)
+    const hasPermission = await userHasPermission(user.id, groupId, "contributions:create")
+    if (!hasPermission) {
       return NextResponse.json(
-        { error: "Only treasurers or admins can create contributions" },
+        { error: "Forbidden: You do not have permission to create contributions" },
         { status: 403 }
       )
     }

@@ -3,6 +3,7 @@ import { NextResponse, NextRequest } from "next/server"
 import { prisma } from "@/lib/db"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { userHasPermission } from "@/lib/rbac"
 
 /**
  * GET /api/contributions/[id]
@@ -41,6 +42,7 @@ export async function GET(
 /**
  * PUT /api/contributions/[id]
  * Update contribution (mark as paid, etc.)
+ * Requires: contributions:edit permission (TREASURER+)
  */
 export async function PUT(
   req: NextRequest,
@@ -85,21 +87,12 @@ export async function PUT(
       )
     }
 
-    // Check if user is treasurer or admin of the group
-    const membership = await prisma.membership.findUnique({
-      where: {
-        userId_groupId: {
-          userId: user.id,
-          groupId: contribution.groupId,
-        },
-      },
-    })
-
-    if (!membership || !["TREASURER", "ADMIN"].includes(membership.role)) {
+    // Check permission to edit contribution (requires contributions:edit)
+    const hasPermission = await userHasPermission(user.id, contribution.groupId, "contributions:edit")
+    if (!hasPermission) {
       return NextResponse.json(
         {
-          error:
-            "Only treasurers or admins can update contributions",
+          error: "Forbidden: You do not have permission to edit contributions",
         },
         { status: 403 }
       )
@@ -137,6 +130,7 @@ export async function PUT(
 /**
  * DELETE /api/contributions/[id]
  * Delete contribution (admin only)
+ * Requires: contributions:delete permission (ADMIN only)
  */
 export async function DELETE(
   req: NextRequest,
@@ -168,19 +162,11 @@ export async function DELETE(
       )
     }
 
-    // Check if user is admin of the group
-    const membership = await prisma.membership.findUnique({
-      where: {
-        userId_groupId: {
-          userId: user.id,
-          groupId: contribution.groupId,
-        },
-      },
-    })
-
-    if (!membership || membership.role !== "ADMIN") {
+    // Check permission to delete contribution (requires contributions:delete)
+    const hasPermission = await userHasPermission(user.id, contribution.groupId, "contributions:delete")
+    if (!hasPermission) {
       return NextResponse.json(
-        { error: "Only admins can delete contributions" },
+        { error: "Forbidden: You do not have permission to delete contributions" },
         { status: 403 }
       )
     }
