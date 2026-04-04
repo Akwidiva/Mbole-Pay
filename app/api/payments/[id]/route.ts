@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/db";
 import { PaymentFactory } from "@/lib/payments/payment-factory";
 import { ApiResponse, PaymentStatusResponse } from "@/types/payments";
+import { userHasPermission } from "@/lib/rbac";
 
 /**
  * GET /api/payments/[id]
@@ -79,17 +80,36 @@ export async function GET(
 
     // Verify ownership
     if (payment.userId !== user.id) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          error: {
-            code: "UNAUTHORIZED",
-            message: "You do not have access to this payment",
+      // Check if user is treasurer+ with payment:view permission
+      const groupId = (payment as any).group?.id;
+      if (groupId) {
+        const hasPermission = await userHasPermission(user.id, groupId, "payments:view");
+        if (!hasPermission) {
+          return NextResponse.json<ApiResponse>(
+            {
+              success: false,
+              error: {
+                code: "UNAUTHORIZED",
+                message: "You do not have access to this payment",
+              },
+              timestamp: new Date(),
+            },
+            { status: 403 }
+          );
+        }
+      } else {
+        return NextResponse.json<ApiResponse>(
+          {
+            success: false,
+            error: {
+              code: "UNAUTHORIZED",
+              message: "You do not have access to this payment",
+            },
+            timestamp: new Date(),
           },
-          timestamp: new Date(),
-        },
-        { status: 403 }
-      );
+          { status: 403 }
+        );
+      }
     }
 
     let currentStatus = payment.status;

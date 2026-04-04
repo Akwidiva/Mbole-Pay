@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server"
 import { prisma } from "@/lib/db"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { userHasPermission } from "@/lib/rbac"
 
 // GET: List contributions for user in a group
 export async function GET(
@@ -23,6 +24,15 @@ export async function GET(
     }
 
     const groupId = params.id
+
+    // Check permission to view contributions (requires contributions:view)
+    const hasPermission = await userHasPermission(user.id, groupId, "contributions:view")
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: "Forbidden: You do not have permission to view contributions in this group" },
+        { status: 403 }
+      )
+    }
 
     // Verify user is member of group
     const membership = await prisma.membership.findUnique({
@@ -72,16 +82,22 @@ export async function POST(
 
     const groupId = params.id
 
-    // Verify user is admin
+    // Check permission to create contributions (requires contributions:create)
+    const hasPermission = await userHasPermission(user.id, groupId, "contributions:create")
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: "Forbidden: You do not have permission to create contributions" },
+        { status: 403 }
+      )
+    }
+
+    // Verify user is member of group
     const membership = await prisma.membership.findUnique({
       where: { userId_groupId: { userId: user.id, groupId } },
     })
 
-    if (!membership || membership.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Only admins can create contributions" },
-        { status: 403 }
-      )
+    if (!membership) {
+      return NextResponse.json({ error: "Not a member of this group" }, { status: 403 })
     }
 
     const { userId, amount, dueDate } = await request.json()
