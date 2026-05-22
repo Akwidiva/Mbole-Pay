@@ -34,6 +34,9 @@ export async function GET() {
           where: { userId: user.id },
           select: { id: true, status: true, amount: true, dueDate: true },
         },
+        _count: {
+          select: { memberships: true, contributions: true },
+        },
       },
       orderBy: { createdAt: "desc" },
     })

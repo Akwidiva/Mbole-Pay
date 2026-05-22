@@ -239,7 +239,8 @@ export async function sendGroupInvitation(
   email: string,
   phone: string,
   groupName: string,
-  inviteCode: string
+  inviteCode: string,
+  acceptUrl?: string
 ) {
   const factory = getNotificationFactory();
 
@@ -256,6 +257,7 @@ export async function sendGroupInvitation(
       userName: email.split("@")[0],
       groupName,
       inviteCode,
+      acceptUrl: acceptUrl || `https://mbolepay.com/join/${inviteCode}`,
     },
   });
 }

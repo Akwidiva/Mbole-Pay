@@ -22,6 +22,7 @@ model User {
   contributions Contribution[]
   payments      Payment[]
   payouts       Payout[]
+  invitationsSent GroupInvitation[] @relation("InvitationsSent")
 }
 
 model Group {
@@ -41,6 +42,26 @@ model Group {
   payments        Payment[]
   payouts         Payout[]
   disputes        Dispute[]
+  invitations     GroupInvitation[]
+}
+
+model GroupInvitation {
+  id          String   @id @default(cuid())
+  token       String   @unique
+  groupId     String
+  invitedById String
+  email       String
+  status      String   @default("PENDING") // "PENDING" | "ACCEPTED" | "DECLINED" | "EXPIRED"
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  invitedBy   User      @relation("InvitationsSent", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([groupId, email])
+  @@index([token])
 }
 
 model Membership {

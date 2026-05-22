@@ -7,7 +7,8 @@ import prisma from '@/lib/db';
  * ADMIN - Get all members in a group
  */
 export async function GET(request, { params }) {
-  const roleCheck = await checkGroupRole(params.groupId, 'ADMIN');
+  const groupId = params.groupId || params.id;
+  const roleCheck = await checkGroupRole(groupId, 'ADMIN');
 
   if (!roleCheck.authorized) {
     return roleErrorResponse(roleCheck.error, 403);
@@ -16,7 +17,7 @@ export async function GET(request, { params }) {
   try {
     const members = await prisma.membership.findMany({
       where: {
-        groupId: params.groupId,
+        groupId,
       },
       include: {
         user: {
@@ -30,7 +31,7 @@ export async function GET(request, { params }) {
       },
     });
 
-    return NextResponse.json(members);
+    return NextResponse.json({ members });
   } catch (error) {
     console.error('Error fetching group members:', error);
     return roleErrorResponse('Internal Server Error', 500);
@@ -42,25 +43,32 @@ export async function GET(request, { params }) {
  * ADMIN - Assign role to a group member
  */
 export async function PUT(request, { params }) {
-  const roleCheck = await checkGroupRole(params.groupId, 'ADMIN');
+  const groupId = params.groupId || params.id;
+  const roleCheck = await checkGroupRole(groupId, 'ADMIN');
 
   if (!roleCheck.authorized) {
     return roleErrorResponse(roleCheck.error, 403);
   }
 
   try {
-    const { role } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const role = body.role || body.newRole
+    const userId = params.memberId || body.userId
 
     const validRoles = ['ADMIN', 'TREASURER', 'MEMBER'];
     if (!validRoles.includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 
+    if (!userId) {
+      return NextResponse.json({ error: 'Member id is required' }, { status: 400 });
+    }
+
     const updatedMembership = await prisma.membership.update({
       where: {
         userId_groupId: {
-          userId: params.memberId,
-          groupId: params.groupId,
+          userId: userId,
+          groupId,
         },
       },
       data: { role },
@@ -83,18 +91,26 @@ export async function PUT(request, { params }) {
  * ADMIN - Remove a member from a group
  */
 export async function DELETE(request, { params }) {
-  const roleCheck = await checkGroupRole(params.groupId, 'ADMIN');
+  const groupId = params.groupId || params.id;
+  const roleCheck = await checkGroupRole(groupId, 'ADMIN');
 
   if (!roleCheck.authorized) {
     return roleErrorResponse(roleCheck.error, 403);
   }
 
   try {
+    const body = await request.json().catch(() => ({}));
+    const userId = params.memberId || body.userId
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Member id is required' }, { status: 400 });
+    }
+
     const membership = await prisma.membership.delete({
       where: {
         userId_groupId: {
-          userId: params.memberId,
-          groupId: params.groupId,
+          userId: userId,
+          groupId,
         },
       },
     });

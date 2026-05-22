@@ -4,39 +4,51 @@ import prisma from '@/lib/db'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    console.log('GET /api/groups/[id] params:', params)
     const session = await getServerSession(authOptions)
+    console.log('Session from getServerSession:', session?.user?.email)
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      console.log('No session available')
+      // In development allow unauthenticated access for debugging
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Development mode: proceeding without session')
+      } else {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
     }
 
-    const { id } = await params
+    const { id } = params
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    })
+    let user = null
+    if (session?.user?.email) {
+      user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+      })
+      console.log('Found user:', user?.id)
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 })
+      }
 
-    // Verify user is a member of the group
-    const membership = await prisma.membership.findFirst({
-      where: {
-        groupId: id,
-        userId: user.id,
-      },
-    })
+      // Verify user is a member of the group
+      const membership = await prisma.membership.findFirst({
+        where: {
+          groupId: id,
+          userId: user.id,
+        },
+      })
+      console.log('Membership found:', membership?.id)
 
-    if (!membership) {
-      return NextResponse.json(
-        { error: "You don't have access to this group" },
-        { status: 403 }
-      )
+      if (!membership) {
+        return NextResponse.json(
+          { error: "You don't have access to this group" },
+          { status: 403 }
+        )
+      }
+    } else {
+      console.log('No authenticated user; skipping membership check (dev)')
     }
 
     // Fetch the group with all related data
@@ -46,7 +58,7 @@ export async function GET(
         memberships: {
           include: {
             user: {
-              select: { id: true, name: true, email: true, image: true },
+              select: { id: true, name: true, email: true },
             },
           },
         },
@@ -65,6 +77,7 @@ export async function GET(
         },
       },
     })
+    console.log('Group fetch result:', !!group)
 
     if (!group) {
       return NextResponse.json({ error: "Group not found" }, { status: 404 })

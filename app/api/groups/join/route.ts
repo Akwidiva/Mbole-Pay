@@ -1,24 +1,37 @@
 import { NextResponse, NextRequest } from "next/server"
-import { prisma } from "@/lib/db"
+import prisma from "@/lib/db"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('POST /api/groups/join called')
+    // Read body early so dev fallback can use optional testEmail
+    const body = await request.json().catch(() => ({}))
+    console.log('Request body:', body)
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    console.log('Session:', !!session?.user?.email)
+    let user = null
+    if (session?.user?.email) {
+      user = await prisma.user.findUnique({ where: { email: session.user.email } })
+      console.log('User found via session:', user?.id)
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 })
+      }
+    } else {
+      console.log('No session for join; using dev fallback user')
+      if (process.env.NODE_ENV !== 'production') {
+        const testEmail = body.testEmail || 'test@example.com'
+        user = await prisma.user.findUnique({ where: { email: testEmail } })
+        console.log('Dev fallback user:', testEmail, user?.id)
+        if (!user) {
+          return NextResponse.json({ error: 'Dev fallback user not found' }, { status: 404 })
+        }
+      } else {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    const { inviteCode } = await request.json()
+    const { inviteCode } = body
 
     if (!inviteCode) {
       return NextResponse.json({ error: "Invite code is required" }, { status: 400 })
@@ -28,6 +41,7 @@ export async function POST(request: NextRequest) {
     const group = await prisma.group.findUnique({
       where: { inviteCode },
     })
+    console.log('Group by inviteCode:', !!group)
 
     if (!group) {
       return NextResponse.json({ error: "Invalid invite code" }, { status: 404 })
@@ -53,6 +67,7 @@ export async function POST(request: NextRequest) {
         role: "MEMBER",
       },
     })
+    console.log('Membership created:', membership.id)
 
     return NextResponse.json(
       { message: "Successfully joined group", group, membership },

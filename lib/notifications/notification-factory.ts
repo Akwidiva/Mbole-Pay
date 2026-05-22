@@ -227,7 +227,7 @@ export class NotificationFactory {
     [NotificationType.DISPUTE_RESOLVED]:
       "✅ Dispute in {{groupName}} resolved: {{resolution}}",
     [NotificationType.GROUP_INVITATION]:
-      "👋 You're invited to join {{groupName}}. Accept: https://mbolepay.com/join/",
+      "👋 You're invited to join {{groupName}}. Accept: {{acceptUrl}}",
     [NotificationType.MEMBER_JOINED]:
       "👤 {{userName}} joined {{groupName}}",
     [NotificationType.CUSTOM]: "{{message}}",
@@ -298,7 +298,7 @@ export class NotificationFactory {
       <h2>👋 You're Invited!</h2>
       <p>Hi {{userName}},</p>
       <p>You've been invited to join <strong>{{groupName}}</strong>.</p>
-      <p><a href="https://mbolepay.com/join/">Accept Invitation</a></p>
+      <p><a href="{{acceptUrl}}">Accept Invitation</a></p>
     `,
     [NotificationType.MEMBER_JOINED]: `
       <h2>👤 New Member</h2>
