@@ -15,6 +15,7 @@ model User {
   username  String?  @unique
   password  String?  // Hashed password (optional for Google OAuth users)
   phone     String?
+  role      String   @default("USER") // "SUPER_ADMIN" | "ADMIN" | "USER"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   memberships   Membership[]
