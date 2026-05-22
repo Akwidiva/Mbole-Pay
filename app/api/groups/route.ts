@@ -1,6 +1,6 @@
 // app/api/groups/route.ts
 import { NextResponse, NextRequest } from "next/server"
-import { prisma } from "@/lib/db"
+import prisma from "@/lib/db"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { v4 as uuid } from "uuid"
@@ -40,8 +40,14 @@ export async function GET() {
 
     return NextResponse.json({ groups }, { status: 200 })
   } catch (error) {
-    console.error("Get groups error:", error)
-    return NextResponse.json({ error: "Failed to fetch groups" }, { status: 500 })
+    console.error("Get groups error:", error instanceof Error ? error.message : error)
+    return NextResponse.json(
+      {
+        error: "Failed to fetch groups",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    )
   }
 }
 
@@ -105,7 +111,13 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error("Create group error:", error)
-    return NextResponse.json({ error: "Failed to create group" }, { status: 500 })
+    console.error("Create group error:", error instanceof Error ? error.message : error)
+    return NextResponse.json(
+      {
+        error: "Failed to create group",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    )
   }
 }

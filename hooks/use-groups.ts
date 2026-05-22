@@ -55,7 +55,10 @@ export function useGroups(): UseGroupsReturn {
       })
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch groups: ${response.statusText}`)
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(
+          errorData.details || `Failed to fetch groups: ${response.statusText}`
+        )
       }
 
       const data = await response.json()

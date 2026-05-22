@@ -6,7 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:mtn": "ts-node test-mtn-momo.ts",
+    "test:orange": "ts-node test-orange-money.ts",
+    "test:payments": "jest --testPathPattern=payment"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -68,12 +74,13 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^22",
+    "@types/node": "^22.19.19",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "postcss": "^8",
     "prisma": "^6.18.0",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }

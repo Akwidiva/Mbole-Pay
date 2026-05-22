@@ -147,3 +147,32 @@ model DisputeVote {
 
   dispute Dispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
 }
+
+model NotificationPreference {
+  id                         String   @id @default(cuid())
+  userId                     String   @unique
+  
+  // Email notifications
+  emailPaymentSuccess        Boolean  @default(true)
+  emailPaymentFailed         Boolean  @default(true)
+  emailPayoutScheduled       Boolean  @default(true)
+  emailDisputeFiled          Boolean  @default(true)
+  emailVotingReminder        Boolean  @default(true)
+  emailContributionReminder  Boolean  @default(true)
+  
+  // SMS notifications
+  smsPaymentSuccess          Boolean  @default(true)
+  smsPaymentFailed           Boolean  @default(true)
+  smsPayoutScheduled         Boolean  @default(true)
+  smsDisputeFiled            Boolean  @default(false)
+  smsVotingReminder          Boolean  @default(true)
+  smsContributionReminder    Boolean  @default(true)
+  
+  // Quiet hours (do not notify during these times)
+  notificationQuietHours     Boolean  @default(false)
+  quietHoursStart            String   @default("22:00") // HH:MM format
+  quietHoursEnd              String   @default("08:00")  // HH:MM format
+  
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+}

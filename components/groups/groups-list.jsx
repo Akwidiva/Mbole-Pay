@@ -1,5 +1,6 @@
 "use client"
 import { useState } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -7,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Users, ArrowUpRight, Settings, MoreHorizontal, LogIn, Plus } from "lucide-react"
+import { Users, ArrowUpRight, Settings, MoreHorizontal, LogIn, Plus, TrendingUp } from "lucide-react"
 import { motion } from "framer-motion"
 import { containerVariants, itemVariants, tabPanelVariants } from "@/lib/animations"
 import { useGroups } from "@/hooks/use-groups"
@@ -124,10 +125,28 @@ export function GroupsList() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>View Contributions</DropdownMenuItem>
-                              <DropdownMenuItem>View Members</DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/groups/${group.id}?tab=overview`}>
+                                  View Group Details
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/groups/${group.id}?tab=members`}>
+                                  View Members
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/groups/${group.id}?tab=analytics`}>
+                                  <TrendingUp className="mr-2 h-4 w-4" />
+                                  View Analytics
+                                </Link>
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem>Group Settings</DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/groups/${group.id}?tab=settings`}>
+                                  Group Settings
+                                </Link>
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -157,13 +176,17 @@ export function GroupsList() {
                         </div>
                       </CardContent>
                       <CardFooter className="flex justify-between pt-4">
-                        <Button variant="outline" className="border-secondary text-secondary hover:bg-secondary/10 hover:border-secondary">
-                          <Settings className="mr-2 h-4 w-4" />
-                          Manage
+                        <Button variant="outline" className="border-secondary text-secondary hover:bg-secondary/10 hover:border-secondary" asChild>
+                          <Link href={`/groups/${group.id}?tab=settings`}>
+                            <Settings className="mr-2 h-4 w-4" />
+                            Manage
+                          </Link>
                         </Button>
-                        <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/85 font-bold">
-                          <ArrowUpRight className="mr-2 h-4 w-4" />
-                          New Contribution
+                        <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/85 font-bold" asChild>
+                          <Link href={`/groups/${group.id}`}>
+                            <ArrowUpRight className="mr-2 h-4 w-4" />
+                            View Details
+                          </Link>
                         </Button>
                       </CardFooter>
                     </Card>

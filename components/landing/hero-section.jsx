@@ -5,8 +5,65 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { motion } from "framer-motion"
 import { pageVariants, containerVariants, itemVariants } from "@/lib/animations"
+import { useSession } from "next-auth/react"
+import { useEffect, useState } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
+
+/**
+ * @typedef {Object} UserStats
+ * @property {number} totalContributions
+ * @property {number} pendingPayout
+ * @property {string} [nextPayoutDate]
+ * @property {number} [memberCount]
+ */
 
 export function HeroSection() {
+  const { data: session } = useSession()
+  /** @type {[UserStats | null, Function]} */
+  const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (!session?.user) {
+      setLoading(false)
+      return
+    }
+
+    async function fetchStats() {
+      try {
+        setLoading(true)
+        const response = await fetch("/api/dashboard/stats")
+        
+        if (response.ok) {
+          const data = await response.json()
+          setStats(data.data || data)
+        } else {
+          setError("Failed to load stats")
+        }
+      } catch (err) {
+        console.error("Error fetching stats:", err)
+        setError("Failed to load stats")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [session?.user])
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("fr-CM", {
+      style: "currency",
+      currency: "XAF",
+      minimumFractionDigits: 0,
+    }).format(amount || 0)
+  }
+
+  const totalContributions = stats?.totalContributions || 0
+  const pendingPayout = stats?.pendingPayout || 0
+  const memberCount = stats?.memberCount || 0
+
   return (
     <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 community-pattern">
       <div className="container px-4 md:px-6">
@@ -62,29 +119,48 @@ export function HeroSection() {
               <div className="relative z-10 bg-muted border rounded-lg shadow-lg overflow-hidden h-full w-full flex items-center justify-center">
                 <div className="p-8 space-y-6 w-full max-w-md">
                   <div className="space-y-2 text-center">
-                    <h3 className="text-2xl font-bold">Mbole Savings Group</h3>
-                    <p className="text-sm text-muted-foreground">Next payout: April 15, 2023</p>
+                    <h3 className="text-2xl font-bold">Your Savings Overview</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {stats?.nextPayoutDate
+                        ? `Next payout: ${new Date(stats.nextPayoutDate).toLocaleDateString()}`
+                        : "Loading..."}
+                    </p>
                   </div>
                   <div className="space-y-4">
-                    <div className="bg-background rounded-md p-4 flex justify-between items-center">
-                      <div>
-                        <p className="text-sm font-medium">Total Contributions</p>
-                        <p className="text-2xl font-bold">XAF 1,250,000</p>
-                      </div>
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-primary font-bold">15</span>
-                      </div>
-                    </div>
-                    <div className="bg-background rounded-md p-4 flex justify-between items-center border border-secondary/30">
-                      <div>
-                        <p className="text-sm font-medium">Your Pending Payout</p>
-                        <p className="text-2xl font-bold text-secondary">XAF 250,000</p>
-                      </div>
-                      <div className="h-12 w-12 rounded-full bg-secondary/20 flex items-center justify-center">
-                        <span className="text-secondary font-bold">➜</span>
-                      </div>
-                    </div>
-                    <Button className="w-full">Make Payment</Button>
+                    {loading ? (
+                      <>
+                        <div className="bg-background rounded-md p-4">
+                          <Skeleton className="h-24 w-full" />
+                        </div>
+                        <div className="bg-background rounded-md p-4 border border-secondary/30">
+                          <Skeleton className="h-24 w-full" />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="bg-background rounded-md p-4 flex justify-between items-center">
+                          <div>
+                            <p className="text-sm font-medium">Total Contributions</p>
+                            <p className="text-2xl font-bold">{formatCurrency(totalContributions)}</p>
+                          </div>
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-primary font-bold">{memberCount}</span>
+                          </div>
+                        </div>
+                        <div className="bg-background rounded-md p-4 flex justify-between items-center border border-secondary/30">
+                          <div>
+                            <p className="text-sm font-medium">Your Pending Payout</p>
+                            <p className="text-2xl font-bold text-secondary">{formatCurrency(pendingPayout)}</p>
+                          </div>
+                          <div className="h-12 w-12 rounded-full bg-secondary/20 flex items-center justify-center">
+                            <span className="text-secondary font-bold">➜</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    <Link href="/dashboard">
+                      <Button className="w-full">Make Payment</Button>
+                    </Link>
                   </div>
                 </div>
               </div>
