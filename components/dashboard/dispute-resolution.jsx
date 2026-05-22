@@ -15,18 +15,20 @@ export function DisputeResolution() {
     async function fetchDisputes() {
       try {
         setLoading(true)
-        const response = await fetch("/api/disputes")
+        const response = await fetch("/api/user/disputes")
         if (!response.ok) {
           throw new Error("Failed to fetch disputes")
         }
         const data = await response.json()
-        setDisputes(data)
+        const disputesArray = Array.isArray(data) ? data : data.disputes || []
+        setDisputes(disputesArray)
       } catch (error) {
         toast({
           title: "Error",
           description: "Could not fetch active disputes.",
           variant: "destructive",
         })
+        setDisputes([])
       } finally {
         setLoading(false)
       }

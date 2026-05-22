@@ -43,15 +43,18 @@ export function DisputesList() {
     async function fetchDisputes() {
       setLoading(true)
       try {
-        const response = await fetch("/api/disputes")
+        const response = await fetch("/api/user/disputes")
         if (response.ok) {
           const data = await response.json()
-          setDisputes(data)
+          const disputesArray = Array.isArray(data) ? data : data.disputes || []
+          setDisputes(disputesArray)
         } else {
           console.error("Failed to fetch disputes")
+          setDisputes([])
         }
       } catch (error) {
         console.error("Error fetching disputes:", error)
+        setDisputes([])
       }
       setLoading(false)
     }

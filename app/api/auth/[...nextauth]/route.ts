@@ -60,9 +60,10 @@ export const authOptions: NextAuthOptions = {
             name: user.name ?? undefined,
           },
         });
-        // Store user id and username in token
+        // Store user id, username, and role in token
         (user as any).id = dbUser.id;
         (user as any).username = (dbUser as any).username ?? null;
+        (user as any).role = dbUser.role;
         return true;
       } catch (e) {
         console.error("SignIn callback error:", e);
@@ -76,6 +77,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.username = user.username
         token.name = user.name
+        token.role = user.role
       }
       return token
     },
@@ -85,6 +87,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string
         session.user.username = token.username as string | null
         session.user.name = token.name as string | null
+        session.user.role = token.role as string
       }
       return session
     },

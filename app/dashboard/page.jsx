@@ -14,6 +14,12 @@ import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton"
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect("/signin")
+  
+  // Redirect super admins to admin dashboard
+  if (session.user.role === "SUPER_ADMIN") {
+    redirect("/admin")
+  }
+  
   return (
     <DashboardShell>
       <DashboardHeader heading="Dashboard" text="Manage your savings groups and track your contributions." />

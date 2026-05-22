@@ -472,3 +472,15 @@ For issues:
 **Ready to deploy?** See deployment instructions above.
 
 **Want to contribute?** Follow the existing code patterns and add tests.
+
+Super Admin Account:
+
+
+- Email: admin@mbolepay.com
+- Password: Admin123456!
+- Role: SUPER_ADMIN (can do everything)
+
+Test User Account:
+- Email: test@example.com
+- Password: Test123456
+- Role: USER (for testing regular user flows)

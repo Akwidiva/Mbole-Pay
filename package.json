@@ -14,6 +14,9 @@
     "test:orange": "ts-node test-orange-money.ts",
     "test:payments": "jest --testPathPattern=payment"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
     "@prisma/client": "^6.18.0",

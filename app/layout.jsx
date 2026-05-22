@@ -2,8 +2,7 @@ import "@/app/globals.css"
 import { Inter } from "next/font/google"
 import { getServerSession } from "next-auth"
 import { ThemeProvider } from "@/components/theme-provider"
-import { MainNav } from "@/components/main-nav"
-import { UserNav } from "@/components/user-nav"
+import { ConditionalHeader } from "@/components/conditional-header"
 import { SiteFooter } from "@/components/site-footer"
 import { AuthProvider } from "@/components/auth-provider"
 import { Toaster } from "@/components/ui/sonner"
@@ -19,6 +18,7 @@ export const metadata = {
 export default async function RootLayout({ children }) {
   const session = await getServerSession(authOptions)
   const isAuthenticated = Boolean(session?.user)
+  const isAdmin = session?.user?.role === "SUPER_ADMIN"
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -26,16 +26,9 @@ export default async function RootLayout({ children }) {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider session={session}>
             <div className="flex min-h-screen flex-col">
-              {isAuthenticated && (
-                <header className="sticky top-0 z-40 border-b bg-background">
-                  <div className="container flex h-16 items-center justify-between py-4">
-                    <MainNav />
-                    <UserNav />
-                  </div>
-                </header>
-              )}
+              {isAuthenticated && !isAdmin && <ConditionalHeader />}
               <main className="flex-1">{children}</main>
-              {isAuthenticated && <SiteFooter />}
+              {isAuthenticated && !isAdmin && <SiteFooter />}
             </div>
           </AuthProvider>
           <Toaster />
