@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -17,219 +17,194 @@ import {
 import { Button } from "@/components/ui/button"
 import { Eye } from "lucide-react"
 import { motion } from "framer-motion"
+import { Skeleton } from "@/components/ui/skeleton"
+import { format } from "date-fns"
+
+function TransactionRowSkeleton() {
+  return (
+    <TableRow>
+      <TableCell>
+        <Skeleton className="h-4 w-24" />
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-6 w-20" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-4 w-24" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-6 w-20" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-4 w-24" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-8 w-8" />
+      </TableCell>
+    </TableRow>
+  )
+}
 
 export function TransactionsList() {
+  const [transactions, setTransactions] = useState([])
+  const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
+  const transactionsPerPage = 7
 
-  const transactions = [
-    {
-      id: "1",
-      group: "Mbole Savings Group",
-      amount: "XAF 50,000",
-      date: "2023-04-05",
-      status: "completed",
-      type: "contribution",
-      reference: "TRX-12345",
-      method: "Bank Transfer",
-    },
-    {
-      id: "2",
-      group: "Family Support Group",
-      amount: "XAF 25,000",
-      date: "2023-04-03",
-      status: "completed",
-      type: "contribution",
-      reference: "TRX-12346",
-      method: "Mobile Money",
-    },
-    {
-      id: "3",
-      group: "Mbole Savings Group",
-      amount: "XAF 200,000",
-      date: "2023-03-28",
-      status: "completed",
-      type: "payout",
-      reference: "TRX-12347",
-      method: "Bank Transfer",
-    },
-    {
-      id: "4",
-      group: "Business Investment Group",
-      amount: "XAF 75,000",
-      date: "2023-03-25",
-      status: "pending",
-      type: "contribution",
-      reference: "TRX-12348",
-      method: "Card Payment",
-    },
-    {
-      id: "5",
-      group: "Family Support Group",
-      amount: "XAF 25,000",
-      date: "2023-03-20",
-      status: "failed",
-      type: "contribution",
-      reference: "TRX-12349",
-      method: "Mobile Money",
-    },
-    {
-      id: "6",
-      group: "Mbole Savings Group",
-      amount: "XAF 5,000",
-      date: "2023-03-15",
-      status: "completed",
-      type: "fee",
-      reference: "TRX-12350",
-      method: "Automatic Deduction",
-    },
-    {
-      id: "7",
-      group: "Business Investment Group",
-      amount: "XAF 150,000",
-      date: "2023-03-10",
-      status: "completed",
-      type: "payout",
-      reference: "TRX-12351",
-      method: "Bank Transfer",
-    },
-    {
-      id: "8",
-      group: "Family Support Group",
-      amount: "XAF 25,000",
-      date: "2023-03-05",
-      status: "completed",
-      type: "contribution",
-      reference: "TRX-12352",
-      method: "Mobile Money",
-    },
-  ]
+  useEffect(() => {
+    async function fetchTransactions() {
+      setLoading(true)
+      try {
+        const response = await fetch("/api/transactions")
+        if (response.ok) {
+          const data = await response.json()
+          setTransactions(data)
+        } else {
+          console.error("Failed to fetch transactions")
+        }
+      } catch (error) {
+        console.error("Error fetching transactions:", error)
+      }
+      setLoading(false)
+    }
+    fetchTransactions()
+  }, [])
+
+  const getStatusBadge = (status) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "bg-green-100 text-green-800"
+      case "pending":
+        return "bg-yellow-100 text-yellow-800"
+      case "failed":
+        return "bg-red-100 text-red-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getTypeBadge = (type) => {
+    switch (type.toLowerCase()) {
+      case "contribution":
+        return "border-green-500 text-green-500"
+      case "payout":
+        return "border-blue-500 text-blue-500"
+      case "fee":
+        return "border-orange-500 text-orange-500"
+      default:
+        return "border-gray-500 text-gray-500"
+    }
+  }
+
+  const paginatedTransactions = transactions.slice(
+    (page - 1) * transactionsPerPage,
+    page * transactionsPerPage
+  )
+
+  const totalPages = Math.ceil(transactions.length / transactionsPerPage)
 
   return (
-    <Card className="border border-secondary/20 shadow-md">
-      <CardHeader className="pb-4 border-b border-secondary/10">
-        <CardTitle className="text-2xl font-bold">Transaction History</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0 px-6 pb-6">
-        <div className="overflow-x-auto border rounded-lg">
-          <Table className="w-full" style={{ tableLayout: 'fixed' }}>
-          <TableHeader>
-            <TableRow className="border-b-2 bg-muted/40">
-              <TableHead className="w-24 px-3 py-3 text-left text-xs font-semibold">Date</TableHead>
-              <TableHead className="w-40 px-3 py-3 text-left text-xs font-semibold">Group</TableHead>
-              <TableHead className="w-28 px-3 py-3 text-left text-xs font-semibold">Type</TableHead>
-              <TableHead className="w-28 px-3 py-3 text-left text-xs font-semibold">Amount</TableHead>
-              <TableHead className="w-24 px-3 py-3 text-left text-xs font-semibold">Status</TableHead>
-              <TableHead className="w-28 px-3 py-3 text-left text-xs font-semibold">Reference</TableHead>
-              <TableHead className="w-16 px-3 py-3 text-center text-xs font-semibold">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactions.map((transaction) => (
-              <TableRow 
-                key={transaction.id} 
-                className="border-b hover:bg-muted/50 transition-all duration-200 cursor-pointer"
-              >
-                    <TableCell className="w-24 px-3 py-3 text-sm font-medium">{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                    <TableCell className="w-40 px-3 py-3">
-                      <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-                        <Avatar className="h-6 w-6 flex-shrink-0">
-                          <AvatarImage src={`/placeholder.svg?height=24&width=24`} alt={transaction.group} />
-                          <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                            {transaction.group.substring(0, 2)}
-                          </AvatarFallback>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card>
+        <CardHeader>
+          <CardTitle>Transaction History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Group</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Reference</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => <TransactionRowSkeleton key={i} />)
+              ) : paginatedTransactions.length > 0 ? (
+                paginatedTransactions.map((transaction) => (
+                  <TableRow key={transaction.id}>
+                    <TableCell>{format(new Date(transaction.createdAt), "dd/MM/yyyy")}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={transaction.group?.imageUrl} />
+                          <AvatarFallback>{transaction.group?.name?.charAt(0) || 'G'}</AvatarFallback>
                         </Avatar>
-                        <span className="text-sm truncate overflow-hidden">{transaction.group}</span>
+                        <span>{transaction.group?.name || "N/A"}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="w-28 px-3 py-3">
-                      <Badge
-                        variant="outline"
-                        className={`text-xs whitespace-nowrap ${
-                          transaction.type === "contribution"
-                            ? "border-primary text-primary"
-                            : transaction.type === "payout"
-                              ? "border-secondary text-secondary bg-secondary/5"
-                              : "border-muted-foreground text-muted-foreground"
-                        }`}
-                      >
+                    <TableCell>
+                      <Badge variant="outline" className={getTypeBadge(transaction.type)}>
                         {transaction.type}
                       </Badge>
                     </TableCell>
                     <TableCell
-                      className={`w-28 px-3 py-3 text-sm font-bold ${
-                        transaction.type === "payout"
-                          ? "text-secondary"
-                          : transaction.type === "fee"
-                            ? "text-destructive"
-                            : "text-foreground"
-                      }`}
+                      className={
+                        transaction.type === "payout" || transaction.type === "fine"
+                          ? "text-red-600"
+                          : "text-green-600"
+                      }
                     >
-                      {transaction.type === "payout" ? "+" : "-"}
-                      {transaction.amount}
+                      {transaction.type === "payout" ? "+" : "-"}XAF {transaction.amount.toLocaleString()}
                     </TableCell>
-                    <TableCell className="w-24 px-3 py-3">
-                      <Badge
-                        variant={
-                          transaction.status === "completed"
-                            ? "secondary"
-                            : transaction.status === "pending"
-                              ? "outline"
-                              : "destructive"
-                        }
-                        className={`text-xs whitespace-nowrap ${
-                          transaction.status === "completed"
-                            ? ""
-                            : transaction.status === "pending"
-                              ? "border-secondary text-secondary hover:bg-secondary/10"
-                              : ""
-                        }`}
-                      >
+                    <TableCell>
+                      <Badge variant="outline" className={getStatusBadge(transaction.status)}>
                         {transaction.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm w-28 px-3 py-3 truncate">{transaction.reference}</TableCell>
-                    <TableCell className="w-16 px-3 py-3 text-center">
-                      <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <Button variant="ghost" size="icon">
-                          <Eye className="h-4 w-4" />
-                          <span className="sr-only">View details</span>
-                        </Button>
-                      </motion.div>
+                    <TableCell>{transaction.reference}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon">
+                        <Eye className="h-5 w-5" />
+                      </Button>
                     </TableCell>
                   </TableRow>
-              ))}
-          </TableBody>
-        </Table>
-        </div>
-        <Pagination className="mt-6">
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center">
+                    No transactions found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      {totalPages > 1 && (
+        <Pagination className="mt-4">
           <PaginationContent>
             <PaginationItem>
-              <PaginationPrevious href="#" />
+              <PaginationPrevious href="#" onClick={() => setPage(Math.max(1, page - 1))} />
             </PaginationItem>
+            {[...Array(totalPages)].map((_, i) => (
+              <PaginationItem key={i}>
+                <PaginationLink href="#" isActive={page === i + 1} onClick={() => setPage(i + 1)}>
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
             <PaginationItem>
-              <PaginationLink href="#" isActive>
-                1
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">2</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">3</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext href="#" />
+              <PaginationNext href="#" onClick={() => setPage(Math.min(totalPages, page + 1))} />
             </PaginationItem>
           </PaginationContent>
         </Pagination>
-      </CardContent>
-    </Card>
+      )}
+    </motion.div>
   )
 }
