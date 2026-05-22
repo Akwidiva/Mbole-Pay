@@ -48,7 +48,7 @@ Test that everything loads without crashing.
 - ✅ "Get Started" button appears
 - ✅ Page is responsive (test on mobile size)
 
-### Step 2: Navigate to Dashboard
+### Step 2: Navigate tonpx prisma generate Dashboard
 ```
 1. Click "Get Started" button or go to http://localhost:3000/dashboard
 2. Should see dashboard with stats

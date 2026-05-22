@@ -1,6 +1,6 @@
 // app/api/groups/route.ts
 import { NextResponse, NextRequest } from "next/server"
-import prisma from "@/lib/db"
+import prisma from '@/lib/db'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { v4 as uuid } from "uuid"

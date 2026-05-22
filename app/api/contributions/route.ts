@@ -1,6 +1,6 @@
 // app/api/contributions/route.ts
 import { NextResponse, NextRequest } from "next/server"
-import { prisma } from "@/lib/db"
+import prisma from '@/lib/db'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { userHasPermission } from "@/lib/rbac"

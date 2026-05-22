@@ -3,7 +3,7 @@
  * Functions for checking user roles and permissions
  */
 
-import { prisma } from "@/lib/db";
+import prisma from '@/lib/db'
 import { GroupRole, hasPermission, type Permission } from "@/types/roles";
 
 /**
