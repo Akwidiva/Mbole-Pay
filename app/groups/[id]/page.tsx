@@ -158,7 +158,7 @@ export default function GroupDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 py-5 space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -179,12 +179,12 @@ export default function GroupDetailPage() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
+        <div className="grid gap-3 md:grid-cols-3">
+          <Card className="rounded-2xl shadow-sm">
+            <CardHeader className="pb-1.5">
               <CardTitle className="text-sm font-medium text-muted-foreground">Members</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-2">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-muted-foreground" />
                 <p className="text-2xl font-bold">{group._count?.memberships || 0}</p>
@@ -192,13 +192,13 @@ export default function GroupDetailPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
+          <Card className="rounded-2xl shadow-sm">
+            <CardHeader className="pb-1.5">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Contribution Amount
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-2">
               <p className="text-2xl font-bold">{formatCurrency(group.contributionAmount)}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 {group.frequency.toLowerCase()} • {group.cycleType.toLowerCase()}
@@ -206,11 +206,11 @@ export default function GroupDetailPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
+          <Card className="rounded-2xl shadow-sm">
+            <CardHeader className="pb-1.5">
               <CardTitle className="text-sm font-medium text-muted-foreground">Cycle Type</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-2">
               <p className="text-2xl font-bold capitalize">{group.cycleType.toLowerCase()}</p>
             </CardContent>
           </Card>
@@ -218,14 +218,18 @@ export default function GroupDetailPage() {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="members">Members</TabsTrigger>
-            <TabsTrigger value="analytics">
+          <TabsList className="mb-4 flex h-auto w-full flex-wrap gap-2 rounded-xl border bg-muted/60 p-2">
+            <TabsTrigger value="overview" className="min-w-[120px] flex-1 rounded-lg data-[state=active]:bg-background">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="members" className="min-w-[120px] flex-1 rounded-lg data-[state=active]:bg-background">
+              Members
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="min-w-[140px] flex-1 rounded-lg data-[state=active]:bg-background">
               <TrendingUp className="h-4 w-4 mr-2" />
               Analytics
             </TabsTrigger>
-            <TabsTrigger value="settings">
+            <TabsTrigger value="settings" className="min-w-[130px] flex-1 rounded-lg data-[state=active]:bg-background">
               <Settings className="h-4 w-4 mr-2" />
               Settings
             </TabsTrigger>
@@ -307,13 +311,13 @@ export default function GroupDetailPage() {
               </div>
             ) : null}
 
-            <Card>
-              <CardHeader>
+            <Card className="rounded-2xl shadow-sm">
+              <CardHeader className="pb-3">
                 <CardTitle>Group Information</CardTitle>
                 <CardDescription>Key details about this savings group</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
+              <CardContent className="space-y-3">
+                <div className="grid gap-3 md:grid-cols-2">
                   <div>
                     <p className="text-sm text-muted-foreground">Description</p>
                     <p className="text-base font-medium mt-1">{group.description || "No description"}</p>
@@ -340,20 +344,20 @@ export default function GroupDetailPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
+            <Card className="rounded-2xl shadow-sm">
+              <CardHeader className="pb-3">
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <Button className="w-full" onClick={() => setActiveTab("members")}>
+              <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                <Button className="w-full justify-start gap-2 px-3" onClick={() => setActiveTab("members")}>
                   <Users className="mr-2 h-4 w-4" />
                   View Members
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => setActiveTab("analytics")}>
+                <Button variant="outline" className="w-full justify-start gap-2 px-3" onClick={() => setActiveTab("analytics")}>
                   <TrendingUp className="mr-2 h-4 w-4" />
                   View Analytics
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => setActiveTab("settings")}>
+                <Button variant="outline" className="w-full justify-start gap-2 px-3 sm:col-span-2 lg:col-span-1" onClick={() => setActiveTab("settings")}>
                   <Settings className="mr-2 h-4 w-4" />
                   Group Settings
                 </Button>

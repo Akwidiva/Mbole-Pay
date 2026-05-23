@@ -14,6 +14,7 @@ import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 
 interface GroupSettingsPageProps {
   groupId: string
+  onGroupUpdated?: () => void
 }
 
 interface Group {
@@ -28,7 +29,7 @@ interface Group {
   creatorId: string
 }
 
-export function GroupSettingsPage({ groupId }: GroupSettingsPageProps) {
+export function GroupSettingsPage({ groupId, onGroupUpdated }: GroupSettingsPageProps) {
   const [group, setGroup] = useState<Group | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -87,6 +88,8 @@ export function GroupSettingsPage({ groupId }: GroupSettingsPageProps) {
         title: "Success",
         description: "Group settings updated",
       })
+
+      onGroupUpdated?.()
     } catch (error) {
       toast({
         title: "Error",
