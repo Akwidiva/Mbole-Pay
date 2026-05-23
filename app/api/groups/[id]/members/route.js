@@ -7,7 +7,8 @@ import prisma from '@/lib/db';
  * ADMIN - Get all members in a group
  */
 export async function GET(request, { params }) {
-  const groupId = params.groupId || params.id;
+  const resolvedParams = params && typeof params.then === 'function' ? await params : params
+  const groupId = resolvedParams.groupId || resolvedParams.id;
   const roleCheck = await checkGroupRole(groupId, 'ADMIN');
 
   if (!roleCheck.authorized) {
@@ -43,7 +44,8 @@ export async function GET(request, { params }) {
  * ADMIN - Assign role to a group member
  */
 export async function PUT(request, { params }) {
-  const groupId = params.groupId || params.id;
+  const resolvedParams = params && typeof params.then === 'function' ? await params : params
+  const groupId = resolvedParams.groupId || resolvedParams.id;
   const roleCheck = await checkGroupRole(groupId, 'ADMIN');
 
   if (!roleCheck.authorized) {
@@ -91,7 +93,8 @@ export async function PUT(request, { params }) {
  * ADMIN - Remove a member from a group
  */
 export async function DELETE(request, { params }) {
-  const groupId = params.groupId || params.id;
+  const resolvedParams = params && typeof params.then === 'function' ? await params : params
+  const groupId = resolvedParams.groupId || resolvedParams.id;
   const roleCheck = await checkGroupRole(groupId, 'ADMIN');
 
   if (!roleCheck.authorized) {

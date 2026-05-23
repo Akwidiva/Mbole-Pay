@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { PlusCircle } from "lucide-react"
 import { motion } from "framer-motion"
@@ -20,16 +21,20 @@ export function DashboardHeader({ heading, text, children }) {
       {children ? (
         children
       ) : (
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            New Group
-          </Button>
-        </motion.div>
+        <>
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Button asChild>
+              <Link href="/groups/new">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                New Group
+              </Link>
+            </Button>
+          </motion.div>
+        </>
       )}
     </motion.div>
   )

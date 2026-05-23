@@ -19,7 +19,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       }
     }
 
-    const { id } = params
+    // `params` can be a Promise in some Next.js dev states — resolve it safely
+    const resolvedParams = params && typeof params.then === 'function' ? await params : params
+    const { id } = resolvedParams
 
     let user = null
     if (session?.user?.email) {

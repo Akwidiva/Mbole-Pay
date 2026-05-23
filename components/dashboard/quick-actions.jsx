@@ -1,12 +1,15 @@
 "use client"
 
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PlusCircle, Users, FileText, ArrowUpRight, Settings } from "lucide-react"
 import { motion } from "framer-motion"
 import { containerVariants, itemVariants } from "@/lib/animations"
+// Use page-based create flow instead of modal
 
 export function QuickActions() {
+  
   const actions = [
     {
       title: "Create New Group",
@@ -14,6 +17,7 @@ export function QuickActions() {
       icon: PlusCircle,
       variant: "default",
       className: "bg-primary text-primary-foreground hover:bg-primary/90 border border-primary/30",
+      href: "/groups/new",
     },
     {
       title: "Invite Members",
@@ -21,6 +25,7 @@ export function QuickActions() {
       icon: Users,
       variant: "outline",
       className: "border-2 border-secondary text-secondary hover:bg-secondary/10 hover:border-secondary/80",
+      href: "/groups/invite",
     },
     {
       title: "Generate Reports",
@@ -28,6 +33,7 @@ export function QuickActions() {
       icon: FileText,
       variant: "outline",
       className: "border-2 border-secondary text-secondary hover:bg-secondary/10 hover:border-secondary/80",
+      href: "/transactions",
     },
     {
       title: "Make Payment",
@@ -35,6 +41,7 @@ export function QuickActions() {
       icon: ArrowUpRight,
       variant: "outline",
       className: "border border-primary text-primary hover:bg-primary/10",
+      href: "/transactions",
     },
     {
       title: "Group Settings",
@@ -42,6 +49,7 @@ export function QuickActions() {
       icon: Settings,
       variant: "outline",
       className: "border border-muted-foreground text-muted-foreground hover:bg-muted",
+      href: "/groups",
     },
   ]
 
@@ -65,25 +73,37 @@ export function QuickActions() {
                 transition={{ duration: 0.2 }}
                 className="h-full"
               >
-                <Button
-                  variant={action.variant}
-                  className={`h-auto flex-col items-start gap-2 p-4 justify-start text-left w-full ${action.className}`}
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.2, rotate: 10 }}
-                    transition={{ duration: 0.2 }}
+                {action.href ? (
+                  <Button
+                    asChild
+                    variant={action.variant}
+                    className={`h-auto flex-col items-start gap-2 p-4 justify-start text-left w-full ${action.className}`}
                   >
-                    <action.icon className="h-5 w-5" />
-                  </motion.div>
-                  <div>
-                    <p className="font-medium">{action.title}</p>
-                    <p
-                      className={`text-xs ${action.variant === "default" ? "text-primary-foreground/80" : "text-muted-foreground"}`}
-                    >
-                      {action.description}
-                    </p>
+                    <Link href={action.href} className="w-full">
+                      <motion.div whileHover={{ scale: 1.2, rotate: 10 }} transition={{ duration: 0.2 }}>
+                        <action.icon className="h-5 w-5" />
+                      </motion.div>
+                      <div>
+                        <p className="font-medium">{action.title}</p>
+                        <p className={`text-xs ${action.variant === "default" ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                          {action.description}
+                        </p>
+                      </div>
+                    </Link>
+                  </Button>
+                ) : (
+                  <div className={`h-auto flex-col items-start gap-2 p-4 justify-start text-left w-full ${action.className}`}>
+                    <motion.div whileHover={{ scale: 1.2, rotate: 10 }} transition={{ duration: 0.2 }}>
+                      <action.icon className="h-5 w-5" />
+                    </motion.div>
+                    <div>
+                      <p className="font-medium">{action.title}</p>
+                      <p className={`text-xs ${action.variant === "default" ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                        {action.description}
+                      </p>
+                    </div>
                   </div>
-                </Button>
+                )}
               </motion.div>
             </motion.div>
           ))}

@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AnalyticsDashboard } from "@/components/analytics";
 import { MemberManagement } from "@/components/groups/member-management";
 import { GroupSettingsPage } from "@/components/groups/group-settings-page";
-import { Users, TrendingUp, Settings, ChevronLeft, DollarSign, Calendar } from "lucide-react";
+import { Users, TrendingUp, Settings, ChevronLeft, DollarSign, Calendar, Mail } from "lucide-react";
 import Link from "next/link";
 
 interface GroupData {
@@ -40,7 +40,7 @@ interface AnalyticsMetrics {
 export default function GroupDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [group, setGroup] = useState<GroupData | null>(null);
   const [metrics, setMetrics] = useState<AnalyticsMetrics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,11 @@ export default function GroupDetailPage() {
   const groupId = params?.id as string;
 
   useEffect(() => {
-    if (!session) {
+    if (status === "loading") {
+      return;
+    }
+
+    if (status === "unauthenticated") {
       router.push("/signin");
       return;
     }
@@ -60,7 +64,7 @@ export default function GroupDetailPage() {
       fetchGroup();
       fetchMetrics();
     }
-  }, [groupId, session, router]);
+  }, [groupId, session, status, router]);
 
   async function fetchGroup() {
     try {
@@ -106,8 +110,15 @@ export default function GroupDetailPage() {
     }
   }
 
-  if (!session) {
-    return null;
+  if (status === "loading") {
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        <div className="space-y-4 w-full max-w-4xl px-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    );
   }
 
   if (loading) {
@@ -352,6 +363,12 @@ export default function GroupDetailPage() {
                 <Button className="w-full justify-start gap-2 px-3" onClick={() => setActiveTab("members")}>
                   <Users className="mr-2 h-4 w-4" />
                   View Members
+                </Button>
+                <Button asChild variant="outline" className="w-full justify-start gap-2 px-3">
+                  <Link href={`/groups/invite?groupId=${groupId}`}>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Invite Members
+                  </Link>
                 </Button>
                 <Button variant="outline" className="w-full justify-start gap-2 px-3" onClick={() => setActiveTab("analytics")}>
                   <TrendingUp className="mr-2 h-4 w-4" />

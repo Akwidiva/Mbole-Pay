@@ -49,7 +49,16 @@ interface AnalyticsDashboardProps {
   groupId: string;
 }
 
-const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+const CHART_COLORS = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+];
+
+const PRIMARY_CHART_COLOR = "hsl(var(--chart-1))";
+const SECONDARY_CHART_COLOR = "hsl(var(--chart-5))";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("fr-CM", {
@@ -67,7 +76,9 @@ function AnalyticsTooltip({ active, payload, label }: any) {
       <p className="font-medium text-foreground">{label}</p>
       {payload.map((entry: any) => (
         <p key={entry.dataKey} className="text-muted-foreground">
-          <span style={{ color: entry.color }}>{entry.name || entry.dataKey}: </span>
+          <span style={{ color: entry.color || PRIMARY_CHART_COLOR }}>
+            {entry.name || entry.dataKey}: 
+          </span>
           {typeof entry.value === "number" ? formatCurrency(entry.value) : entry.value}
         </p>
       ))}
@@ -81,6 +92,7 @@ function MetricCard({
   subtitle,
   icon,
   sparkline,
+  sparklineColor = PRIMARY_CHART_COLOR,
   className = "",
 }: {
   title: string;
@@ -88,34 +100,37 @@ function MetricCard({
   subtitle: string;
   icon: React.ReactNode;
   sparkline?: Array<{ month: string; amount: number }>;
+  sparklineColor?: string;
   className?: string;
 }) {
+  const gradientId = `sparkline-fill-${title.replace(/\s+/g, "-").toLowerCase()}`;
+
   return (
     <Card className={`overflow-hidden rounded-2xl shadow-sm ${className}`}>
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-        <div>
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2 sm:gap-4">
+        <div className="min-w-0">
           <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-          <div className="text-2xl font-bold tracking-tight">{value}</div>
+          <div className="truncate text-2xl font-bold tracking-tight">{value}</div>
         </div>
         <div className="rounded-full bg-muted p-2 text-muted-foreground">{icon}</div>
       </CardHeader>
       <CardContent className="space-y-3 pt-0">
         {sparkline?.length ? (
-          <div className="h-12 w-full overflow-hidden rounded-lg bg-muted/30 px-1 pt-1">
+          <div className="h-12 w-full overflow-hidden rounded-lg bg-muted/30 px-1 pt-1 sm:h-14">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={sparkline}>
                 <defs>
-                  <linearGradient id={`sparkline-fill-${title.replace(/\s+/g, "-").toLowerCase()}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
+                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={sparklineColor} stopOpacity={0.35} />
+                    <stop offset="95%" stopColor={sparklineColor} stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
                 <Area
                   type="monotone"
                   dataKey="amount"
-                  stroke="#3b82f6"
+                  stroke={sparklineColor}
                   strokeWidth={2}
-                  fill={`url(#sparkline-fill-${title.replace(/\s+/g, "-").toLowerCase()})`}
+                  fill={`url(#${gradientId})`}
                   dot={false}
                 />
               </AreaChart>
@@ -183,30 +198,31 @@ export function AnalyticsDashboard({ groupId }: AnalyticsDashboardProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-4 sm:pb-0">
       {/* Header with Export Buttons */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">{metrics.groupName} Analytics</h2>
-          <p className="text-sm text-gray-600">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{metrics.groupName} Analytics</h2>
+          <p className="text-sm text-muted-foreground">
             Generated {new Date().toLocaleDateString()}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
           <Button
             variant="outline"
             size="sm"
             onClick={refetch}
             disabled={loading}
+            className="w-full sm:w-auto"
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
-          <Button variant="outline" size="sm" onClick={exportToCSV}>
+          <Button variant="outline" size="sm" onClick={exportToCSV} className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" />
             CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={exportToPDF}>
+          <Button variant="outline" size="sm" onClick={exportToPDF} className="w-full sm:w-auto">
             <FileText className="mr-2 h-4 w-4" />
             PDF
           </Button>
@@ -221,6 +237,7 @@ export function AnalyticsDashboard({ groupId }: AnalyticsDashboardProps) {
           subtitle="All members combined"
           icon={<TrendingUp className="h-5 w-5" />}
           sparkline={metrics.contributionTrend}
+          sparklineColor={PRIMARY_CHART_COLOR}
         />
         <MetricCard
           title="Total Paid Out"
@@ -245,24 +262,24 @@ export function AnalyticsDashboard({ groupId }: AnalyticsDashboardProps) {
 
       {/* Pending & Cycle Info */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="rounded-2xl shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg">Pending Payouts</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-gray-600">Total Pending</p>
-                    <p className="text-3xl font-bold text-amber-600">{formatCurrency(metrics.pendingAmount)}</p>
+                <p className="text-sm text-muted-foreground">Total Pending</p>
+                <p className="text-3xl font-bold tracking-tight text-amber-600">{formatCurrency(metrics.pendingAmount)}</p>
               </div>
               {metrics.nextPayoutDate && (
                 <div>
-                  <p className="text-sm text-gray-600">Next Payout</p>
+                  <p className="text-sm text-muted-foreground">Next Payout</p>
                   <p className="font-semibold">
                     {new Date(metrics.nextPayoutDate).toLocaleDateString()}
                   </p>
-                  <p className="text-sm text-gray-600">
-                        Amount: {formatCurrency(metrics.nextPayoutAmount || 0)}
+                  <p className="text-sm text-muted-foreground">
+                    Amount: {formatCurrency(metrics.nextPayoutAmount || 0)}
                   </p>
                 </div>
               )}
@@ -270,14 +287,14 @@ export function AnalyticsDashboard({ groupId }: AnalyticsDashboardProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-2xl shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg">Cycle Information</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <p className="text-sm text-gray-600">Start Date</p>
+                <p className="text-sm text-muted-foreground">Start Date</p>
                 <p className="font-semibold">
                   {metrics.cycleStartDate
                     ? new Date(metrics.cycleStartDate).toLocaleDateString()
@@ -286,7 +303,7 @@ export function AnalyticsDashboard({ groupId }: AnalyticsDashboardProps) {
               </div>
               {metrics.cycleEndDate && (
                 <div>
-                  <p className="text-sm text-gray-600">End Date</p>
+                  <p className="text-sm text-muted-foreground">End Date</p>
                   <p className="font-semibold">
                     {new Date(metrics.cycleEndDate).toLocaleDateString()}
                   </p>
@@ -300,26 +317,26 @@ export function AnalyticsDashboard({ groupId }: AnalyticsDashboardProps) {
       {/* Charts */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Contribution Trend */}
-        <Card>
+        <Card className="rounded-2xl shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg">Contribution Trend</CardTitle>
             <CardDescription>Last 12 months</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={260}>
               <LineChart data={metrics.contributionTrend}>
                 <defs>
                   <linearGradient id="trend-stroke" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#3b82f6" />
-                    <stop offset="100%" stopColor="#8b5cf6" />
+                    <stop offset="0%" stopColor={PRIMARY_CHART_COLOR} />
+                    <stop offset="100%" stopColor={SECONDARY_CHART_COLOR} />
                   </linearGradient>
                   <linearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.28} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.02} />
+                    <stop offset="5%" stopColor={PRIMARY_CHART_COLOR} stopOpacity={0.28} />
+                    <stop offset="95%" stopColor={PRIMARY_CHART_COLOR} stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} interval={1} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} interval={0} minTickGap={18} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
                 <YAxis tickLine={false} axisLine={false} width={80} tickFormatter={(value) => formatCurrency(value as number)} />
                 <Tooltip content={<AnalyticsTooltip />} />
                 <Line
@@ -342,13 +359,13 @@ export function AnalyticsDashboard({ groupId }: AnalyticsDashboardProps) {
         </Card>
 
         {/* Payment Breakdown */}
-        <Card>
+        <Card className="rounded-2xl shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg">Payment Methods</CardTitle>
             <CardDescription>By transaction count</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
                   data={metrics.paymentBreakdown}
@@ -356,14 +373,14 @@ export function AnalyticsDashboard({ groupId }: AnalyticsDashboardProps) {
                   nameKey="method"
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
+                  outerRadius={92}
                   labelLine={false}
                   label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                 >
                   {metrics.paymentBreakdown.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
+                      fill={CHART_COLORS[index % CHART_COLORS.length]}
                     />
                   ))}
                 </Pie>
@@ -376,7 +393,7 @@ export function AnalyticsDashboard({ groupId }: AnalyticsDashboardProps) {
       </div>
 
       {/* Top Contributors */}
-      <Card>
+      <Card className="rounded-2xl shadow-sm">
         <CardHeader>
           <CardTitle>Top Contributors</CardTitle>
           <CardDescription>Members with highest contributions</CardDescription>
@@ -384,15 +401,15 @@ export function AnalyticsDashboard({ groupId }: AnalyticsDashboardProps) {
         <CardContent>
           <div className="space-y-4">
             {metrics.topContributors.map((contributor) => (
-              <div key={contributor.userId} className="flex items-center justify-between border-b pb-3 last:border-b-0">
-                <div>
+              <div key={contributor.userId} className="flex items-center justify-between gap-4 border-b pb-3 last:border-b-0">
+                <div className="min-w-0">
                   <p className="font-semibold">{contributor.userName}</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     {contributor.contributionCount} contributions
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold">{contributor.totalContributed}</p>
+                  <p className="font-semibold">{formatCurrency(contributor.totalContributed)}</p>
                 </div>
               </div>
             ))}
@@ -401,15 +418,15 @@ export function AnalyticsDashboard({ groupId }: AnalyticsDashboardProps) {
       </Card>
 
       {/* Member Statistics Table */}
-      <Card>
+      <Card className="rounded-2xl shadow-sm">
         <CardHeader>
           <CardTitle>Member Statistics</CardTitle>
           <CardDescription>
             Detailed breakdown of each member's participation
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
+        <CardContent className="p-0 sm:p-6">
+          <div className="overflow-x-auto rounded-b-2xl border-t sm:border-0">
             <Table>
               <TableHeader>
                 <TableRow>

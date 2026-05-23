@@ -86,16 +86,14 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       select: { id: true, email: true, phone: true },
     })
 
-    if (invitee) {
-      await sendGroupInvitation(
-        invitee.id,
-        invitee.email,
-        invitee.phone || "",
-        group.name,
-        group.inviteCode,
-        `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/invites/${invitation.token}`
-      )
-    }
+    await sendGroupInvitation(
+      invitee?.id || email,
+      email,
+      invitee?.phone || "",
+      group.name,
+      group.inviteCode,
+      `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/invites/${invitation.token}`
+    )
 
     return NextResponse.json(
       {

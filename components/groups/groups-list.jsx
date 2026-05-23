@@ -13,7 +13,6 @@ import { motion } from "framer-motion"
 import { containerVariants, itemVariants, tabPanelVariants } from "@/lib/animations"
 import { useGroups } from "@/hooks/use-groups"
 import { JoinGroupDialog } from "./join-group-dialog"
-import { CreateGroupDialog } from "./create-group-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +25,6 @@ import {
 export function GroupsList() {
   const [activeTab, setActiveTab] = useState("active")
   const [joinDialogOpen, setJoinDialogOpen] = useState(false)
-  const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const { groups, loading, refetch } = useGroups()
 
   const activeGroups = groups.filter(g => g.status !== 'INACTIVE')
@@ -51,11 +49,6 @@ export function GroupsList() {
   return (
     <>
       <JoinGroupDialog open={joinDialogOpen} onOpenChange={setJoinDialogOpen} />
-      <CreateGroupDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        onSuccess={refetch}
-      />
 
       <Tabs defaultValue="active" className="w-full mt-6" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3 mb-4">
@@ -203,10 +196,12 @@ export function GroupsList() {
               <CardDescription>Start a new savings group and invite members</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => setCreateDialogOpen(true)} size="lg" className="w-full">
-                <Plus className="mr-2 h-5 w-5" />
-                Start Creating
-              </Button>
+                <Button asChild size="lg" className="w-full">
+                  <Link href="/groups/new">
+                    <Plus className="mr-2 h-5 w-5" />
+                    Start Creating
+                  </Link>
+                </Button>
             </CardContent>
           </Card>
         </TabsContent>
