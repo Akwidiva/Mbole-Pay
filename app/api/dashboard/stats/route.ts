@@ -47,8 +47,11 @@ export async function GET(req: Request) {
     // Calculate total pending payout (payouts that haven't been marked as paid)
     const pendingPayouts = await prisma.payout.findMany({
       where: {
-        userId: user.id,
+        recipientId: user.id,
         status: "PENDING", // Only count pending payouts
+      },
+      orderBy: {
+        scheduledDate: "asc",
       },
     });
 

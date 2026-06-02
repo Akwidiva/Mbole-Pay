@@ -76,7 +76,6 @@ vercel deploy
 
 ### 5️⃣ **Notifications**
 - Email notifications (6 event types)
-- SMS notifications (7 event types)
 - User preference management
 - Quiet hours support
 - Async event processing
@@ -113,7 +112,6 @@ components/                   # React components
 lib/                          # Utilities & services
 ├── services/                # Business logic
 │   ├── email-service.ts
-│   ├── sms-service.ts
 │   └── notification-event-handler.ts
 ├── auth.ts                  # NextAuth config
 ├── db.ts                    # Prisma client
@@ -219,7 +217,6 @@ POST   /api/notifications/send        - Send notification
 
 ### Services
 - **SMTP** - Email service (Gmail, SendGrid, AWS SES)
-- **Twilio** - SMS service
 - **Stripe/Flutterwave** - Payment processing
 - **Vercel** - Frontend hosting
 - **Railway** - Backend hosting
@@ -343,11 +340,6 @@ EMAIL_SECURE=false
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASSWORD=your-app-password
 EMAIL_FROM=noreply@mbolepay.com
-
-# SMS (Twilio - Optional)
-TWILIO_ACCOUNT_SID=your-account-sid
-TWILIO_AUTH_TOKEN=your-auth-token
-TWILIO_PHONE_NUMBER=+1234567890
 
 # Payment Providers
 MTN_MOMO_API_KEY=your-key

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { PlusCircle, Users, FileText, ArrowUpRight, Settings } from "lucide-react"
+import { PlusCircle, Users, FileText, ArrowUpRight, Settings, Wallet } from "lucide-react"
 import { motion } from "framer-motion"
 import { containerVariants, itemVariants } from "@/lib/animations"
 // Use page-based create flow instead of modal
@@ -41,7 +41,15 @@ export function QuickActions() {
       icon: ArrowUpRight,
       variant: "outline",
       className: "border border-primary text-primary hover:bg-primary/10",
-      href: "/transactions",
+      href: "/dashboard/payments",
+    },
+    {
+      title: "Withdraw Cash",
+      description: "Generate an MTN MoMo dial code to withdraw funds",
+      icon: Wallet,
+      variant: "outline",
+      className: "border border-emerald-600 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40",
+      href: "/dashboard/withdraw",
     },
     {
       title: "Group Settings",

@@ -22,6 +22,15 @@ interface GroupData {
   contributionAmount: number;
   frequency: string;
   cycleType: string;
+  memberships?: Array<{
+    userId: string;
+    role: "ADMIN" | "TREASURER" | "MEMBER";
+    user: {
+      id: string;
+      name: string | null;
+      email: string;
+    };
+  }>;
   _count?: {
     memberships: number;
   };
@@ -166,6 +175,9 @@ export default function GroupDetailPage() {
       minimumFractionDigits: 0,
     }).format(amount || 0);
   };
+
+  const currentUserRole =
+    group?.memberships?.find((membership) => membership.userId === session?.user?.id)?.role || "MEMBER";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
@@ -384,7 +396,7 @@ export default function GroupDetailPage() {
 
           {/* Members Tab */}
           <TabsContent value="members" className="space-y-4">
-            <MemberManagement groupId={groupId} />
+            <MemberManagement groupId={groupId} currentUserRole={currentUserRole} />
           </TabsContent>
 
           {/* Analytics Tab */}

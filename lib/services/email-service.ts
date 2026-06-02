@@ -1,5 +1,4 @@
 import nodemailer from "nodemailer";
-import { prisma } from "@/lib/db";
 
 // Email service using nodemailer (works with any SMTP provider)
 // For production, use SendGrid or AWS SES
@@ -11,15 +10,19 @@ interface EmailOptions {
   text?: string;
 }
 
+function getEnv(name: string, fallbackName?: string) {
+  return process.env[name] || (fallbackName ? process.env[fallbackName] : undefined);
+}
+
 // Initialize transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || "localhost",
-  port: parseInt(process.env.EMAIL_PORT || "587"),
-  secure: process.env.EMAIL_SECURE === "true",
-  auth: process.env.EMAIL_USER
+  host: getEnv("SMTP_HOST", "EMAIL_HOST") || "localhost",
+  port: parseInt(getEnv("SMTP_PORT", "EMAIL_PORT") || "587"),
+  secure: (getEnv("SMTP_SECURE", "EMAIL_SECURE") || "false") === "true",
+  auth: getEnv("SMTP_USER", "EMAIL_USER")
     ? {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
+        user: getEnv("SMTP_USER", "EMAIL_USER"),
+        pass: getEnv("SMTP_PASS", "EMAIL_PASSWORD"),
       }
     : undefined,
 });
@@ -30,13 +33,15 @@ export const emailService = {
    */
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
-      await transporter.sendMail({
-        from: process.env.EMAIL_FROM || "noreply@mbolepay.com",
+      console.log(`[emailService] Sending email to: ${options.to}, subject: ${options.subject}`);
+      const info = await transporter.sendMail({
+        from: getEnv("SMTP_FROM", "EMAIL_FROM") || "noreply@mbolepay.com",
         ...options,
       });
+      console.log("✅ Email sent successfully:", { to: options.to, messageId: info.messageId, response: info.response });
       return true;
     } catch (error) {
-      console.error("Email send failed:", error);
+      console.error("❌ Email send failed:", { to: options.to, error: String(error) });
       return false;
     }
   },

@@ -37,6 +37,8 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name ?? undefined,
           username: (user as any).username ?? null,
+          phone: user.phone ?? null,
+          role: user.role,
         } as any
       },
     }),
@@ -63,6 +65,7 @@ export const authOptions: NextAuthOptions = {
         // Store user id, username, and role in token
         (user as any).id = dbUser.id;
         (user as any).username = (dbUser as any).username ?? null;
+        (user as any).phone = dbUser.phone ?? null;
         (user as any).role = dbUser.role;
         return true;
       } catch (e) {
@@ -76,6 +79,7 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email
         token.id = user.id
         token.username = user.username
+        token.phone = user.phone
         token.name = user.name
         token.role = user.role
       }
@@ -86,6 +90,7 @@ export const authOptions: NextAuthOptions = {
         session.user.email = token.email as string
         session.user.id = token.id as string
         session.user.username = token.username as string | null
+        session.user.phone = token.phone as string | null
         session.user.name = token.name as string | null
         session.user.role = token.role as string
       }

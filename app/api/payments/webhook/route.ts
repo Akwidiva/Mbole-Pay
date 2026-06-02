@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import prisma from "@/lib/db";
 import { PaymentFactory } from "@/lib/payments/payment-factory";
 import { PaymentStatus, PaymentProvider, ApiResponse } from "@/types/payments";
 import crypto from "crypto";

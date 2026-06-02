@@ -2,31 +2,26 @@
  * Notification Factory
  * Centralized management of email and SMS services
  * Allows sending notifications through multiple channels
+ * Centralized management of email notifications
  */
 
 import EmailService from "./email-service";
-import SmsService from "./sms-service";
 import {
   NotificationPayload,
   NotificationChannel,
   NotificationType,
   EmailOptions,
-  SmsOptions,
   SendEmailResponse,
-  SendSmsResponse,
   IEmailService,
-  ISmsService,
   NOTIFICATION_VARIABLES,
 } from "@/types/notifications";
 
 export class NotificationFactory {
   private emailService: IEmailService;
-  private smsService: ISmsService;
   private templates: Map<NotificationType, Record<string, string>> = new Map();
 
-  constructor(emailService?: IEmailService, smsService?: ISmsService) {
+  constructor(emailService?: IEmailService) {
     this.emailService = emailService || new EmailService();
-    this.smsService = smsService || new SmsService();
     this.initializeTemplates();
   }
 
@@ -35,11 +30,9 @@ export class NotificationFactory {
    */
   async send(payload: NotificationPayload): Promise<{
     email?: SendEmailResponse;
-    sms?: SendSmsResponse;
   }> {
     const results: {
       email?: SendEmailResponse;
-      sms?: SendSmsResponse;
     } = {};
 
     try {
@@ -49,13 +42,6 @@ export class NotificationFactory {
             if (payload.recipientEmail) {
               const emailOptions = this.buildEmailOptions(payload);
               results.email = await this.emailService.send(emailOptions);
-            }
-            break;
-
-          case NotificationChannel.SMS:
-            if (payload.recipientPhone) {
-              const smsOptions = this.buildSmsOptions(payload);
-              results.sms = await this.smsService.send(smsOptions);
             }
             break;
 
@@ -84,7 +70,6 @@ export class NotificationFactory {
   async sendBatch(payloads: NotificationPayload[]): Promise<
     Array<{
       email?: SendEmailResponse;
-      sms?: SendSmsResponse;
     }>
   > {
     return Promise.all(payloads.map((payload) => this.send(payload)));
@@ -104,25 +89,6 @@ export class NotificationFactory {
         this.getEmailSubject(payload.type, payload.variables),
       html,
       text: payload.message,
-    };
-  }
-
-  /**
-   * Build SMS options from notification payload
-   */
-  private buildSmsOptions(payload: NotificationPayload): SmsOptions {
-    const template = this.getTemplate(payload.type, "sms");
-    const message = this.renderTemplate(
-      template,
-      payload.variables || {}
-    );
-
-    return {
-      phoneNumber: (this.smsService as SmsService).formatPhoneNumber(
-        payload.recipientPhone!
-      ),
-      message:
-        message.length <= 160 ? message : message.substring(0, 157) + "...",
     };
   }
 
@@ -148,7 +114,7 @@ export class NotificationFactory {
    */
   private getTemplate(
     type: NotificationType,
-    channel: "email" | "sms"
+    channel: "email"
   ): string {
     return this.templates.get(type)?.[channel] || this.getDefaultTemplate(type, channel);
   }
@@ -195,43 +161,10 @@ export class NotificationFactory {
    */
   private getDefaultTemplate(
     type: NotificationType,
-    channel: "email" | "sms"
+    channel: "email"
   ): string {
-    if (channel === "sms") {
-      return this.defaultSmsTemplates[type] || "{{message}}";
-    }
-
     return this.defaultEmailTemplates[type] || `<p>{{message}}</p>`;
   }
-
-  /**
-   * Default SMS templates (160 char limit)
-   */
-  private defaultSmsTemplates: Record<NotificationType, string> = {
-    [NotificationType.CONTRIBUTION_DUE]:
-      "Hi {{userName}}, your {{amount}} {{currency}} contribution to {{groupName}} is due on {{dueDate}}.",
-    [NotificationType.CONTRIBUTION_OVERDUE]:
-      "⚠️ {{userName}}, your {{amount}} {{currency}} contribution to {{groupName}} is {{overdueBy}} overdue.",
-    [NotificationType.PAYMENT_RECEIVED]:
-      "✅ Payment of {{amount}} {{currency}} received by {{groupName}}. Ref: {{reference}}",
-    [NotificationType.PAYMENT_FAILED]:
-      "❌ Payment of {{amount}} {{currency}} failed. Reason: {{reason}}. Please retry.",
-    [NotificationType.PAYOUT_AVAILABLE]:
-      "💸 {{amount}} {{currency}} payout is ready from {{groupName}} on {{payoutDate}}",
-    [NotificationType.PAYOUT_SCHEDULED]:
-      "📅 Payout of {{amount}} {{currency}} scheduled for {{payoutDate}}",
-    [NotificationType.DISPUTE_OPENED]:
-      "⚖️ New dispute in {{groupName}}: {{disputeTitle}}. Vote by {{votingDeadline}}",
-    [NotificationType.DISPUTE_RESOLUTION_VOTE]:
-      "🗳️ Vote needed on dispute in {{groupName}}: {{disputeTitle}}",
-    [NotificationType.DISPUTE_RESOLVED]:
-      "✅ Dispute in {{groupName}} resolved: {{resolution}}",
-    [NotificationType.GROUP_INVITATION]:
-      "👋 You're invited to join {{groupName}}. Accept: {{acceptUrl}}",
-    [NotificationType.MEMBER_JOINED]:
-      "👤 {{userName}} joined {{groupName}}",
-    [NotificationType.CUSTOM]: "{{message}}",
-  };
 
   /**
    * Default email templates
@@ -322,54 +255,13 @@ export class NotificationFactory {
     type: NotificationType,
     channel: "email" | "sms",
     template: string
-  ): void {
-    if (!this.templates.has(type)) {
-      this.templates.set(type, {});
-    }
-    this.templates.get(type)![channel] = template;
-  }
-
-  /**
-   * Verify all services are configured correctly
-   */
-  async verifyServices(): Promise<{
-    email: boolean;
-    sms: boolean;
-  }> {
-    const [emailOk, smsOk] = await Promise.all([
-      this.emailService.verifyCredentials(),
-      this.smsService.verifyCredentials(),
-    ]);
-
-    return { email: emailOk, sms: smsOk };
-  }
-
-  /**
-   * Get service health status
-   */
-  async getHealthStatus(): Promise<{
-    email: {
-      operational: boolean;
-      quota?: { used: number; limit: number };
-    };
-    sms: {
-      operational: boolean;
-      quota?: { used: number; limit: number };
-    };
-  }> {
-    const [emailOk, smsOk] = await Promise.all([
-      this.emailService.verifyCredentials(),
-      this.smsService.verifyCredentials(),
-    ]);
 
     const emailQuota = emailOk
       ? await this.emailService.getQuota?.()
       : undefined;
-    const smsQuota = smsOk ? await this.smsService.getQuota?.() : undefined;
 
     return {
       email: { operational: emailOk, quota: emailQuota },
-      sms: { operational: smsOk, quota: smsQuota },
     };
   }
 }

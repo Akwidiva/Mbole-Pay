@@ -158,7 +158,7 @@ export function HeroSection() {
                         </div>
                       </>
                     )}
-                    <Link href="/dashboard">
+                    <Link href="/dashboard/payments">
                       <Button className="w-full">Make Payment</Button>
                     </Link>
                   </div>

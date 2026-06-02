@@ -22,7 +22,6 @@ export enum NotificationType {
 // Notification channels
 export enum NotificationChannel {
   EMAIL = "EMAIL",
-  SMS = "SMS",
   PUSH = "PUSH",
   IN_APP = "IN_APP",
 }
@@ -75,13 +74,6 @@ export interface EmailOptions {
   }>;
 }
 
-// SMS-specific options
-export interface SmsOptions {
-  phoneNumber: string;
-  message: string;
-  sendAt?: Date;
-}
-
 // Notification template
 export interface NotificationTemplate {
   id: string;
@@ -90,7 +82,6 @@ export interface NotificationTemplate {
   channels: NotificationChannel[];
   emailSubject?: string;
   emailTemplate?: string;
-  smsTemplate?: string;
   variables: string[]; // Expected template variables
   createdAt: Date;
   updatedAt: Date;
@@ -104,25 +95,10 @@ export interface SendEmailResponse {
   timestamp: Date;
 }
 
-export interface SendSmsResponse {
-  success: boolean;
-  messageId?: string;
-  error?: string;
-  timestamp: Date;
-}
-
 // Email service interface
 export interface IEmailService {
   send(options: EmailOptions): Promise<SendEmailResponse>;
   sendBatch(options: EmailOptions[]): Promise<SendEmailResponse[]>;
-  verifyCredentials(): Promise<boolean>;
-  getQuota?(): Promise<{ used: number; limit: number }>;
-}
-
-// SMS service interface
-export interface ISmsService {
-  send(options: SmsOptions): Promise<SendSmsResponse>;
-  sendBatch(options: SmsOptions[]): Promise<SendSmsResponse[]>;
   verifyCredentials(): Promise<boolean>;
   getQuota?(): Promise<{ used: number; limit: number }>;
 }

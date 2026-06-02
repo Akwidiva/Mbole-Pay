@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, Bell, Mail, MessageSquare } from "lucide-react";
+import { AlertCircle, Bell, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 interface NotificationPreferences {
@@ -25,12 +25,6 @@ interface NotificationPreferences {
   emailDisputeFiled?: boolean;
   emailVotingReminder?: boolean;
   emailContributionReminder?: boolean;
-  smsPaymentSuccess?: boolean;
-  smsPaymentFailed?: boolean;
-  smsPayoutScheduled?: boolean;
-  smsDisputeFiled?: boolean;
-  smsVotingReminder?: boolean;
-  smsContributionReminder?: boolean;
   notificationQuietHours?: boolean;
   quietHoursStart?: string;
   quietHoursEnd?: string;
@@ -203,72 +197,20 @@ export function NotificationSettings() {
         </CardContent>
       </Card>
 
-      {/* SMS Notifications */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <MessageSquare className="h-5 w-5" />
-            SMS Notifications
+            <Bell className="h-5 w-5" />
+            Email Notifications
           </CardTitle>
-          <CardDescription>Receive urgent alerts via text message</CardDescription>
+          <CardDescription>
+            All notifications are delivered via email for reliable delivery.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="sms-payment-success">Payment Confirmed</Label>
-            <Switch
-              id="sms-payment-success"
-              checked={prefs.smsPaymentSuccess}
-              onCheckedChange={(checked) =>
-                updatePref("smsPaymentSuccess", checked)
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label htmlFor="sms-payment-failed">Payment Failed</Label>
-            <Switch
-              id="sms-payment-failed"
-              checked={prefs.smsPaymentFailed}
-              onCheckedChange={(checked) =>
-                updatePref("smsPaymentFailed", checked)
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label htmlFor="sms-payout-scheduled">Payout Scheduled</Label>
-            <Switch
-              id="sms-payout-scheduled"
-              checked={prefs.smsPayoutScheduled}
-              onCheckedChange={(checked) =>
-                updatePref("smsPayoutScheduled", checked)
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label htmlFor="sms-voting-reminder">Voting Reminder</Label>
-            <Switch
-              id="sms-voting-reminder"
-              checked={prefs.smsVotingReminder}
-              onCheckedChange={(checked) =>
-                updatePref("smsVotingReminder", checked)
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Label htmlFor="sms-contribution-reminder">
-              Contribution Reminder
-            </Label>
-            <Switch
-              id="sms-contribution-reminder"
-              checked={prefs.smsContributionReminder}
-              onCheckedChange={(checked) =>
-                updatePref("smsContributionReminder", checked)
-              }
-            />
-          </div>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Keep email notifications enabled to receive payment and payout updates.
+          </p>
         </CardContent>
       </Card>
 

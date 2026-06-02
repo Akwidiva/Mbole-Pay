@@ -3,7 +3,6 @@
  */
 
 export { EmailService, default as EmailServiceDefault } from "./email-service";
-export { SmsService, default as SmsServiceDefault } from "./sms-service";
 export {
   NotificationFactory,
   getNotificationFactory,

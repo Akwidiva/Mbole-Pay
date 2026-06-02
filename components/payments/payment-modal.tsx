@@ -22,6 +22,7 @@ interface PaymentModalProps {
   amount: number;
   currency: string;
   groupName: string;
+  defaultPhoneNumber?: string;
   onPaymentSuccess?: () => void;
 }
 
@@ -33,6 +34,7 @@ export function PaymentModal({
   amount,
   currency,
   groupName,
+  defaultPhoneNumber,
   onPaymentSuccess,
 }: PaymentModalProps) {
   const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(null);
@@ -79,6 +81,7 @@ export function PaymentModal({
               amount={amount}
               currency={currency}
               groupName={groupName}
+              defaultPhoneNumber={defaultPhoneNumber}
               onPaymentInitialized={handlePaymentInitialized}
             />
           </TabsContent>

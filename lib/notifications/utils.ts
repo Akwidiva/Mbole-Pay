@@ -30,7 +30,7 @@ export async function sendContributionDueReminder(
     recipientEmail: email,
     recipientPhone: phone,
     type: NotificationType.CONTRIBUTION_DUE,
-    channels: [NotificationChannel.EMAIL, NotificationChannel.SMS],
+       channels: [NotificationChannel.EMAIL],
     priority: NotificationPriority.HIGH,
     message: `Your ${amount} ${currency} contribution to ${groupName} is due on ${dueDate}`,
     variables: {
@@ -62,7 +62,7 @@ export async function sendContributionOverdueAlert(
     recipientEmail: email,
     recipientPhone: phone,
     type: NotificationType.CONTRIBUTION_OVERDUE,
-    channels: [NotificationChannel.EMAIL, NotificationChannel.SMS],
+       channels: [NotificationChannel.EMAIL],
     priority: NotificationPriority.URGENT,
     message: `Your ${amount} ${currency} contribution to ${groupName} is ${overdueBy} overdue`,
     variables: {
@@ -94,7 +94,7 @@ export async function sendPaymentReceivedConfirmation(
     recipientEmail: email,
     recipientPhone: phone,
     type: NotificationType.PAYMENT_RECEIVED,
-    channels: [NotificationChannel.EMAIL, NotificationChannel.SMS],
+       channels: [NotificationChannel.EMAIL],
     priority: NotificationPriority.MEDIUM,
     message: `Payment of ${amount} ${currency} received by ${groupName}`,
     variables: {
@@ -126,7 +126,7 @@ export async function sendPaymentFailedAlert(
     recipientEmail: email,
     recipientPhone: phone,
     type: NotificationType.PAYMENT_FAILED,
-    channels: [NotificationChannel.EMAIL, NotificationChannel.SMS],
+       channels: [NotificationChannel.EMAIL],
     priority: NotificationPriority.HIGH,
     message: `Payment of ${amount} ${currency} failed: ${reason}`,
     variables: {
@@ -158,7 +158,7 @@ export async function sendPayoutAvailableNotification(
     recipientEmail: email,
     recipientPhone: phone,
     type: NotificationType.PAYOUT_AVAILABLE,
-    channels: [NotificationChannel.EMAIL, NotificationChannel.SMS],
+       channels: [NotificationChannel.EMAIL],
     priority: NotificationPriority.MEDIUM,
     message: `Your payout of ${amount} ${currency} from ${groupName} is ready`,
     variables: {
@@ -189,7 +189,7 @@ export async function sendDisputeOpenedNotification(
     recipientEmail: email,
     recipientPhone: phone,
     type: NotificationType.DISPUTE_OPENED,
-    channels: [NotificationChannel.EMAIL, NotificationChannel.SMS],
+       channels: [NotificationChannel.EMAIL],
     priority: NotificationPriority.HIGH,
     message: `New dispute in ${groupName}: ${disputeTitle}`,
     variables: {
@@ -219,7 +219,7 @@ export async function sendDisputeResolvedNotification(
     recipientEmail: email,
     recipientPhone: phone,
     type: NotificationType.DISPUTE_RESOLVED,
-    channels: [NotificationChannel.EMAIL, NotificationChannel.SMS],
+       channels: [NotificationChannel.EMAIL],
     priority: NotificationPriority.MEDIUM,
     message: `Dispute in ${groupName} has been resolved`,
     variables: {
@@ -281,7 +281,7 @@ export async function sendMemberJoinedNotification(
     recipientEmail: member.email,
     recipientPhone: member.phone,
     type: NotificationType.MEMBER_JOINED,
-    channels: [NotificationChannel.EMAIL, NotificationChannel.SMS],
+      channels: [NotificationChannel.EMAIL],
     priority: NotificationPriority.LOW,
     message: `${newMemberName} joined ${groupName}`,
     variables: {

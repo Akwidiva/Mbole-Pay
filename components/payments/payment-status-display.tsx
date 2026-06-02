@@ -173,7 +173,7 @@ export function PaymentStatusDisplay({
           <div className="flex justify-between">
             <span className="text-muted-foreground">Provider</span>
             <span className="font-semibold">
-              {status.provider === "MTN_MOMO" ? "MTN MoMo" : "Orange Money"}
+              MTN MoMo
             </span>
           </div>
           {status.providerRef && (

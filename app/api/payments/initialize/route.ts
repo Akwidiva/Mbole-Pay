@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { prisma } from "@/lib/db";
+import prisma from "@/lib/db";
 import { PaymentFactory } from "@/lib/payments/payment-factory";
 import { PaymentStatus, PaymentProvider, ApiResponse, InitializePaymentResponse } from "@/types/payments";
 import { userHasPermission } from "@/lib/rbac";
@@ -15,7 +15,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
  *   groupId: string;
  *   contributionId: string;
  *   phoneNumber: string;
- *   provider: "MTN_MOMO" | "ORANGE_MONEY";
+ *   provider?: "MTN_MOMO";
  *   amount?: number; // If not provided, uses contribution amount
  * }
  */
@@ -41,13 +41,13 @@ export async function POST(request: NextRequest) {
     const { groupId, contributionId, phoneNumber, provider, amount } = body;
 
     // Validation
-    if (!groupId || !contributionId || !phoneNumber || !provider) {
+    if (!groupId || !contributionId || !phoneNumber) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
           error: {
             code: "VALIDATION_ERROR",
-            message: "Missing required fields: groupId, contributionId, phoneNumber, provider",
+            message: "Missing required fields: groupId, contributionId, phoneNumber",
           },
           timestamp: new Date(),
         },
@@ -55,13 +55,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!Object.values(PaymentProvider).includes(provider)) {
+    const resolvedProvider = provider || PaymentProvider.MTN_MOMO;
+
+    if (resolvedProvider !== PaymentProvider.MTN_MOMO) {
       return NextResponse.json<ApiResponse>(
         {
           success: false,
           error: {
             code: "INVALID_PROVIDER",
-            message: `Invalid provider. Supported: ${Object.values(PaymentProvider).join(", ")}`,
+            message: "Only MTN MoMo is supported for payments",
           },
           timestamp: new Date(),
         },
@@ -238,14 +240,14 @@ export async function POST(request: NextRequest) {
         amount: paymentAmount,
         currency: "XAF",
         status: PaymentStatus.PENDING,
-        provider: provider,
+        provider: PaymentProvider.MTN_MOMO,
         phoneNumber: phoneNumber.replace(/\s/g, ""),
         retryCount: 0,
       },
     });
 
     // Initialize payment with provider
-    const paymentFactory = PaymentFactory.getProvider(provider);
+    const paymentFactory = PaymentFactory.getProvider(PaymentProvider.MTN_MOMO);
     const externalId = paymentRecord.id;
 
     const paymentRequest = await paymentFactory.requestToPay({

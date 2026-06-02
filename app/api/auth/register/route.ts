@@ -7,9 +7,17 @@ export async function POST(req: NextRequest) {
     const { email, name, password, phone } = await req.json();
 
     // Validate input
-    if (!email || !password || !name) {
+    if (!email || !password || !name || !phone) {
       return NextResponse.json(
-        { error: "Email, name, and password are required" },
+        { error: "Email, name, phone, and password are required" },
+        { status: 400 }
+      );
+    }
+
+    const phoneRegex = /^(\+237|\+221)?[679]\d{8}$/;
+    if (!phoneRegex.test(String(phone).replace(/\s/g, ""))) {
+      return NextResponse.json(
+        { error: "Enter a valid Cameroon mobile number" },
         { status: 400 }
       );
     }
@@ -31,7 +39,7 @@ export async function POST(req: NextRequest) {
       data: {
         email,
         name,
-        phone,
+        phone: String(phone).replace(/\s/g, ""),
         password: hashedPassword,
       },
       select: {

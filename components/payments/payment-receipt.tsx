@@ -71,7 +71,7 @@ Date:                ${format(new Date(payment.date), "PPpp")}
 PAYMENT DETAILS
 
 Amount:              ${payment.amount.toLocaleString()} ${payment.currency}
-Provider:            ${payment.provider === "MTN_MOMO" ? "MTN Mobile Money" : "Orange Money"}
+Provider:            MTN Mobile Money
 Phone Number:        ${maskPhoneNumber(payment.phoneNumber)}
 Status:              ${payment.status}
 Group:               ${payment.groupName || "N/A"}
@@ -203,7 +203,7 @@ Website: https://mbolepay.com
                     Provider
                   </p>
                   <p className="text-sm">
-                    {payment.provider === "MTN_MOMO" ? "MTN Mobile Money" : "Orange Money"}
+                    MTN Mobile Money
                   </p>
                 </div>
 

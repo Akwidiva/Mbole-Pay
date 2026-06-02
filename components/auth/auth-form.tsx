@@ -22,6 +22,7 @@ interface AuthFormProps {
 export function AuthForm({ mode, redirectPath = "/dashboard", onSuccess, className }: AuthFormProps) {
   const router = useRouter()
   const [name, setName] = useState("")
+  const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -39,8 +40,14 @@ export function AuthForm({ mode, redirectPath = "/dashboard", onSuccess, classNa
     e.preventDefault()
     setError("")
 
-    if (!name.trim() || !email.trim() || password.length < 6 || password !== confirmPassword) {
-      setError("Please fill in all fields correctly")
+    if (
+      !name.trim() ||
+      !phone.trim() ||
+      !email.trim() ||
+      password.length < 6 ||
+      password !== confirmPassword
+    ) {
+      setError("Please fill in your name, phone, email, and password correctly")
       return
     }
 
@@ -49,7 +56,7 @@ export function AuthForm({ mode, redirectPath = "/dashboard", onSuccess, classNa
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, phone, email, password }),
       })
 
       if (!res.ok) {
@@ -119,6 +126,19 @@ export function AuthForm({ mode, redirectPath = "/dashboard", onSuccess, classNa
           <motion.div variants={itemVariants}>
             <Label htmlFor="name">Full Name</Label>
             <Input id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} />
+          </motion.div>
+        )}
+        {mode === "signup" && (
+          <motion.div variants={itemVariants}>
+            <Label htmlFor="phone">Mobile Number</Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+237691234567"
+              disabled={loading}
+            />
           </motion.div>
         )}
         <motion.div variants={itemVariants}>

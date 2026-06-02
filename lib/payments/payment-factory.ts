@@ -1,5 +1,4 @@
 import { MTNMoMoService } from './mtn-momo'
-import { OrangeMoneyService } from './orange-money'
 import { PaymentProvider } from '@/types/payments'
 
 /**
@@ -19,8 +18,6 @@ export class PaymentFactory {
     switch (provider) {
       case 'MTN_MOMO':
         return new MTNMoMoService()
-      case 'ORANGE_MONEY':
-        return new OrangeMoneyService()
       default:
         throw new Error(`Unknown payment provider: ${provider}`)
     }
@@ -30,7 +27,7 @@ export class PaymentFactory {
    * Get all supported providers
    */
   static getSupportedProviders(): PaymentProvider[] {
-    return ['MTN_MOMO', 'ORANGE_MONEY']
+    return [PaymentProvider.MTN_MOMO]
   }
 
   /**
@@ -40,8 +37,6 @@ export class PaymentFactory {
     switch (provider) {
       case 'MTN_MOMO':
         return 'MTN Mobile Money'
-      case 'ORANGE_MONEY':
-        return 'Orange Money'
       default:
         return provider
     }
@@ -54,8 +49,6 @@ export class PaymentFactory {
     switch (provider) {
       case 'MTN_MOMO':
         return '/icons/mtn-momo.svg'
-      case 'ORANGE_MONEY':
-        return '/icons/orange-money.svg'
       default:
         return '/icons/payment.svg'
     }

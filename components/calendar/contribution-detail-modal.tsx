@@ -170,7 +170,7 @@ export function ContributionDetailModal({
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Provider:</span>
                   <span className="font-medium">
-                    {event.paymentProvider === "MTN_MOMO" ? "MTN MoMo" : "Orange Money"}
+                    MTN MoMo
                   </span>
                 </div>
                 <div className="flex justify-between">

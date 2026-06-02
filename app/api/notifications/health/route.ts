@@ -29,17 +29,6 @@ export async function GET(request: NextRequest) {
                   )
                 : 0,
           },
-          sms: {
-            operational: health.sms.operational,
-            quotaUsed: health.sms.quota?.used ?? 0,
-            quotaLimit: health.sms.quota?.limit ?? 0,
-            quotaPercentage:
-              health.sms.quota?.limit && health.sms.quota?.used
-                ? Math.round(
-                    (health.sms.quota.used / health.sms.quota.limit) * 100
-                  )
-                : 0,
-          },
         },
         warnings: getWarnings(health),
       },
@@ -70,18 +59,8 @@ function getWarnings(health: any): string[] {
     );
   }
 
-  if (!health.sms.operational) {
-    warnings.push(
-      "SMS service is not operational. Check Twilio credentials."
-    );
-  }
-
   if (health.email.quota && health.email.quota.used > health.email.quota.limit * 0.8) {
     warnings.push("Email quota usage is above 80%");
-  }
-
-  if (health.sms.quota && health.sms.quota.used > health.sms.quota.limit * 0.8) {
-    warnings.push("SMS quota usage is above 80%");
   }
 
   return warnings;

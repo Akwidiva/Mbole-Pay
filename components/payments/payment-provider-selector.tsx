@@ -29,13 +29,6 @@ export function PaymentProviderSelector({
           icon: "📱",
           features: ["USSD/SMS prompt", "No app required", "Instant feedback"],
         };
-      case "ORANGE_MONEY":
-        return {
-          name: "Orange Money",
-          description: "Pay using Orange Money services",
-          icon: "🟠",
-          features: ["Web payment flow", "Secure checkout", "Multiple currencies"],
-        };
     }
   };
 
@@ -115,9 +108,6 @@ export function PaymentProviderSelector({
           <li>
             <strong>MTN MoMo:</strong> You'll receive a USSD prompt on your phone to confirm the
             payment
-          </li>
-          <li>
-            <strong>Orange Money:</strong> You'll be redirected to a secure checkout page
           </li>
         </ul>
       </div>

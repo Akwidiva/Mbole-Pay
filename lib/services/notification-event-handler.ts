@@ -1,20 +1,5 @@
-import { prisma } from "@/lib/db";
+import prisma from "@/lib/db";
 import { emailService } from "./email-service";
-import { smsService } from "./sms-service";
-
-export interface NotificationEvent {
-  type:
-    | "PAYMENT_SUCCESS"
-    | "PAYMENT_FAILED"
-    | "PAYOUT_SCHEDULED"
-    | "DISPUTE_FILED"
-    | "VOTING_REMINDER"
-    | "CONTRIBUTION_REMINDER"
-    | "DISPUTE_RESOLVED";
-  userId?: string;
-  groupId?: string;
-  data: Record<string, any>;
-}
 
 export const notificationEventHandler = {
   /**
@@ -35,12 +20,6 @@ export const notificationEventHandler = {
         emailDisputeFiled: true,
         emailVotingReminder: true,
         emailContributionReminder: true,
-        smsPaymentSuccess: true,
-        smsPaymentFailed: true,
-        smsPayoutScheduled: true,
-        smsDisputeFiled: false,
-        smsVotingReminder: true,
-        smsContributionReminder: true,
         notificationQuietHours: false,
         quietHoursStart: "22:00",
         quietHoursEnd: "08:00",
@@ -78,7 +57,7 @@ export const notificationEventHandler = {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { email: true, phone: true },
+        select: { email: true },
       });
       return user;
     } catch (error) {
@@ -142,14 +121,6 @@ export const notificationEventHandler = {
       });
     }
 
-    if (prefs?.smsPaymentSuccess && contact.phone && smsService.isConfigured()) {
-      await smsService.sendPaymentConfirmationSMS(contact.phone, {
-        amount: data.amount,
-        currency: data.currency,
-        groupName: data.groupName,
-        paymentId: data.paymentId,
-      });
-    }
   },
 
   async handlePaymentFailed(event: NotificationEvent) {
@@ -172,14 +143,6 @@ export const notificationEventHandler = {
       });
     }
 
-    if (prefs?.smsPaymentFailed && contact.phone && smsService.isConfigured()) {
-      await smsService.sendPaymentFailedSMS(contact.phone, {
-        amount: data.amount,
-        currency: data.currency,
-        groupName: data.groupName,
-        errorMessage: data.errorMessage,
-      });
-    }
   },
 
   async handlePayoutScheduled(event: NotificationEvent) {
@@ -202,14 +165,6 @@ export const notificationEventHandler = {
       });
     }
 
-    if (prefs?.smsPayoutScheduled && contact.phone && smsService.isConfigured()) {
-      await smsService.sendPayoutSMS(contact.phone, {
-        amount: data.amount,
-        currency: data.currency,
-        groupName: data.groupName,
-        scheduledDate: data.scheduledDate,
-      });
-    }
   },
 
   async handleDisputeFiled(event: NotificationEvent) {
@@ -239,12 +194,6 @@ export const notificationEventHandler = {
         });
       }
 
-      if (prefs?.smsDisputeFiled && contact.phone && smsService.isConfigured()) {
-        await smsService.sendDisputeNotificationSMS(contact.phone, {
-          groupName: data.groupName,
-          disputeTitle: data.disputeTitle,
-        });
-      }
     }
   },
 
@@ -276,15 +225,9 @@ export const notificationEventHandler = {
         });
       }
 
-      if (prefs?.smsVotingReminder && contact.phone && smsService.isConfigured()) {
-        await smsService.sendVotingReminderSMS(contact.phone, {
-          groupName: data.groupName,
-          hoursLeft: data.hoursLeft,
-        });
-      }
     }
   },
-
+ 
   async handleContributionReminder(event: NotificationEvent) {
     const { userId, data } = event;
     if (!userId) return;
@@ -306,19 +249,6 @@ export const notificationEventHandler = {
         groupName: data.groupName,
         dueDate: data.dueDate,
         paymentUrl: `https://mbolepay.com/groups/${data.groupId}/pay`,
-      });
-    }
-
-    if (
-      prefs?.smsContributionReminder &&
-      contact.phone &&
-      smsService.isConfigured()
-    ) {
-      await smsService.sendContributionReminderSMS(contact.phone, {
-        amount: data.amount,
-        currency: data.currency,
-        groupName: data.groupName,
-        daysUntilDue,
       });
     }
   },

@@ -5,7 +5,7 @@ Automated notification system for sending contribution reminders, overdue alerts
 ## Features
 
 - **Scheduled Jobs**: 4 built-in jobs running on automated schedules
-- **Email + SMS**: Multi-channel notifications via SendGrid and Twilio
+- **Email Notifications**: Multi-channel notifications via SMTP (SendGrid, Gmail, AWS SES)
 - **Contribution Tracking**: Automatic status updates and reminders
 - **Error Handling**: Graceful error management with detailed logging
 - **Manual Triggers**: Admin API endpoints to manually run jobs
@@ -19,8 +19,7 @@ NotificationScheduler (singleton)
 │   ├── Overdue Alert (09:00 UTC daily)
 │   ├── Status Check (every 6 hours)
 │   └── Cleanup (02:00 UTC daily)
-├── Email Service (SendGrid)
-├── SMS Service (Twilio)
+├── Email Service (SMTP)
 └── API Endpoints (3 routes)
     ├── /api/bootstrap (initialize scheduler)
     ├── /api/scheduler/status (get status)
@@ -86,17 +85,15 @@ curl -X POST http://localhost:3000/api/scheduler/trigger \
 
 ### 1. Contribution Due Reminder
 - **Schedule**: Daily at 08:00 UTC
-- **Description**: Sends email + SMS reminders for contributions due in 3 days
-- **Channels**: Email, SMS
+- **Description**: Sends email reminders for contributions due in 3 days
+- **Channel**: Email
 - **Action**: Queries DB for pending contributions with dueDate = today + 3 days
-- **Sends**:
-  - Email with template variables (groupName, amount, dueDate)
-  - SMS limited to 160 characters
+- **Sends**: Email with template variables (groupName, amount, dueDate)
 
 ### 2. Overdue Alert
 - **Schedule**: Daily at 09:00 UTC
-- **Description**: Sends alerts for overdue contributions  
-- **Channels**: Email, SMS
+- **Description**: Sends alerts for overdue contributions
+- **Channel**: Email
 - **Action**: Queries DB for pending contributions with dueDate < now()
 - **Sends**: Urgent notifications (HIGH priority)
 
@@ -236,7 +233,6 @@ export function SchedulerStatus() {
   return (
     <div>
       <p>Email: {status?.email.operational ? "✅" : "❌"}</p>
-      <p>SMS: {status?.sms.operational ? "✅" : "❌"}</p>
     </div>
   );
 }
@@ -278,13 +274,12 @@ ALLOW_MANUAL_TRIGGERS="false"
 
 ### Jobs Not Running
 
-1. Check SendGrid credentials:
+1. Check if bootstrap endpoint was called:
    ```bash
-   curl -X POST http://localhost:3000/api/scheduler/trigger \
-     -d '{"jobId": "contribution-due-reminder"}'
+   curl http://localhost:3000/api/bootstrap
    ```
 
-2. Check Twilio credentials:
+2. Check email configuration:
    ```bash
    curl http://localhost:3000/api/notifications/health
    ```
@@ -333,5 +328,4 @@ ALLOW_MANUAL_TRIGGERS="false"
 
 - [Notification Services](../notifications/)
 - [Email Configuration](../notifications/email-service.ts)
-- [SMS Configuration](../notifications/sms-service.ts)
 - [Database Models](../../prisma/schema.prisma)

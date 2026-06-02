@@ -22,6 +22,7 @@ model User {
   contributions Contribution[]
   payments      Payment[]
   payouts       Payout[]
+  withdrawalRequests WithdrawalRequest[]
   invitationsSent GroupInvitation[] @relation("InvitationsSent")
 }
 
@@ -120,6 +121,25 @@ model Payment {
   updatedAt       DateTime @updatedAt
 }
 
+model WithdrawalRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  phoneNumber String
+  amount      Float
+  ussd        String
+  dialerUrl   String
+
+  provider    String   @default("MTN_MOMO")
+  status      String   @default("PENDING")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, createdAt])
+}
+
 model Payout {
   id              String   @id @default(cuid())
   groupId         String
@@ -181,14 +201,6 @@ model NotificationPreference {
   emailDisputeFiled          Boolean  @default(true)
   emailVotingReminder        Boolean  @default(true)
   emailContributionReminder  Boolean  @default(true)
-  
-  // SMS notifications
-  smsPaymentSuccess          Boolean  @default(true)
-  smsPaymentFailed           Boolean  @default(true)
-  smsPayoutScheduled         Boolean  @default(true)
-  smsDisputeFiled            Boolean  @default(false)
-  smsVotingReminder          Boolean  @default(true)
-  smsContributionReminder    Boolean  @default(true)
   
   // Quiet hours (do not notify during these times)
   notificationQuietHours     Boolean  @default(false)
