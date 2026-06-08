@@ -255,13 +255,39 @@ export class NotificationFactory {
     type: NotificationType,
     channel: "email" | "sms",
     template: string
+  ): void {
+    if (!this.templates.has(type)) {
+      this.templates.set(type, {});
+    }
 
-    const emailQuota = emailOk
-      ? await this.emailService.getQuota?.()
-      : undefined;
+    const existing = this.templates.get(type)!;
+    existing[channel] = template;
+    this.templates.set(type, existing);
+  }
+
+  /**
+   * Return notification service health information.
+   */
+  async getHealthStatus(): Promise<{
+    email: {
+      operational: boolean;
+      quota?: {
+        used: number;
+        limit: number;
+      };
+    };
+  }> {
+    const emailConfigured = Boolean(
+      process.env.SMTP_HOST || process.env.EMAIL_HOST
+    );
+    const emailAuthConfigured = Boolean(
+      process.env.SMTP_USER || process.env.EMAIL_USER
+    );
 
     return {
-      email: { operational: emailOk, quota: emailQuota },
+      email: {
+        operational: emailConfigured && emailAuthConfigured,
+      },
     };
   }
 }

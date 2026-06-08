@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mbole-pay.fullname" . }}-config
+  labels:
+    {{- include "mbole-pay.labels" . | nindent 4 }}
+data:
+  NODE_ENV: {{ .Values.config.NODE_ENV | quote }}
+  PORT: {{ .Values.config.PORT | quote }}
+  HOSTNAME: {{ .Values.config.HOSTNAME | quote }}
+  NEXTAUTH_URL: {{ .Values.config.NEXTAUTH_URL | quote }}
+  FAPSHI_BASE_URL: {{ .Values.config.FAPSHI_BASE_URL | quote }}
+  EMAIL_HOST: {{ .Values.config.EMAIL_HOST | quote }}
+  EMAIL_PORT: {{ .Values.config.EMAIL_PORT | quote }}
+  EMAIL_SECURE: {{ .Values.config.EMAIL_SECURE | quote }}
+  EMAIL_FROM: {{ .Values.config.EMAIL_FROM | quote }}

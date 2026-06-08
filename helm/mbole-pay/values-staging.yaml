@@ -1,0 +1,29 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/your-org/mbole-pay
+  tag: "staging"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 3000
+
+ingress:
+  enabled: false
+
+secrets:
+  DATABASE_URL: "postgresql://user:pass@postgres:5432/mbole_pay"
+  NEXTAUTH_SECRET: "replace-me"
+  EMAIL_USER: "replace@example.com"
+  EMAIL_PASSWORD: "replace"
+  FAPSHI_API_KEY: "replace"
+  FAPSHI_WEBHOOK_SECRET: "replace"
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

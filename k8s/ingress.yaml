@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mbole-pay-app
+  namespace: mbole-pay
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+spec:
+  tls:
+    - hosts:
+        - mbole-pay.example.com
+      secretName: mbole-pay-tls
+  rules:
+    - host: mbole-pay.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mbole-pay-app
+                port:
+                  number: 80

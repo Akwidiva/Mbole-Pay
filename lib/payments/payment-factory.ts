@@ -1,4 +1,5 @@
 import { MTNMoMoService } from './mtn-momo'
+import { FapshiService } from './fapshi'
 import { PaymentProvider } from '@/types/payments'
 
 /**
@@ -18,6 +19,8 @@ export class PaymentFactory {
     switch (provider) {
       case 'MTN_MOMO':
         return new MTNMoMoService()
+      case 'FAPSHI':
+        return new FapshiService()
       default:
         throw new Error(`Unknown payment provider: ${provider}`)
     }
@@ -27,7 +30,7 @@ export class PaymentFactory {
    * Get all supported providers
    */
   static getSupportedProviders(): PaymentProvider[] {
-    return [PaymentProvider.MTN_MOMO]
+    return [PaymentProvider.MTN_MOMO, PaymentProvider.FAPSHI]
   }
 
   /**
@@ -37,6 +40,8 @@ export class PaymentFactory {
     switch (provider) {
       case 'MTN_MOMO':
         return 'MTN Mobile Money'
+      case 'FAPSHI':
+        return 'Fapshi'
       default:
         return provider
     }
@@ -49,6 +54,8 @@ export class PaymentFactory {
     switch (provider) {
       case 'MTN_MOMO':
         return '/icons/mtn-momo.svg'
+      case 'FAPSHI':
+        return '/icons/fapshi.svg'
       default:
         return '/icons/payment.svg'
     }

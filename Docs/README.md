@@ -66,7 +66,7 @@ Mbole Pay provides:
 - **Database**: PostgreSQL + IPFS (decentralized file storage)
 - **Blockchain**: Ethereum / Binance Smart Chain (Smart Contracts)
 - **Payments**: Flutterwave, Paystack, MTN MoMo
-- **Infrastructure**: Docker, GitLab CI/CD, Terraform (IaC), Kubernetes
+- **Infrastructure**: Docker, GitHub Actions CI/CD, Terraform (IaC), Kubernetes
 
 ---
 
@@ -78,7 +78,7 @@ Mbole Pay provides:
 | Backend      | Node.js, Express                  |
 | Database     | PostgreSQL, IPFS                  |
 | Blockchain   | Solidity, Hardhat                 |
-| Infra/DevOps | Docker, GitLab CI, Terraform, K8s |
+| Infra/DevOps | Docker, GitHub Actions CI, Terraform, K8s |
 
 ---
 
@@ -133,10 +133,12 @@ npm install
 npx next dev
 ```
 
-4. To commit to github and gitlab 
+4. Build and deploy with Helm:
 
-git push origin main
-git push gitlab main
+```bash
+docker build -t mbole-pay:latest .
+helm upgrade --install mbole-pay ./helm/mbole-pay -n mbole-pay --create-namespace
+```
 
 ## 🤝 Contributing
 

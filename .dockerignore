@@ -1,0 +1,13 @@
+.git
+.github
+.next
+node_modules
+coverage
+dist
+*.log
+*.db
+prisma/dev.db
+Docs
+__tests__
+test-*.ts
+test-*.js

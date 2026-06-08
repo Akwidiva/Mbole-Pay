@@ -55,7 +55,7 @@ function getWarnings(health: any): string[] {
 
   if (!health.email.operational) {
     warnings.push(
-      "Email service is not operational. Check SendGrid credentials."
+      "Email service is not operational. Check SMTP credentials and environment variables."
     );
   }
 

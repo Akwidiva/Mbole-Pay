@@ -1,0 +1,54 @@
+replicaCount: 3
+
+image:
+  repository: ghcr.io/your-org/mbole-pay
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  host: app.example.com
+  tlsSecretName: mbole-pay-tls
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+config:
+  NODE_ENV: production
+  PORT: "3000"
+  HOSTNAME: 0.0.0.0
+  NEXTAUTH_URL: https://app.example.com
+  FAPSHI_BASE_URL: https://api.fapshi.com
+  EMAIL_HOST: smtp.gmail.com
+  EMAIL_PORT: "587"
+  EMAIL_SECURE: "false"
+  EMAIL_FROM: noreply@mbolepay.com
+
+secrets:
+  DATABASE_URL: ""
+  NEXTAUTH_SECRET: ""
+  EMAIL_USER: ""
+  EMAIL_PASSWORD: ""
+  FAPSHI_API_KEY: ""
+  FAPSHI_WEBHOOK_SECRET: ""
+
+hpa:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  cpuAverageUtilization: 70
+
+autoscaling:
+  memoryAverageUtilization: 80

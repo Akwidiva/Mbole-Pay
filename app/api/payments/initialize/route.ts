@@ -55,21 +55,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const resolvedProvider = provider || PaymentProvider.MTN_MOMO;
-
-    if (resolvedProvider !== PaymentProvider.MTN_MOMO) {
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          error: {
-            code: "INVALID_PROVIDER",
-            message: "Only MTN MoMo is supported for payments",
-          },
-          timestamp: new Date(),
-        },
-        { status: 400 }
-      );
-    }
+    const resolvedProvider = provider || (await PaymentFactory.getDefaultProvider());
 
     // Validate phone number format
     const phoneRegex = /^(\+237|\+221)?[679]\d{8}$/;
@@ -240,14 +226,14 @@ export async function POST(request: NextRequest) {
         amount: paymentAmount,
         currency: "XAF",
         status: PaymentStatus.PENDING,
-        provider: PaymentProvider.MTN_MOMO,
+        provider: resolvedProvider,
         phoneNumber: phoneNumber.replace(/\s/g, ""),
         retryCount: 0,
       },
     });
 
     // Initialize payment with provider
-    const paymentFactory = PaymentFactory.getProvider(PaymentProvider.MTN_MOMO);
+    const paymentFactory = PaymentFactory.getProvider(resolvedProvider as any);
     const externalId = paymentRecord.id;
 
     const paymentRequest = await paymentFactory.requestToPay({

@@ -3,7 +3,7 @@ is should show t# 🎯 Mbole Pay - MVP Launch May 31, 2026
 **Status:** 95% Complete | 5 Core Features Built | Ready to Ship  
 **Tech Stack:** Next.js 14 | React 18 | TypeScript | Prisma | NextAuth | Tailwind  
 **Database:** PostgreSQL (production) | SQLite (dev)  
-**Deployment:** Vercel (frontend) | Railway (backend)
+**Deployment:** Docker | Kubernetes | GitHub Actions CI/CD
 
 ---
 
@@ -37,9 +37,17 @@ npx prisma studio
 # Build for production
 pnpm build
 
-# Deploy to Vercel
-vercel deploy
+# Build and run locally with Docker
+docker compose up --build
 ```
+
+### Production Deployment
+- Build the container image with `Dockerfile`
+- Push image to GHCR in CI
+- Deploy to Kubernetes with Helm for atomic releases and HPA
+- Use a managed PostgreSQL database and ingress controller
+- Store `DATABASE_URL`, `NEXTAUTH_SECRET`, SMTP, and Fapshi credentials in your secret manager
+
 
 ---
 
@@ -269,6 +277,40 @@ POST   /api/notifications/send        - Send notification
 ---
 
 ## 🚢 DEPLOYMENT
+### Install Helm
+
+Install Helm (required for deploying with the included Helm chart):
+
+macOS (Homebrew):
+```bash
+brew install helm
+```
+
+Windows (Chocolatey):
+```powershell
+choco install kubernetes-helm -y
+# or with Scoop:
+# scoop install helm
+```
+
+Cross-platform (official install script):
+```bash
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+```
+
+Verify installation:
+```bash
+helm version
+```
+
+Quick Helm checks for this repo:
+```bash
+helm repo update
+helm lint ./helm/mbole-pay
+helm template mbole-pay ./helm/mbole-pay --values ./helm/mbole-pay/values.yaml
+```
 
 ### Frontend (Vercel)
 ```bash
@@ -295,7 +337,74 @@ vercel deploy --prod
 # Run: npx prisma migrate deploy
 ```
 
+### Next Production Additions
+
+These are the next technologies I would add for this app, in priority order.
+
+#### 1. Observability - Must have
+- Add: Prometheus, Grafana, OpenTelemetry, and centralized logs like Loki.
+- Why: once real users are on the app, you need to see failed payments, slow pages, webhook failures, and auth errors quickly.
+- For this project: useful right away because the app already has payments, notifications, and background-style API routes.
+
+#### 2. Secrets Management - Must have
+- Add: Vault, cloud secrets manager, or Kubernetes secrets with a stricter process.
+- Why: production keys like `DATABASE_URL`, `NEXTAUTH_SECRET`, SMTP credentials, and Fapshi keys must not live in plain files.
+- For this project: critical because the app already uses Docker and Kubernetes, so secret handling needs to match that setup.
+
+#### 3. Backups - Must have
+- Add: automated PostgreSQL backups, restore testing, and optional Kubernetes backup tooling like Velero.
+- Why: if the database fails, user groups, contributions, payments, and disputes cannot be lost.
+- For this project: very important because the app stores financial and membership records.
+
+#### 4. Infrastructure as Code - Strongly recommended
+- Add: Terraform or Pulumi.
+- Why: it makes infrastructure repeatable instead of manual and reduces deployment mistakes.
+- For this project: useful once you move beyond local Docker/Kubernetes into cloud-managed databases, networking, and clusters.
+
+#### 5. Queue / Background Jobs - Recommended
+- Add: BullMQ, RabbitMQ, or NATS.
+- Why: notifications, payment retries, reports, and scheduled jobs should not slow down request/response traffic.
+- For this project: Redis is already present, so this is a natural next step if you want reliable async processing.
+
+### What You Already Have
+- Docker: already implemented for consistent builds and local production-like runs.
+- Kubernetes: already implemented for container orchestration and scaling.
+- Redis: already present, so it can support caching or job queues later.
+
 ---
+
+## ✅ Implemented helpers (you can run now)
+
+- **Prometheus metrics endpoint**: `GET /api/metrics` — available for Prometheus to scrape using `prom-client`.
+- **OpenTelemetry starter**: `lib/telemetry/init-otel.ts` — enable auto-instrumentation by setting `OTEL_ENABLED=true` and providing OTLP exporter env vars.
+- **Background queue skeleton**: `lib/queue/worker.ts` (BullMQ) — uses `REDIS_URL` and provides a starter worker for email jobs.
+
+Quick local steps:
+```bash
+pnpm install
+
+# Run the app
+pnpm dev
+
+# Start worker (runs the BullMQ worker defined in lib/queue/worker.ts)
+node -r ts-node/register ./lib/queue/worker.ts
+```
+
+Prometheus scrape example (add to your Prometheus config):
+```yaml
+scrape_configs:
+	- job_name: 'mbole-pay'
+		static_configs:
+			- targets: ['host.docker.internal:3000']
+		metrics_path: /api/metrics
+```
+
+OpenTelemetry note:
+- To enable tracing, set `OTEL_ENABLED=true` and configure an OTLP exporter (e.g., `OTEL_EXPORTER_OTLP_ENDPOINT`). The app will auto-instrument supported libraries when started with that env var.
+
+Queue note:
+- The `lib/queue/worker.ts` file contains a starter worker that currently logs jobs. Integrate it with `lib/services/email-service.ts` to offload email sending.
+
 
 ## 🧪 TESTING
 

@@ -202,6 +202,14 @@ model NotificationPreference {
   emailVotingReminder        Boolean  @default(true)
   emailContributionReminder  Boolean  @default(true)
   
+  // SMS notifications
+  smsPaymentSuccess          Boolean  @default(true)
+  smsPaymentFailed           Boolean  @default(true)
+  smsPayoutScheduled         Boolean  @default(true)
+  smsDisputeFiled            Boolean  @default(false)
+  smsVotingReminder          Boolean  @default(true)
+  smsContributionReminder    Boolean  @default(true)
+  
   // Quiet hours (do not notify during these times)
   notificationQuietHours     Boolean  @default(false)
   quietHoursStart            String   @default("22:00") // HH:MM format

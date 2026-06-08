@@ -23,6 +23,7 @@ export enum PayoutStatus {
 export enum PaymentProvider {
   MTN_MOMO = "MTN_MOMO",
   ORANGE_MONEY = "ORANGE_MONEY",
+  FAPSHI = "FAPSHI",
 }
 
 /**

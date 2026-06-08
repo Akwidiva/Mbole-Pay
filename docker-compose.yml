@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mbole_pay
+      POSTGRES_USER: mbole
+      POSTGRES_PASSWORD: mbole_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DATABASE_URL: postgresql://mbole:mbole_password@postgres:5432/mbole_pay
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://mbole:mbole_password@postgres:5432/mbole_pay
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: change-me-to-a-random-secret-key
+      EMAIL_HOST: smtp.gmail.com
+      EMAIL_PORT: 587
+      EMAIL_SECURE: "false"
+      EMAIL_USER: your-email@gmail.com
+      EMAIL_PASSWORD: your-app-password
+      EMAIL_FROM: noreply@mbolepay.com
+      FAPSHI_BASE_URL: https://api.fapshi.com
+      FAPSHI_API_KEY: your-fapshi-api-key-here
+      FAPSHI_WEBHOOK_SECRET: your-fapshi-webhook-secret-here
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:

@@ -1,6 +1,21 @@
 import prisma from "@/lib/db";
 import { emailService } from "./email-service";
 
+export type NotificationType =
+  | "PAYMENT_SUCCESS"
+  | "PAYMENT_FAILED"
+  | "PAYOUT_SCHEDULED"
+  | "DISPUTE_FILED"
+  | "VOTING_REMINDER"
+  | "CONTRIBUTION_REMINDER";
+
+export interface NotificationEvent {
+  type: NotificationType;
+  userId?: string;
+  groupId?: string;
+  data: Record<string, any>;
+}
+
 export const notificationEventHandler = {
   /**
    * Get user notification preferences

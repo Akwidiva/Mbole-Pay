@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       externalId = body.externalId;
       transactionStatus = body.transactionStatus;
       transactionId = body.transactionId;
-    } else if (body.status && body.phoneNumber) {
+    } else if (body.status && body.phoneNumber && body.source !== "fapshi") {
       // Orange Money webhook format
       provider = PaymentProvider.ORANGE_MONEY;
       externalId = body.externalId;
@@ -55,6 +55,31 @@ export async function POST(request: NextRequest) {
           },
           { status: 401 }
         );
+      }
+    } else if (body.source === "fapshi" || body.fapshi_transaction_id || body.gateway === "fapshi" || request.headers.get("x-fapshi-signature")) {
+      // Fapshi webhook assumed format
+      provider = PaymentProvider.FAPSHI;
+      // Fapshi may include an external_id or reference; try common fields
+      externalId = body.external_id || body.externalId || body.reference || body.payment_id || body.paymentId;
+      transactionStatus = body.status || body.transaction_status || body.state;
+      transactionId = body.fapshi_transaction_id || body.id || body.transaction_id || body.transactionId;
+
+      // Optional: verify signature if FAPSHI_SECRET configured
+      const fSignature = request.headers.get("x-fapshi-signature") || body.signature;
+      const fSecret = process.env.FAPSHI_WEBHOOK_SECRET || "";
+      if (fSecret && fSignature) {
+        const payload = JSON.stringify(body);
+        const expected = crypto.createHmac("sha256", fSecret).update(payload).digest("hex");
+        if (expected !== fSignature) {
+          return NextResponse.json<ApiResponse>(
+            {
+              success: false,
+              error: { code: "INVALID_SIGNATURE", message: "Fapshi webhook signature mismatch" },
+              timestamp: new Date(),
+            },
+            { status: 401 }
+          );
+        }
       }
     } else {
       return NextResponse.json<ApiResponse>(

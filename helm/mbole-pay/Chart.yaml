@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mbole-pay
+description: Production Helm chart for Mbole Pay
+version: 0.1.0
+appVersion: "1.0.0"
+type: application

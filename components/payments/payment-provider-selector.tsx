@@ -29,6 +29,13 @@ export function PaymentProviderSelector({
           icon: "📱",
           features: ["USSD/SMS prompt", "No app required", "Instant feedback"],
         };
+      case "FAPSHI":
+        return {
+          name: "Fapshi",
+          description: "Accept payments via Fapshi (aggregated MTN/Orange)",
+          icon: "🧾",
+          features: ["Hosted links or API integration", "Unified webhook", "Sandbox & live keys"],
+        };
     }
   };
 

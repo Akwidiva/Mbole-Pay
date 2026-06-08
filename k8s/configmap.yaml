@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mbole-pay-config
+  namespace: mbole-pay
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  NEXTAUTH_URL: "https://mbole-pay.example.com"
+  EMAIL_HOST: "smtp.gmail.com"
+  EMAIL_PORT: "587"
+  EMAIL_SECURE: "false"
+  FAPSHI_BASE_URL: "https://api.fapshi.com"

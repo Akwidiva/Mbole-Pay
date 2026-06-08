@@ -13,21 +13,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { PaymentProvider } from "@/types/payments";
+import { PaymentFactory } from "@/lib/payments/payment-factory";
+import { PaymentProviderSelector } from "./payment-provider-selector";
 import { usePayment } from "@/hooks/use-payment";
 
 const paymentFormSchema = z.object({
   phoneNumber: z
     .string()
     .min(1, "Phone number is required")
-    .regex(
-      /^(\+237|\+221)?[679]\d{8}$/,
-      "Invalid phone number. Use +237XXXXXXXXX or local format"
-    ),
-  provider: z.literal(PaymentProvider.MTN_MOMO),
+    .regex(/^(\+237|\+221)?[679]\d{8}$/, "Invalid phone number. Use +237XXXXXXXXX or local format"),
 });
 
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
@@ -51,7 +50,8 @@ export function PaymentForm({
   defaultPhoneNumber,
   onPaymentInitialized,
 }: PaymentFormProps) {
-  const provider = PaymentProvider.MTN_MOMO;
+  const defaultProvider = PaymentFactory.getSupportedProviders()[0] || PaymentProvider.MTN_MOMO;
+  const [provider, setProvider] = useState<PaymentProvider>(defaultProvider as any);
   const { loading, error, initializePayment } = usePayment({
     onSuccess: (data) => {
       onPaymentInitialized?.(data.paymentId);
@@ -62,7 +62,6 @@ export function PaymentForm({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
       phoneNumber: defaultPhoneNumber || "",
-      provider,
     },
   });
 
@@ -139,6 +138,13 @@ export function PaymentForm({
                   </FormItem>
                 )}
               />
+
+              <div>
+                <PaymentProviderSelector
+                  onSelect={(p) => setProvider(p)}
+                  selectedProvider={provider}
+                />
+              </div>
 
               <div className="rounded-lg bg-amber-50 dark:bg-amber-950 p-3 text-sm">
                 <p className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
