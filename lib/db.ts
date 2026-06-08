@@ -29,5 +29,7 @@ try {
   throw new Error("Prisma Client failed to initialize.");
 }
 
+export const prisma = client;
+
 // Export the Prisma client instance as the default export.
 export default client;
