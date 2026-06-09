@@ -32,69 +32,70 @@
        5. Highlights: Secondary used to draw attention to financial wins
        ========================================== */
       
-    --primary: 156 35% 35%;
+    --primary: 226 71% 40%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 18 58% 51%;
+    --secondary: 160 84% 39%;
     --secondary-foreground: 0 0% 100%;
 
-    --accent: 200 7% 52%;
+    --accent: 189 95% 43%;
     --accent-foreground: 0 0% 100%;
 
-    --background: 0 0% 100%;
-    --foreground: 200 10% 20%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 200 10% 20%;
+    --card: 210 40% 99%;
+    --card-foreground: 222 20% 12%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 200 10% 20%;
+    --popover: 210 40% 99%;
+    --popover-foreground: 222 20% 12%;
 
-    --muted: 200 5% 92%;
-    --muted-foreground: 200 4% 48%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 222 10% 45%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 200 6% 90%;
-    --input: 200 6% 90%;
-    --ring: 156 35% 35%;
+    --border: 210 30% 92%;
+    --input: 210 30% 92%;
+    --ring: 226 71% 40%;
 
     --radius: 0.5rem;
+    /* Gradient stops for colorful cards and buttons (lightened) */
+    --card-start: 226 71% 96%; /* very light deep-blue tint */
+    --card-end: 160 84% 98%; /* very light emerald tint */
+    --soft-ivory: 210 40% 99%; /* whitish warm background */
   }
 
   .dark {
-    /* Forest Green - darker for dark mode */
-    --primary: 156 35% 42%;
+    /* Dark mode variants for the new palette */
+    --primary: 226 71% 50%;
     --primary-foreground: 0 0% 100%;
 
-    /* Burnt Orange - adjusted for dark mode */
-    --secondary: 18 65% 55%;
+    --secondary: 160 84% 45%;
     --secondary-foreground: 0 0% 10%;
 
-    /* Cool Grey - adjusted for dark mode */
-    --accent: 200 8% 60%;
+    --accent: 189 95% 46%;
     --accent-foreground: 0 0% 10%;
 
-    /* UI Elements for dark mode */
-    --background: 200 10% 12%;
-    --foreground: 0 0% 95%;
+    --background: 210 20% 8%;
+    --foreground: 222 47% 96%;
 
-    --card: 200 10% 12%;
-    --card-foreground: 0 0% 95%;
+    --card: 210 20% 10%;
+    --card-foreground: 222 20% 96%;
 
-    --popover: 200 10% 12%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 210 20% 10%;
+    --popover-foreground: 222 20% 96%;
 
-    --muted: 200 5% 22%;
-    --muted-foreground: 200 4% 60%;
+    --muted: 210 14% 18%;
+    --muted-foreground: 210 10% 60%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 200 5% 22%;
-    --input: 200 5% 22%;
-    --ring: 156 35% 42%;
+    --border: 210 14% 16%;
+    --input: 210 14% 16%;
+    --ring: 226 71% 50%;
   }
 }
 
@@ -117,4 +118,34 @@
   background-color: hsl(var(--background));
   background-image: radial-gradient(at 47% 33%, hsl(var(--primary) / 0.1) 0, transparent 59%),
     radial-gradient(at 82% 65%, hsl(var(--secondary) / 0.08) 0, transparent 55%);
+}
+
+/* Subtle colorful card gradient */
+.card-gradient {
+  background-image: linear-gradient(135deg, hsl(var(--card-start) / 0.6), hsl(var(--card-end) / 0.6));
+  background-blend-mode: overlay;
+}
+
+/* Button gradient utilities */
+.btn-primary-gradient {
+  background-image: linear-gradient(90deg, hsl(var(--primary) / 1), hsl(var(--secondary) / 0.95));
+  color: hsl(var(--primary-foreground));
+}
+
+.btn-secondary-gradient {
+  background-image: linear-gradient(90deg, hsl(var(--secondary) / 1), hsl(var(--primary) / 0.9));
+  color: hsl(var(--secondary-foreground));
+}
+
+/* Soft ivory backgrounds for larger surfaces */
+.bg-soft-ivory {
+  background-color: hsl(var(--soft-ivory));
+}
+
+/* Gradient text helper for stronger accents */
+.gradient-accent {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(90deg, hsl(var(--primary) / 1), hsl(var(--secondary) / 1));
 }

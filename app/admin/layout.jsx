@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(30,64,175,0.10),transparent_32%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.10),transparent_28%),linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] text-foreground">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.10),transparent_32%),radial-gradient(circle_at_top_right,hsl(var(--secondary)/0.10),transparent_28%),linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--card))_100%)] text-foreground">
       <div className="border-b border-white/40 bg-white/70 backdrop-blur-xl">
         <AdminNavbar />
       </div>

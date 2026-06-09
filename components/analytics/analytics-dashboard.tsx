@@ -344,7 +344,7 @@ export function AnalyticsDashboard({ groupId }: AnalyticsDashboardProps) {
                   dataKey="amount"
                   stroke="url(#trend-stroke)"
                   strokeWidth={3}
-                  dot={{ r: 3, strokeWidth: 2, fill: "#ffffff" }}
+                  dot={{ r: 3, strokeWidth: 2, fill: "hsl(var(--card))" }}
                   activeDot={{ r: 5, strokeWidth: 0 }}
                 />
                 <Area
