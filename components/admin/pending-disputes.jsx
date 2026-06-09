@@ -4,6 +4,9 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
+import { ShieldAlert } from "lucide-react"
+import { motion } from "framer-motion"
+import { containerVariants, itemVariants } from "@/lib/animations"
 
 export function PendingDisputes() {
   const [disputes, setDisputes] = useState([])
@@ -31,9 +34,10 @@ export function PendingDisputes() {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
+      <Card className="border-border/70 bg-card/90 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.2)] backdrop-blur">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle>Pending Disputes</CardTitle>
+          <ShieldAlert className="h-4 w-4 text-amber-500" />
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -47,30 +51,30 @@ export function PendingDisputes() {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="border-border/70 bg-card/90 shadow-[0_20px_40px_-24px_rgba(15,23,42,0.2)] backdrop-blur">
+      <CardHeader className="border-b border-border/60 pb-4">
         <CardTitle className="flex justify-between items-center">
           <span>Pending Disputes</span>
-          <Badge variant="destructive">{disputes.length}</Badge>
+          <Badge variant="destructive" className="rounded-full px-3 py-1">{disputes.length}</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <motion.div className="space-y-4 pt-4" variants={containerVariants} initial="initial" animate="animate">
           {disputes.length === 0 ? (
-            <p className="text-sm text-gray-500">No pending disputes</p>
+            <p className="text-sm text-muted-foreground">No pending disputes</p>
           ) : (
             disputes.map((dispute) => (
-              <div key={dispute.id} className="pb-3 border-b last:border-0">
-                <p className="font-medium text-sm">{dispute.title}</p>
-                <p className="text-xs text-gray-500 mt-1">{dispute.description}</p>
-                <div className="mt-2 flex justify-between text-xs">
-                  <Badge variant="outline">{dispute.group?.name}</Badge>
-                  <Badge>{dispute.status}</Badge>
+              <motion.div key={dispute.id} variants={itemVariants} whileHover={{ y: -3, scale: 1.01 }} transition={{ duration: 0.18 }} className="rounded-2xl border border-border/60 bg-white px-4 py-3 shadow-sm">
+                <p className="text-sm font-semibold text-foreground">{dispute.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{dispute.description}</p>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <Badge variant="outline" className="rounded-full">{dispute.group?.name}</Badge>
+                  <Badge className="rounded-full bg-amber-500/10 text-amber-700 hover:bg-amber-500/10">{dispute.status}</Badge>
                 </div>
-              </div>
+              </motion.div>
             ))
           )}
-        </div>
+        </motion.div>
       </CardContent>
     </Card>
   )

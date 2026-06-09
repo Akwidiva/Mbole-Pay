@@ -85,7 +85,7 @@ export function GroupsList() {
                     transition={{ duration: 0.3 }}
                     className="h-full"
                   >
-                    <Card className="border border-secondary/20 shadow-md hover:border-secondary/40 transition-colors">
+                    <Card className="border border-secondary/20 shadow-md hover:border-secondary/40 transition-colors rounded-2xl">
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
@@ -95,9 +95,9 @@ export function GroupsList() {
                                 {group.name.substring(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <div>
-                              <CardTitle className="text-xl">{group.name}</CardTitle>
-                              <CardDescription className="flex items-center mt-1">
+                              <div>
+                              <CardTitle className="text-2xl">{group.name}</CardTitle>
+                              <CardDescription className="flex items-center mt-1 text-sm md:text-base">
                                 <Users className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
                                 {group._count?.memberships || 0} members
                               </CardDescription>
@@ -169,13 +169,13 @@ export function GroupsList() {
                         </div>
                       </CardContent>
                       <CardFooter className="flex justify-between pt-4">
-                        <Button variant="outline" className="border-secondary text-secondary hover:bg-secondary/10 hover:border-secondary" asChild>
+                        <Button variant="outline" className="border-secondary text-secondary hover:bg-secondary/10 hover:border-secondary px-4 py-2 text-sm md:text-base" asChild>
                           <Link href={`/groups/${group.id}?tab=settings`}>
                             <Settings className="mr-2 h-4 w-4" />
                             Manage
                           </Link>
                         </Button>
-                        <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/85 font-bold" asChild>
+                        <Button className="bg-secondary text-secondary-foreground hover:bg-secondary/85 font-bold px-4 py-2 text-sm md:text-base" asChild>
                           <Link href={`/groups/${group.id}`}>
                             <ArrowUpRight className="mr-2 h-4 w-4" />
                             View Details

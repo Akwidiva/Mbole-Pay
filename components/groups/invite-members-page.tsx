@@ -30,13 +30,13 @@ export function InviteMembersPage() {
       return
     }
 
-    if (!selectedGroupId && groups.length > 0) {
-      setSelectedGroupId(groups[0].id)
+    if (!selectedGroupId && visibleGroups.length > 0) {
+      setSelectedGroupId(visibleGroups[0].id)
     }
-  }, [groups, searchParams, selectedGroupId])
+  }, [searchParams, selectedGroupId, visibleGroups])
 
-  const selectedGroup = groups.find((group) => group.id === selectedGroupId)
   const visibleGroups = groups.filter((group) => group.status !== "INACTIVE")
+  const selectedGroup = visibleGroups.find((group) => group.id === selectedGroupId)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()

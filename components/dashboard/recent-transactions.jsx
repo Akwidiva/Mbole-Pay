@@ -1,10 +1,15 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { format } from "date-fns"
 import { useContributions } from "@/hooks/use-contributions"
 import { Skeleton } from "@/components/ui/skeleton"
+import { motion } from "framer-motion"
+import { containerVariants, itemVariants } from "@/lib/animations"
 
 export function RecentTransactions() {
   const { contributions, loading } = useContributions()
@@ -42,7 +47,8 @@ export function RecentTransactions() {
   const recentTransactions = contributions.slice(0, 5)
 
   return (
-    <Card className="border-none shadow-md w-full">
+    <motion.div variants={containerVariants} initial="initial" animate="animate">
+      <Card className="border-border/60 rounded-2xl shadow-md w-full">
       <CardHeader>
         <CardTitle>Recent Contributions</CardTitle>
         <CardDescription>Your latest contribution activities across all groups.</CardDescription>
@@ -65,10 +71,7 @@ export function RecentTransactions() {
             </div>
           ) : (
             recentTransactions.map((contribution) => (
-              <div
-                key={contribution.id}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
-              >
+              <motion.div key={contribution.id} variants={itemVariants} whileHover={{ y: -4 }} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors">
                 <div className="flex items-center space-x-3 flex-1">
                   <Avatar className="h-8 w-8 border-2 border-muted flex-shrink-0">
                     <AvatarImage
@@ -84,7 +87,7 @@ export function RecentTransactions() {
                       {contribution.group?.name || 'Unknown Group'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(contribution.dueDate).toLocaleDateString()}
+                      {contribution.dueDate ? format(new Date(contribution.dueDate), 'PPP') : ''}
                     </p>
                   </div>
                 </div>
@@ -96,11 +99,17 @@ export function RecentTransactions() {
                     {getStatusDisplay(contribution.status)}
                   </Badge>
                 </div>
-              </div>
+              </motion.div>
             ))
           )}
         </div>
       </CardContent>
-    </Card>
+      <CardFooter className="pt-2">
+        <Button asChild variant="ghost" className="w-full">
+          <Link href="/transactions">View all transactions</Link>
+        </Button>
+      </CardFooter>
+      </Card>
+    </motion.div>
   )
 }

@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 import {
   Pagination,
   PaginationContent,
@@ -16,7 +16,15 @@ import {
 } from "@/components/ui/pagination"
 import { Button } from "@/components/ui/button"
 import { Eye } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from "@/components/ui/alert-dialog"
 import { motion } from "framer-motion"
+import { containerVariants, itemVariants, listRowVariants } from "@/lib/animations"
 import { Skeleton } from "@/components/ui/skeleton"
 import { format } from "date-fns"
 
@@ -55,6 +63,8 @@ export function TransactionsList() {
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
+  const [showDetails, setShowDetails] = useState(false)
+  const [selectedTransaction, setSelectedTransaction] = useState(null)
   const transactionsPerPage = 7
 
   useEffect(() => {
@@ -107,29 +117,40 @@ export function TransactionsList() {
     page * transactionsPerPage
   )
 
+  const mapTypeToVariant = (type) => {
+    switch ((type || "").toLowerCase()) {
+      case "contribution":
+        return "secondary"
+      case "payout":
+        return "destructive"
+      case "fee":
+        return "default"
+      default:
+        return "outline"
+    }
+  }
+
   const totalPages = Math.ceil(transactions.length / transactionsPerPage)
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Card>
+    <motion.div variants={containerVariants} initial="initial" animate="animate">
+      <motion.div variants={itemVariants} className="">
+        <Card className="rounded-2xl border-border/60 shadow-sm">
         <CardHeader>
           <CardTitle>Transaction History</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
+          <div className="overflow-x-auto">
+            <Table className="min-w-full">
+            <TableHeader className="bg-muted/5">
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Group</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Reference</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide">Date</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide">Group</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide">Type</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide">Amount</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide">Status</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide">Reference</TableHead>
+                <TableHead className="text-xs uppercase tracking-wide">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -137,7 +158,7 @@ export function TransactionsList() {
                 Array.from({ length: 5 }).map((_, i) => <TransactionRowSkeleton key={i} />)
               ) : paginatedTransactions.length > 0 ? (
                 paginatedTransactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
+                  <TableRow key={transaction.id} className="group hover:bg-muted/50 transition-colors hover:shadow-sm">
                     <TableCell>{format(new Date(transaction.createdAt), "dd/MM/yyyy")}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -149,15 +170,15 @@ export function TransactionsList() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={getTypeBadge(transaction.type)}>
+                      <Badge variant={mapTypeToVariant(transaction.type)} className={getTypeBadge(transaction.type)}>
                         {transaction.type}
                       </Badge>
                     </TableCell>
                     <TableCell
                       className={
-                        transaction.type === "payout" || transaction.type === "fine"
+                        (transaction.type === "payout" || transaction.type === "fine"
                           ? "text-red-600"
-                          : "text-green-600"
+                          : "text-green-600") + " font-mono"
                       }
                     >
                       {transaction.type === "payout" ? "+" : "-"}XAF {transaction.amount.toLocaleString()}
@@ -168,11 +189,19 @@ export function TransactionsList() {
                       </Badge>
                     </TableCell>
                     <TableCell>{transaction.reference}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon">
-                        <Eye className="h-5 w-5" />
-                      </Button>
-                    </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedTransaction(transaction)
+                            setShowDetails(true)
+                          }}
+                          aria-label={`View transaction ${transaction.reference}`}
+                        >
+                          <Eye className="h-5 w-5" />
+                        </Button>
+                      </TableCell>
                   </TableRow>
                 ))
               ) : (
@@ -183,7 +212,8 @@ export function TransactionsList() {
                 </TableRow>
               )}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         </CardContent>
       </Card>
       {totalPages > 1 && (
@@ -205,6 +235,47 @@ export function TransactionsList() {
           </PaginationContent>
         </Pagination>
       )}
+      <AlertDialog open={showDetails} onOpenChange={setShowDetails}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Transaction Details</AlertDialogTitle>
+            <AlertDialogDescription>
+              Details for the selected transaction.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {selectedTransaction ? (
+            <div className="space-y-4 mt-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Date</p>
+                <p className="font-medium">{format(new Date(selectedTransaction.createdAt), "PPpp")}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Group</p>
+                <p className="font-medium">{selectedTransaction.group?.name || "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Type</p>
+                <p className="font-medium">{selectedTransaction.type}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Amount</p>
+                <p className={selectedTransaction.type === "payout" || selectedTransaction.type === "fine" ? "text-red-600 font-semibold" : "text-green-600 font-semibold"}>
+                  {selectedTransaction.type === "payout" ? "+" : "-"}XAF {selectedTransaction.amount.toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Status</p>
+                <p className="font-medium">{selectedTransaction.status}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Reference</p>
+                <p className="font-mono text-sm">{selectedTransaction.reference}</p>
+              </div>
+            </div>
+          ) : null}
+        </AlertDialogContent>
+      </AlertDialog>
+    </motion.div>
     </motion.div>
   )
 }

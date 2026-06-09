@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { motion } from "framer-motion"
+import { itemVariants } from "@/lib/animations"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Trash2, UserCog } from "lucide-react"
 import {
@@ -201,67 +203,66 @@ export function MemberManagement({ groupId, currentUserRole }: MemberManagementP
             <p className="text-center text-muted-foreground py-8">No members yet</p>
           ) : (
             <div className="space-y-2">
-              {members.map((member) => (
-                <div
-                  key={member.userId}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={`/placeholder.svg?height=40&width=40`} />
-                      <AvatarFallback>
-                        {(member.user.name || member.user.email).substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm">{member.user.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{member.user.email}</p>
+              {members.map((member) => {
+                return (
+                  <div key={member.userId} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={`/placeholder.svg?height=40&width=40`} />
+                        <AvatarFallback>
+                          {(member.user.name || member.user.email).substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">{member.user.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{member.user.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {canManageMembers ? (
+                        <>
+                          <Select
+                            value={member.role}
+                            onValueChange={(value) =>
+                              handleUpdateRole(member.userId, value as "ADMIN" | "TREASURER" | "MEMBER")
+                            }
+                            disabled={updatingMember === member.userId}
+                          >
+                            <SelectTrigger className="w-[120px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="MEMBER">Member</SelectItem>
+                              <SelectItem value="TREASURER">Treasurer</SelectItem>
+                              <SelectItem value="ADMIN">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedMember(member)
+                              setShowRemoveConfirm(true)
+                            }}
+                            disabled={removingMember === member.userId}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            {removingMember === member.userId ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </>
+                      ) : (
+                        <Badge variant={getRoleBadgeVariant(member.role)}>
+                          {member.role}
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    {canManageMembers ? (
-                      <>
-                        <Select
-                          value={member.role}
-                          onValueChange={(value) =>
-                            handleUpdateRole(member.userId, value as "ADMIN" | "TREASURER" | "MEMBER")
-                          }
-                          disabled={updatingMember === member.userId}
-                        >
-                          <SelectTrigger className="w-[120px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="MEMBER">Member</SelectItem>
-                            <SelectItem value="TREASURER">Treasurer</SelectItem>
-                            <SelectItem value="ADMIN">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedMember(member)
-                            setShowRemoveConfirm(true)
-                          }}
-                          disabled={removingMember === member.userId}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          {removingMember === member.userId ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </>
-                    ) : (
-                      <Badge variant={getRoleBadgeVariant(member.role)}>
-                        {member.role}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </CardContent>

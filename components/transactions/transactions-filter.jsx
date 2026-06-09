@@ -12,7 +12,7 @@ export function TransactionsFilter() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   return (
-    <Card className="border-none shadow-md mt-6">
+    <Card className="border-border/60 rounded-2xl shadow-md mt-6">
       <CardContent className="p-4">
         <div className="flex flex-col space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">

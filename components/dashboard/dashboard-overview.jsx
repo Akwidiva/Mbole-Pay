@@ -76,7 +76,7 @@ export function DashboardOverview() {
             transition={{ duration: 0.3 }}
             className="h-full"
           >
-            <Card className={`border shadow-md hover:shadow-lg transition-shadow h-full ${card.borderColor}`}>
+            <Card className={`border shadow-md hover:shadow-lg transition-shadow h-full rounded-2xl ${card.borderColor}`}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
                 <motion.div
@@ -84,7 +84,10 @@ export function DashboardOverview() {
                   transition={{ duration: 0.2 }}
                   className={`h-8 w-8 rounded-full flex items-center justify-center ${card.iconClass}`}
                 >
-                  <card.icon className="h-4 w-4" />
+                  {(() => {
+                    const Icon = card.icon
+                    return <Icon className="h-4 w-4" />
+                  })()}
                 </motion.div>
               </CardHeader>
               <CardContent>
@@ -95,8 +98,8 @@ export function DashboardOverview() {
                   </>
                 ) : (
                   <>
-                    <div className="text-2xl font-bold">{card.value}</div>
-                    <p className="text-xs text-muted-foreground">{card.change}</p>
+                    <div className="text-3xl font-bold">{card.value}</div>
+                    <p className="text-sm text-muted-foreground">{card.change}</p>
                   </>
                 )}
               </CardContent>

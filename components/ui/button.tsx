@@ -46,6 +46,8 @@ export interface ButtonProps
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+    const hydrationProps = asChild ? {} : { suppressHydrationWarning: true }
+
     return (
       <motion.div
         variants={buttonMotionVariants}
@@ -57,6 +59,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         <Comp
           className={cn(buttonVariants({ variant, size, className }))}
           ref={ref}
+          {...hydrationProps}
           {...props}
         />
       </motion.div>

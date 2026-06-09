@@ -28,7 +28,7 @@ export async function GET() {
       include: {
         _count: {
           select: {
-            members: true,
+            memberships: true,
             contributions: true,
           },
         },
@@ -36,7 +36,13 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     })
 
-    return NextResponse.json(groups)
+    return NextResponse.json(
+      groups.map((group) => ({
+        ...group,
+        memberCount: group._count.memberships,
+        contributionCount: group._count.contributions,
+      }))
+    )
   } catch (error) {
     console.error("Error fetching groups:", error)
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })

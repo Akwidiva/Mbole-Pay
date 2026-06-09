@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { toast } from "sonner"
@@ -155,6 +156,13 @@ export function AuthForm({ mode, redirectPath = "/dashboard", onSuccess, classNa
             disabled={loading}
           />
         </motion.div>
+        {mode === "signin" && (
+          <motion.div variants={itemVariants} className="flex items-center justify-end">
+            <Link href="/forgot-password" className="text-sm font-medium text-primary transition hover:text-primary/80">
+              Forgot password?
+            </Link>
+          </motion.div>
+        )}
         {mode === "signup" && (
           <motion.div variants={itemVariants}>
             <Label htmlFor="confirm">Confirm Password</Label>
