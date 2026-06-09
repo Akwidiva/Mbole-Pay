@@ -1,0 +1,32 @@
+{
+  "annotations": {"list":[]},
+  "panels": [
+    {
+      "type": "graph",
+      "title": "HTTP Requests (total)",
+      "targets": [
+        {"expr": "sum(rate(nodejs_http_server_requests_seconds_count[1m])) by (route)", "legendFormat":"{{route}}"}
+      ],
+      "gridPos": {"x":0,"y":0,"w":24,"h":9}
+    },
+    {
+      "type": "graph",
+      "title": "CPU Usage",
+      "targets": [
+        {"expr": "avg(rate(process_cpu_seconds_total[1m])) by (instance)", "legendFormat":"{{instance}}"}
+      ],
+      "gridPos": {"x":0,"y":9,"w":12,"h":6}
+    },
+    {
+      "type": "graph",
+      "title": "Memory RSS",
+      "targets": [
+        {"expr": "process_resident_memory_bytes", "legendFormat":"rss"}
+      ],
+      "gridPos": {"x":12,"y":9,"w":12,"h":6}
+    }
+  ],
+  "schemaVersion": 27,
+  "title": "Mbole Pay - Overview",
+  "version": 1
+}

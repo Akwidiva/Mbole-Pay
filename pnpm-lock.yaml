@@ -14,6 +14,9 @@ importers:
       '@opentelemetry/auto-instrumentations-node':
         specifier: ^0.40.0
         version: 0.40.3(@opentelemetry/api@1.9.1)
+      '@opentelemetry/exporter-trace-otlp-http':
+        specifier: ^0.38.0
+        version: 0.38.0(@opentelemetry/api@1.9.1)
       '@opentelemetry/sdk-node':
         specifier: ^0.38.0
         version: 0.38.0(@opentelemetry/api@1.9.1)

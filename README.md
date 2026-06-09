@@ -345,6 +345,41 @@ These are the next technologies I would add for this app, in priority order.
 - Add: Prometheus, Grafana, OpenTelemetry, and centralized logs like Loki.
 - Why: once real users are on the app, you need to see failed payments, slow pages, webhook failures, and auth errors quickly.
 - For this project: useful right away because the app already has payments, notifications, and background-style API routes.
+ 
+ How to enable and use observability locally (quickstart)
+
+ 1. Start the observability stack (Prometheus, Grafana, Loki, OTEL Collector):
+
+ ```bash
+ docker compose -f observability/docker-compose.observability.yml up -d
+ ```
+
+2. Start the app normally for development:
+
+```bash
+pnpm dev
+```
+
+If you later wire OTEL into a production Node runtime, set `OTEL_ENABLED=true` and point `OTEL_EXPORTER_OTLP_ENDPOINT` at your collector. Keep that out of `next dev` in this repo to avoid bundling issues.
+
+ 3. Prometheus will scrape metrics from `http://host.docker.internal:3000/api/metrics` (configured in `observability/prometheus/prometheus.yml`).
+
+ 4. Open Grafana at `http://localhost:3001` (admin/admin). The provisioning will add Prometheus and Loki datasources and a basic "Mbole Pay - Overview" dashboard.
+
+ 5. Logs: `loki` + `promtail` are included — if you want to send application logs to Loki, configure your app logger to push to the Loki HTTP API or write logs to STDOUT and configure `promtail` to collect them.
+
+ What admins will see
+
+- Metrics (Prometheus/Grafana): request rates, latency histograms (if added), basic process metrics (CPU, memory), and any custom metrics you add via `prom-client` in API routes (the app already exposes `/api/metrics`). Use Grafana to create alerts on high error rates or increased payment-failure counts.
+- Traces (OpenTelemetry): trace spans for server requests, outgoing HTTP calls, and DB calls. In the quickstart traces are logged by the collector; in production you should set the OTLP exporter to your tracing backend (e.g., Jaeger, Tempo, Honeycomb).
+- Logs (Loki + Grafana): search logs by timeframe, correlate log lines with traces using trace IDs (when your logger includes the trace id). Use Grafana Explore to run log queries and link to dashboards.
+
+ Production notes
+
+- Use a managed Prometheus/Grafana or run scaled instances. Configure secure access and basic auth for Grafana.
+- Store OTEL_EXPORTER_OTLP_ENDPOINT, Prometheus rules, and Loki credentials in your secret manager.
+- Add Prometheus alerting rules (e.g., alert on sustained high 5xx rate, webhook backlog growth, worker failures).
+
 
 #### 2. Secrets Management - Must have
 - Add: Vault, cloud secrets manager, or Kubernetes secrets with a stricter process.
@@ -376,7 +411,7 @@ These are the next technologies I would add for this app, in priority order.
 ## ✅ Implemented helpers (you can run now)
 
 - **Prometheus metrics endpoint**: `GET /api/metrics` — available for Prometheus to scrape using `prom-client`.
-- **OpenTelemetry starter**: `lib/telemetry/init-otel.ts` — enable auto-instrumentation by setting `OTEL_ENABLED=true` and providing OTLP exporter env vars.
+- **OpenTelemetry starter**: `lib/telemetry/init-otel.ts` — helper for a production Node runtime if you want to wire OTEL later.
 - **Background queue skeleton**: `lib/queue/worker.ts` (BullMQ) — uses `REDIS_URL` and provides a starter worker for email jobs.
 
 Quick local steps:

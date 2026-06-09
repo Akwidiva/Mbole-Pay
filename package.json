@@ -80,6 +80,7 @@
     "ioredis": "^5.3.2",
     "@opentelemetry/sdk-node": "^0.38.0",
     "@opentelemetry/auto-instrumentations-node": "^0.40.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.38.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
