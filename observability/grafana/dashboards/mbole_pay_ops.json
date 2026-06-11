@@ -1,0 +1,77 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Payment Webhook Failures (10m)",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS" },
+      "targets": [
+        { "expr": "sum(increase(mbole_pay_payment_webhook_events_total{result=\"failed\"}[10m]))", "legendFormat": "failed" }
+      ],
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 7 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Payment Webhook Outcomes",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS" },
+      "targets": [
+        { "expr": "sum(rate(mbole_pay_payment_webhook_events_total[5m])) by (result)", "legendFormat": "{{result}}" }
+      ],
+      "gridPos": { "x": 8, "y": 0, "w": 16, "h": 7 }
+    },
+    {
+      "type": "stat",
+      "title": "Auth Sign-in Failures (10m)",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS" },
+      "targets": [
+        { "expr": "sum(increase(mbole_pay_auth_signin_events_total{result=\"failed\"}[10m]))", "legendFormat": "failed" }
+      ],
+      "gridPos": { "x": 0, "y": 7, "w": 8, "h": 7 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Auth Sign-in Outcomes",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS" },
+      "targets": [
+        { "expr": "sum(rate(mbole_pay_auth_signin_events_total[5m])) by (result)", "legendFormat": "{{result}}" }
+      ],
+      "gridPos": { "x": 8, "y": 7, "w": 16, "h": 7 }
+    },
+    {
+      "type": "stat",
+      "title": "API 5xx Errors (5m)",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS" },
+      "targets": [
+        { "expr": "sum(increase(mbole_pay_api_error_events_total{status=~\"5..\"}[5m]))", "legendFormat": "5xx" }
+      ],
+      "gridPos": { "x": 0, "y": 14, "w": 8, "h": 7 }
+    },
+    {
+      "type": "timeseries",
+      "title": "API Errors by Route",
+      "datasource": { "type": "prometheus", "uid": "PROMETHEUS" },
+      "targets": [
+        { "expr": "sum(rate(mbole_pay_api_error_events_total[5m])) by (route, status)", "legendFormat": "{{route}} {{status}}" }
+      ],
+      "gridPos": { "x": 8, "y": 14, "w": 16, "h": 7 }
+    },
+    {
+      "type": "logs",
+      "title": "Mbole Pay Logs",
+      "datasource": { "type": "loki", "uid": "LOKI" },
+      "targets": [
+        { "expr": "{service=\"mbole-pay\"}", "refId": "A" }
+      ],
+      "gridPos": { "x": 0, "y": 21, "w": 24, "h": 10 }
+    }
+  ],
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": ["mbole-pay", "observability", "payments"],
+  "templating": { "list": [] },
+  "time": { "from": "now-24h", "to": "now" },
+  "title": "Mbole Pay - Operations",
+  "uid": "mbole-pay-ops",
+  "version": 1
+}

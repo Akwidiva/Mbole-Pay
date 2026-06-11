@@ -5,6 +5,10 @@ import { PaymentFactory } from "@/lib/payments/payment-factory";
 import { PaymentStatus, PaymentProvider, ApiResponse, InitializePaymentResponse } from "@/types/payments";
 import { userHasPermission } from "@/lib/rbac";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { createLogger } from "@/lib/observability/logger";
+import { paymentInitializationEvents, recordApiError } from "@/lib/observability/metrics";
+
+const logger = createLogger("payments.initialize")
 
 /**
  * POST /api/payments/initialize
@@ -22,8 +26,11 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
+    logger.info("Payment initialization request received")
 
     if (!session?.user?.email) {
+      paymentInitializationEvents.inc({ provider: "unknown", result: "unauthorized" })
+      logger.warn("Payment initialization rejected: unauthorized")
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -42,6 +49,8 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!groupId || !contributionId || !phoneNumber) {
+      paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "validation_error" })
+      logger.warn("Payment initialization rejected: missing required fields", { groupId, contributionId, phoneNumber })
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -60,6 +69,8 @@ export async function POST(request: NextRequest) {
     // Validate phone number format
     const phoneRegex = /^(\+237|\+221)?[679]\d{8}$/;
     if (!phoneRegex.test(phoneNumber.replace(/\s/g, ""))) {
+      paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "invalid_phone" })
+      logger.warn("Payment initialization rejected: invalid phone", { phoneNumber })
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -79,6 +90,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
+      paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "user_not_found" })
+      logger.warn("Payment initialization rejected: user not found", { email: session.user.email })
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -95,6 +108,8 @@ export async function POST(request: NextRequest) {
     // Check permission to make payments (requires payments:create)
     const hasPermission = await userHasPermission(user.id, groupId, "payments:create");
     if (!hasPermission) {
+      paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "forbidden" })
+      logger.warn("Payment initialization rejected: forbidden", { userId: user.id, groupId })
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -118,6 +133,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (!contribution) {
+      paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "contribution_not_found" })
+      logger.warn("Payment initialization rejected: contribution not found", { contributionId })
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -132,6 +149,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (contribution.groupId !== groupId) {
+      paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "group_mismatch" })
+      logger.warn("Payment initialization rejected: group mismatch", { contributionId, groupId })
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -146,6 +165,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (contribution.userId !== user.id) {
+      paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "unauthorized" })
+      logger.warn("Payment initialization rejected: unauthorized contribution", { contributionId, userId: user.id })
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -161,6 +182,8 @@ export async function POST(request: NextRequest) {
 
     // Check if contribution is already paid
     if (contribution.status === "PAID") {
+      paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "already_paid" })
+      logger.warn("Payment initialization rejected: already paid", { contributionId })
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -178,6 +201,8 @@ export async function POST(request: NextRequest) {
     const paymentAmount = amount || contribution.amount;
 
     if (paymentAmount <= 0) {
+      paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "invalid_amount" })
+      logger.warn("Payment initialization rejected: invalid amount", { paymentAmount })
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -200,6 +225,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingPayment) {
+      paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "duplicate" })
+      logger.warn("Payment initialization rejected: duplicate pending payment", { contributionId, existingPaymentId: existingPayment.id })
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -256,6 +283,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json<ApiResponse<InitializePaymentResponse>>(
       {
         success: true,
+        paymentInitializationEvents.inc({ provider: String(resolvedProvider), result: "success" })
+        logger.info("Payment initialization succeeded", { paymentId: paymentRecord.id, provider: resolvedProvider })
+
         data: {
           paymentId: paymentRecord.id,
           referenceId: providerRef,
@@ -273,6 +303,9 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Payment initialization error:", error);
 
+    paymentInitializationEvents.inc({ provider: "unknown", result: "error" })
+    recordApiError("/api/payments/initialize", 500)
+    logger.error("Payment initialization error", { error: String(error) })
     return NextResponse.json<ApiResponse>(
       {
         success: false,

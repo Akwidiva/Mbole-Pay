@@ -366,18 +366,20 @@ If you later wire OTEL into a production Node runtime, set `OTEL_ENABLED=true` a
 
  4. Open Grafana at `http://localhost:3001` (admin/admin). The provisioning will add Prometheus and Loki datasources and a basic "Mbole Pay - Overview" dashboard.
 
- 5. Logs: `loki` + `promtail` are included — if you want to send application logs to Loki, configure your app logger to push to the Loki HTTP API or write logs to STDOUT and configure `promtail` to collect them.
+ 5. Logs: set `LOKI_URL=http://localhost:3100` in your app environment to push structured logs to Loki with the built-in logger. If you prefer stdout collection, keep the logger as-is and have `promtail` scrape container logs instead.
 
  What admins will see
 
 - Metrics (Prometheus/Grafana): request rates, latency histograms (if added), basic process metrics (CPU, memory), and any custom metrics you add via `prom-client` in API routes (the app already exposes `/api/metrics`). Use Grafana to create alerts on high error rates or increased payment-failure counts.
 - Traces (OpenTelemetry): trace spans for server requests, outgoing HTTP calls, and DB calls. In the quickstart traces are logged by the collector; in production you should set the OTLP exporter to your tracing backend (e.g., Jaeger, Tempo, Honeycomb).
-- Logs (Loki + Grafana): search logs by timeframe, correlate log lines with traces using trace IDs (when your logger includes the trace id). Use Grafana Explore to run log queries and link to dashboards.
+- Logs (Loki + Grafana): search logs by timeframe, correlate log lines with traces using trace IDs (when your logger includes the trace id). Use Grafana Explore to run log queries and link to dashboards. The built-in logger sends JSON logs to Loki when `LOKI_URL` is set.
 
  Production notes
 
 - Use a managed Prometheus/Grafana or run scaled instances. Configure secure access and basic auth for Grafana.
 - Store OTEL_EXPORTER_OTLP_ENDPOINT, Prometheus rules, and Loki credentials in your secret manager.
+
+See `SECRETS.md` for recommended secrets management workflows (local `.env.local`, Kubernetes Secrets, Helm values, GitHub Actions, SealedSecrets, and Vault).
 - Add Prometheus alerting rules (e.g., alert on sustained high 5xx rate, webhook backlog growth, worker failures).
 
 

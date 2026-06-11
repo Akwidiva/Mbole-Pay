@@ -3,6 +3,10 @@ import prisma from "@/lib/db";
 import { PaymentFactory } from "@/lib/payments/payment-factory";
 import { PaymentStatus, PaymentProvider, ApiResponse } from "@/types/payments";
 import crypto from "crypto";
+import { createLogger } from "@/lib/observability/logger";
+import { paymentWebhookEvents, recordApiError } from "@/lib/observability/metrics";
+
+const logger = createLogger("payments.webhook")
 
 /**
  * POST /api/payments/webhook
@@ -13,6 +17,7 @@ import crypto from "crypto";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    logger.info("Webhook received", { source: body?.source || body?.gateway || "unknown" })
 
     // Determine which provider sent the webhook
     let provider: PaymentProvider;
@@ -44,6 +49,8 @@ export async function POST(request: NextRequest) {
         .digest("hex");
 
       if (signature !== expectedSignature) {
+        paymentWebhookEvents.inc({ provider, result: "invalid_signature" })
+        logger.warn("Webhook rejected: invalid Orange Money signature")
         return NextResponse.json<ApiResponse>(
           {
             success: false,
@@ -71,6 +78,8 @@ export async function POST(request: NextRequest) {
         const payload = JSON.stringify(body);
         const expected = crypto.createHmac("sha256", fSecret).update(payload).digest("hex");
         if (expected !== fSignature) {
+          paymentWebhookEvents.inc({ provider, result: "invalid_signature" })
+          logger.warn("Webhook rejected: invalid Fapshi signature")
           return NextResponse.json<ApiResponse>(
             {
               success: false,
@@ -82,6 +91,8 @@ export async function POST(request: NextRequest) {
         }
       }
     } else {
+      paymentWebhookEvents.inc({ provider: "unknown", result: "unknown_provider" })
+      logger.warn("Webhook rejected: unknown provider", { body })
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -106,7 +117,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (!payment) {
-      console.warn(`Payment not found for externalId: ${externalId}`);
+      paymentWebhookEvents.inc({ provider, result: "payment_not_found" })
+      logger.warn("Payment not found for webhook externalId", { externalId, provider })
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -122,9 +134,8 @@ export async function POST(request: NextRequest) {
 
     // Verify provider matches
     if (payment.provider !== provider) {
-      console.warn(
-        `Provider mismatch: payment has ${payment.provider}, webhook from ${provider}`
-      );
+      paymentWebhookEvents.inc({ provider, result: "provider_mismatch" })
+      logger.warn("Webhook provider mismatch", { paymentId: payment.id, expected: payment.provider, provider })
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -179,14 +190,14 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      console.log(
-        `Contribution ${payment.contributionId} marked as PAID for user ${payment.userId}`
-      );
+      paymentWebhookEvents.inc({ provider, result: "completed" })
+      logger.info("Contribution marked as PAID", { contributionId: payment.contributionId, userId: payment.userId })
     }
 
     // If payment failed, increment retry count and log error
     if (updatedStatus === PaymentStatus.FAILED) {
       const newRetryCount = payment.retryCount + 1;
+      paymentWebhookEvents.inc({ provider, result: "failed" })
       await prisma.payment.update({
         where: { id: payment.id },
         data: {
@@ -196,9 +207,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (newRetryCount >= 3) {
-        console.error(
-          `Payment ${payment.id} failed after 3 retries. Manual intervention needed.`
-        );
+        logger.error("Payment failed after 3 retries", { paymentId: payment.id, provider, retryCount: newRetryCount })
       }
     }
 
@@ -216,7 +225,9 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error: any) {
-    console.error("Webhook processing error:", error);
+    paymentWebhookEvents.inc({ provider: "unknown", result: "error" })
+    recordApiError("/api/payments/webhook", 500)
+    logger.error("Webhook processing error", { error: String(error) })
 
     return NextResponse.json<ApiResponse>(
       {

@@ -1,9 +1,9 @@
-version: '3.8'
 services:
   prometheus:
     image: prom/prometheus:latest
     volumes:
-      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
     ports:
       - 9090:9090
 
@@ -12,8 +12,8 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
-      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - 3001:3000
     depends_on:
@@ -38,4 +38,4 @@ services:
       - 4317:4317 # OTLP gRPC
       - 55681:55681
     volumes:
-      - ./observability/otel/collector-config.yml:/etc/otel-collector/config.yml:ro
+      - ./otel/collector-config.yml:/etc/otel-collector/config.yml:ro

@@ -4,6 +4,10 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from '@/lib/db'
+import { createLogger } from "@/lib/observability/logger";
+import { authSignInEvents } from "@/lib/observability/metrics";
+
+const logger = createLogger("auth.nextauth")
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -19,18 +23,27 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) {
+          authSignInEvents.inc({ provider: "credentials", result: "failed", role: "unknown" })
+          logger.warn("Credentials sign-in rejected: missing email or password")
           throw new Error("Email and password are required")
         }
 
         const user = await prisma.user.findUnique({ where: { email: credentials.email } })
         if (!user?.password) {
+          authSignInEvents.inc({ provider: "credentials", result: "failed", role: "unknown" })
+          logger.warn("Credentials sign-in rejected: account not found", { email: credentials.email })
           throw new Error("Email/password account not found")
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.password)
         if (!isValid) {
+          authSignInEvents.inc({ provider: "credentials", result: "failed", role: user.role })
+          logger.warn("Credentials sign-in rejected: invalid password", { email: credentials.email, role: user.role })
           throw new Error("Invalid email or password")
         }
+
+        authSignInEvents.inc({ provider: "credentials", result: "success", role: user.role })
+        logger.info("Credentials sign-in succeeded", { email: credentials.email, role: user.role })
 
         return {
           id: user.id,
@@ -49,7 +62,7 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, profile }: any) {
       try {
         if (!user?.email) {
-          console.error("SignIn: No email provided", user)
+          logger.warn("SignIn callback rejected: no email provided", { user })
           return false
         }
         const dbUser = await prisma.user.upsert({
@@ -69,7 +82,7 @@ export const authOptions: NextAuthOptions = {
         (user as any).role = dbUser.role;
         return true;
       } catch (e) {
-        console.error("SignIn callback error:", e);
+        logger.error("SignIn callback error", { error: String(e) })
         // Still allow sign in even if DB operation fails
         return true
       }

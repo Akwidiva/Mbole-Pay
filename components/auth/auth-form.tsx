@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -21,7 +20,6 @@ interface AuthFormProps {
 }
 
 export function AuthForm({ mode, redirectPath = "/dashboard", onSuccess, className }: AuthFormProps) {
-  const router = useRouter()
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
@@ -32,7 +30,19 @@ export function AuthForm({ mode, redirectPath = "/dashboard", onSuccess, classNa
 
   const finish = () => {
     if (redirectPath) {
-      router.push(redirectPath)
+      window.location.assign(redirectPath)
+    }
+    onSuccess?.()
+  }
+
+  const finishWithRoleRedirect = async () => {
+    try {
+      const sessionResponse = await fetch("/api/auth/session")
+      const session = await sessionResponse.json().catch(() => null)
+      const targetPath = session?.user?.role === "SUPER_ADMIN" ? "/admin" : redirectPath
+      window.location.assign(targetPath)
+    } catch {
+      finish()
     }
     onSuccess?.()
   }
@@ -97,7 +107,7 @@ export function AuthForm({ mode, redirectPath = "/dashboard", onSuccess, classNa
         setError("Invalid email or password")
       } else if (result?.ok) {
         toast.success("Signed in!")
-        finish()
+        await finishWithRoleRedirect()
       }
     } catch (err: any) {
       setError(err.message || "Signin failed")

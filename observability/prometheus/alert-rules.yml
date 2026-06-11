@@ -1,0 +1,29 @@
+groups:
+  - name: mbole-pay-alerts
+    rules:
+      - alert: FailedPaymentWebhooksSpike
+        expr: sum(increase(mbole_pay_payment_webhook_events_total{result="failed"}[10m])) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Failed payment webhooks are spiking"
+          description: "More than 3 payment webhook failures occurred in the last 10 minutes. Check provider connectivity and webhook signatures."
+
+      - alert: Api5xxSpike
+        expr: sum(increase(mbole_pay_api_error_events_total{status=~"5.."}[5m])) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "5xx errors are spiking"
+          description: "The app has emitted more than 5 5xx API errors in the last 5 minutes. Inspect the Grafana logs and route traces."
+
+      - alert: AuthSigninFailuresSpike
+        expr: sum(increase(mbole_pay_auth_signin_events_total{result="failed"}[10m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Auth sign-in failures are rising"
+          description: "Sign-in failures are above normal. Check auth provider health, password errors, and account lockout patterns."

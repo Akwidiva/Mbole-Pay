@@ -2,6 +2,10 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import prisma from "@/lib/db"
+import { createLogger } from "@/lib/observability/logger"
+import { recordApiError } from "@/lib/observability/metrics"
+
+const logger = createLogger("admin.groups")
 
 /**
  * GET /api/admin/groups
@@ -12,6 +16,7 @@ export async function GET() {
     const session = await getServerSession(authOptions)
     
     if (!session?.user?.email) {
+      logger.warn("Admin groups request rejected: unauthorized")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -20,6 +25,7 @@ export async function GET() {
     })
 
     if (user?.role !== "SUPER_ADMIN") {
+      logger.warn("Admin groups request rejected: forbidden", { email: session.user.email, role: user?.role })
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -44,7 +50,8 @@ export async function GET() {
       }))
     )
   } catch (error) {
-    console.error("Error fetching groups:", error)
+    recordApiError("/api/admin/groups", 500)
+    logger.error("Error fetching groups", { error: String(error) })
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
 }
