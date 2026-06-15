@@ -1,52 +1,160 @@
-is should show t# 🎯 Mbole Pay - MVP Launch May 31, 2026
+# 🎯 Mbole Pay - MVP Launch May 31, 2026
 
 **Status:** 95% Complete | 5 Core Features Built | Ready to Ship  
 **Tech Stack:** Next.js 14 | React 18 | TypeScript | Prisma | NextAuth | Tailwind  
-**Database:** PostgreSQL (production) | SQLite (dev)  
+**Database:** PostgreSQL (production and development)  
 **Deployment:** Docker | Kubernetes | GitHub Actions CI/CD
 
 ---
 
-## 🚀 QUICK START
+## 🚀 RUN EVERYTHING LOCALLY (STEP-BY-STEP)
 
-### Development
+Follow these steps in order. This is the fastest path to run all important technologies locally.
+
+### 0) Prerequisites
+Install these first:
+- Node.js 18+ and npm
+- pnpm
+- Docker Desktop (must be running)
+
+Check:
 ```bash
-# Install dependencies
-pnpm install
-
-# Add recharts (for analytics)
-pnpm add recharts
-
-# Run dev server
-pnpm dev
-
-# Open http://localhost:3000
+node -v
+npm -v
+pnpm -v
+docker --version
 ```
 
-### Database
+### 1) Install dependencies
 ```bash
-# Apply migrations
-npx prisma migrate dev
+pnpm install
+```
 
-# View data
+### 2) Start infrastructure (PostgreSQL + Redis)
+```bash
+docker compose up -d postgres redis
+```
+
+This starts:
+- PostgreSQL on `localhost:5432`
+- Redis on `localhost:6379`
+
+### 3) Configure environment
+Create/update `.env.local` with at least:
+```env
+DATABASE_URL="postgresql://mbole:mbole_password@localhost:5432/mbole_pay"
+REDIS_URL="redis://localhost:6379"
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="change-me-to-a-random-secret-key"
+```
+
+### 4) Generate Prisma client (required)
+```bash
+npx prisma generate
+```
+
+### 5) Run database migrations
+```bash
+npx prisma migrate dev
+```
+
+(Optional seed, if needed by your flow):
+```bash
+npx prisma db seed
+```
+
+### 6) Start the app
+```bash
+pnpm dev
+```
+
+Open:
+- App: `http://localhost:3000`  
+(If 3000 is busy, Next.js will move to 3001 and print the URL.)
+
+### 7) (Optional) Start observability stack
+If you want Grafana/Prometheus/Loki locally:
+```bash
+docker compose -f observability/docker-compose.observability.yml up -d
+```
+
+Open:
+- Grafana: `http://localhost:3001` (admin/admin)
+- Prometheus: `http://localhost:9090`
+- Loki: `http://localhost:3100`
+
+### 8) Verify everything is running
+
+Core:
+- App UI opens and loads
+- API health: `http://localhost:3000/api/health`
+- Metrics endpoint: `http://localhost:3000/api/metrics`
+
+Data:
+- PostgreSQL container is up:
+```bash
+docker ps
+```
+- Prisma Studio opens:
+```bash
 npx prisma studio
 ```
 
-### Build & Deploy
-```bash
-# Build for production
-pnpm build
+Queue:
+- Redis container is up (`docker ps`)
+- `REDIS_URL` is set correctly
+- Payment initialize flow can enqueue retry job via app API route
 
-# Build and run locally with Docker
+---
+
+### Quick start modes
+
+#### Mode A: Core app only (recommended first run)
+1. `pnpm install`
+2. `docker compose up -d postgres redis`
+3. Set `.env.local`
+4. `npx prisma generate`
+5. `npx prisma migrate dev`
+6. `pnpm dev`
+
+#### Mode B: Core app + Observability
+Run Mode A, then:
+```bash
+docker compose -f observability/docker-compose.observability.yml up -d
+```
+
+#### Mode C: Build production image locally
+```bash
 docker compose up --build
 ```
 
-### Production Deployment
-- Build the container image with `Dockerfile`
-- Push image to GHCR in CI
-- Deploy to Kubernetes with Helm for atomic releases and HPA
-- Use a managed PostgreSQL database and ingress controller
-- Store `DATABASE_URL`, `NEXTAUTH_SECRET`, SMTP, and Fapshi credentials in your secret manager
+---
+
+### Common fixes (important)
+
+#### Prisma Client failed to initialize
+Run:
+```bash
+npx prisma generate
+```
+
+#### Database connection error
+- Verify `DATABASE_URL` in `.env.local`
+- Ensure PostgreSQL container is running:
+```bash
+docker compose up -d postgres
+```
+
+#### Redis connection error
+- Verify `REDIS_URL=redis://localhost:6379`
+- Ensure Redis container is running:
+```bash
+docker compose up -d redis
+```
+
+#### Port already in use
+If 3000 is in use, Next.js auto-switches to 3001.
+Or stop old process and rerun.
 
 
 ---
@@ -337,94 +445,133 @@ vercel deploy --prod
 # Run: npx prisma migrate deploy
 ```
 
-### Next Production Additions
+### Implemented Production Capabilities
 
-These are the next technologies I would add for this app, in priority order.
+Production operational guide (implemented with BullMQ + Redis):
 
-#### 1. Observability - Must have
-- Add: Prometheus, Grafana, OpenTelemetry, and centralized logs like Loki.
-- Why: once real users are on the app, you need to see failed payments, slow pages, webhook failures, and auth errors quickly.
-- For this project: useful right away because the app already has payments, notifications, and background-style API routes.
- 
- How to enable and use observability locally (quickstart)
+1) Queue modules added
+- `lib/queue/connection.ts`
+  - Central Redis connection settings via `REDIS_URL` with BullMQ-safe options.
+- `lib/queue/jobs.ts`
+  - Typed job names and payloads:
+    - `notification.process`
+    - `payment.retry`
+    - `report.generate`
+    - `scheduler.tick`
+- `lib/queue/queues.ts`
+  - Queue + QueueEvents instances for:
+    - notifications
+    - payment retries
+    - reports
+    - scheduler
+- `lib/queue/enqueue.ts`
+  - Producer helpers:
+    - `enqueueNotification`
+    - `enqueuePaymentRetry`
+    - `enqueueReportGeneration`
+    - `enqueueSchedulerTick`
+- `lib/queue/workers.ts`
+  - Worker implementations for all four queues with concurrency and event logging.
+- `lib/queue/bootstrap.ts`
+  - Safe one-time worker bootstrap per Node process using global guard.
+- `lib/queue/worker.ts`
+  - Legacy email queue worker kept compatible with the shared queue connection.
 
- 1. Start the observability stack (Prometheus, Grafana, Loki, OTEL Collector):
+2) End-to-end producer integration completed
+- `app/api/payments/initialize/route.ts`
+  - After successful payment initialization and DB status update to `PROCESSING`, app enqueues a safety retry job:
+  - queue: `payment.retry`
+  - reason: `post_initialize_safety_check`
 
- ```bash
- docker compose -f observability/docker-compose.observability.yml up -d
- ```
+3) Environment variables
+- Required:
+```env
+REDIS_URL=redis://localhost:6379
+```
+- Existing app DB/auth/payment secrets remain unchanged.
 
-2. Start the app normally for development:
+4) Runtime behavior and reliability defaults
+- Jobs are configured with:
+  - retries (`attempts`)
+  - exponential backoff
+  - auto cleanup of old completed/failed jobs (`removeOnComplete`, `removeOnFail`)
+- Workers log:
+  - completed jobs
+  - failed jobs
+  - worker-level errors
 
+5) Local runbook
+- Start Redis (example with Docker):
+```bash
+docker run --name mbole-redis -p 6379:6379 -d redis:7-alpine
+```
+- Generate Prisma client (required before app boot if missing):
+```bash
+npx prisma generate
+```
+- Start app:
 ```bash
 pnpm dev
 ```
+- Start queue workers from server runtime bootstrap (already available in code path), or run explicit worker process if you choose to wire one as a separate entrypoint.
 
-If you later wire OTEL into a production Node runtime, set `OTEL_ENABLED=true` and point `OTEL_EXPORTER_OTLP_ENDPOINT` at your collector. Keep that out of `next dev` in this repo to avoid bundling issues.
+6) Recommended production pattern
+- Run workers as dedicated process(es), separate from web API pods.
+- Scale independently:
+  - API pods for HTTP throughput
+  - Worker pods for async throughput
+- Keep Redis highly available and monitor:
+  - queue depth
+  - failure rate
+  - retry volume
+  - processing latency
 
- 3. Prometheus will scrape metrics from `http://host.docker.internal:3000/api/metrics` (configured in `observability/prometheus/prometheus.yml`).
+7) Failure handling guidance
+- If Redis is unavailable:
+  - enqueue operations fail fast and should be logged/observed.
+  - retry via API/application logic where appropriate.
+- For payment retries:
+  - keep idempotent provider reconciliation to prevent duplicate actions.
 
- 4. Open Grafana at `http://localhost:3001` (admin/admin). The provisioning will add Prometheus and Loki datasources and a basic "Mbole Pay - Overview" dashboard.
-
- 5. Logs: set `LOKI_URL=http://localhost:3100` in your app environment to push structured logs to Loki with the built-in logger. If you prefer stdout collection, keep the logger as-is and have `promtail` scrape container logs instead.
-
- What admins will see
-
-- Metrics (Prometheus/Grafana): request rates, latency histograms (if added), basic process metrics (CPU, memory), and any custom metrics you add via `prom-client` in API routes (the app already exposes `/api/metrics`). Use Grafana to create alerts on high error rates or increased payment-failure counts.
-- Traces (OpenTelemetry): trace spans for server requests, outgoing HTTP calls, and DB calls. In the quickstart traces are logged by the collector; in production you should set the OTLP exporter to your tracing backend (e.g., Jaeger, Tempo, Honeycomb).
-- Logs (Loki + Grafana): search logs by timeframe, correlate log lines with traces using trace IDs (when your logger includes the trace id). Use Grafana Explore to run log queries and link to dashboards. The built-in logger sends JSON logs to Loki when `LOKI_URL` is set.
-
- Production notes
-
-- Use a managed Prometheus/Grafana or run scaled instances. Configure secure access and basic auth for Grafana.
-- Store OTEL_EXPORTER_OTLP_ENDPOINT, Prometheus rules, and Loki credentials in your secret manager.
-
-See `SECRETS.md` for recommended secrets management workflows (local `.env.local`, Kubernetes Secrets, Helm values, GitHub Actions, SealedSecrets, and Vault).
-- Add Prometheus alerting rules (e.g., alert on sustained high 5xx rate, webhook backlog growth, worker failures).
-
-
-#### 2. Secrets Management - Must have
-- Add: Vault, cloud secrets manager, or Kubernetes secrets with a stricter process.
-- Why: production keys like `DATABASE_URL`, `NEXTAUTH_SECRET`, SMTP credentials, and Fapshi keys must not live in plain files.
-- For this project: critical because the app already uses Docker and Kubernetes, so secret handling needs to match that setup.
-
-#### 3. Backups - Must have
-- Add: automated PostgreSQL backups, restore testing, and optional Kubernetes backup tooling like Velero.
-- Why: if the database fails, user groups, contributions, payments, and disputes cannot be lost.
-- For this project: very important because the app stores financial and membership records.
-
-#### 4. Infrastructure as Code - Strongly recommended
-- Add: Terraform or Pulumi.
-- Why: it makes infrastructure repeatable instead of manual and reduces deployment mistakes.
-- For this project: useful once you move beyond local Docker/Kubernetes into cloud-managed databases, networking, and clusters.
-
-#### 5. Queue / Background Jobs - Recommended
-- Add: BullMQ, RabbitMQ, or NATS.
-- Why: notifications, payment retries, reports, and scheduled jobs should not slow down request/response traffic.
-- For this project: Redis is already present, so this is a natural next step if you want reliable async processing.
+8) Next hardening steps
+- Add queue dashboard/metrics (Bull Board or custom Prometheus metrics).
+- Add dead-letter queue strategy for permanently failed jobs.
+- Add alerting thresholds on retry spikes and queue lag.
 
 ### What You Already Have
-- Docker: already implemented for consistent builds and local production-like runs.
-- Kubernetes: already implemented for container orchestration and scaling.
-- Redis: already present, so it can support caching or job queues later.
+- Docker: implemented for consistent builds and local production-like runs.
+- Kubernetes: implemented for container orchestration and scaling.
+- Infrastructure as Code (IaC): implemented with Terraform in `infra/` (variables, outputs, tfvars example, and README).
+- Redis: implemented and now actively used for BullMQ queue processing.
+- Prisma + PostgreSQL datasource: configured with `DATABASE_URL` for production-style database setup.
 
 ---
 
-## ✅ Implemented helpers (you can run now)
+## ✅ Implemented helpers (available now)
 
-- **Prometheus metrics endpoint**: `GET /api/metrics` — available for Prometheus to scrape using `prom-client`.
-- **OpenTelemetry starter**: `lib/telemetry/init-otel.ts` — helper for a production Node runtime if you want to wire OTEL later.
-- **Background queue skeleton**: `lib/queue/worker.ts` (BullMQ) — uses `REDIS_URL` and provides a starter worker for email jobs.
+- **Prometheus metrics endpoint**: `GET /api/metrics` — available for Prometheus scraping via `prom-client`.
+- **OpenTelemetry starter**: `lib/telemetry/init-otel.ts` — starter helper for production Node runtime telemetry wiring.
+- **Queue connection helper**: `lib/queue/connection.ts` — centralized Redis connection config for BullMQ.
+- **Typed queue contracts**: `lib/queue/jobs.ts` — typed job names and payload map.
+- **Queue instances/events**: `lib/queue/queues.ts` — notifications, payment retries, reports, scheduler queues.
+- **Enqueue helpers**: `lib/queue/enqueue.ts` — typed producer helpers for all queue domains.
+- **Workers**: `lib/queue/workers.ts` — workers with concurrency and lifecycle logging.
+- **Worker bootstrap guard**: `lib/queue/bootstrap.ts` — safe one-time worker startup per server process.
+- **Legacy email queue worker compatibility**: `lib/queue/worker.ts` — now aligned with shared queue connection options.
+- **Concrete producer integration**: `app/api/payments/initialize/route.ts` — enqueues `payment.retry` safety-check jobs post-initialization.
 
 Quick local steps:
 ```bash
 pnpm install
 
+# Ensure Prisma Client is generated
+npx prisma generate
+
+# Start Redis (if not already running)
+docker run --name mbole-redis -p 6379:6379 -d redis:7-alpine
+
 # Run the app
 pnpm dev
-
-# Start worker (runs the BullMQ worker defined in lib/queue/worker.ts)
-node -r ts-node/register ./lib/queue/worker.ts
 ```
 
 Prometheus scrape example (add to your Prometheus config):

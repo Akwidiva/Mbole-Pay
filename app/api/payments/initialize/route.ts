@@ -7,6 +7,7 @@ import { userHasPermission } from "@/lib/rbac";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { createLogger } from "@/lib/observability/logger";
 import { paymentInitializationEvents, recordApiError } from "@/lib/observability/metrics";
+import { enqueuePaymentRetry } from "@/lib/queue/enqueue";
 
 const logger = createLogger("payments.initialize")
 
@@ -280,16 +281,23 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Queue a safety retry check to avoid blocking API latency.
+    await enqueuePaymentRetry({
+      paymentId: paymentRecord.id,
+      reason: "post_initialize_safety_check",
+      requestedAt: new Date().toISOString(),
+    });
+
+    paymentInitializationEvents.inc({ provider: String(resolvedProvider), result: "success" });
+    logger.info("Payment initialization succeeded", { paymentId: paymentRecord.id, provider: resolvedProvider });
+
     return NextResponse.json<ApiResponse<InitializePaymentResponse>>(
       {
         success: true,
-        paymentInitializationEvents.inc({ provider: String(resolvedProvider), result: "success" })
-        logger.info("Payment initialization succeeded", { paymentId: paymentRecord.id, provider: resolvedProvider })
-
         data: {
           paymentId: paymentRecord.id,
           referenceId: providerRef,
-          provider: provider,
+          provider: resolvedProvider as PaymentProvider,
           amount: paymentAmount,
           currency: "XAF",
           phoneNumber: phoneNumber.replace(/\s/g, ""),

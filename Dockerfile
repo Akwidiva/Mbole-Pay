@@ -9,12 +9,12 @@ RUN corepack enable && corepack prepare pnpm@9.15.5 --activate && pnpm install -
 
 FROM base AS builder
 ARG NEXT_STANDALONE=true
-ARG DATABASE_URL=file:./prisma/dev.db
+ARG DATABASE_URL=postgresql://mbole:mbole_password@postgres:5432/mbole_pay
 ENV NEXT_STANDALONE=$NEXT_STANDALONE
 ENV DATABASE_URL=$DATABASE_URL
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN corepack enable && corepack prepare pnpm@9.15.5 --activate && pnpm prisma generate && pnpm build
+RUN corepack enable && corepack prepare pnpm@9.15.5 --activate && npx prisma generate && npx next build
 
 FROM base AS runner
 ENV NODE_ENV=production

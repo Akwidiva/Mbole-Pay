@@ -11,6 +11,7 @@ import { containerVariants, itemVariants } from "@/lib/animations"
 export function AllGroups() {
   const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState("")
 
   useEffect(() => {
     async function fetchGroups() {
@@ -24,8 +25,10 @@ export function AllGroups() {
 
         const groupsList = Array.isArray(data) ? data : data?.groups || []
         setGroups(groupsList.slice(0, 10))
+        setErrorMessage("")
       } catch (error) {
         console.error("Failed to fetch groups:", error)
+        setErrorMessage(error?.message || "Failed to load groups right now")
       } finally {
         setLoading(false)
       }
@@ -63,7 +66,9 @@ export function AllGroups() {
       </CardHeader>
       <CardContent>
         <motion.div className="space-y-4 pt-4" variants={containerVariants} initial="initial" animate="animate">
-          {groups.length === 0 ? (
+          {errorMessage ? (
+            <p className="text-sm text-destructive">{errorMessage}</p>
+          ) : groups.length === 0 ? (
             <p className="text-sm text-muted-foreground">No groups found</p>
           ) : (
             groups.map((group) => (

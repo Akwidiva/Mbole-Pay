@@ -1,0 +1,31 @@
+\project_name = "mbole-pay"
+environment  = "prod"
+aws_region   = "eu-west-1"
+
+vpc_cidr            = "10.20.0.0/16"
+public_subnet_cidrs = ["10.20.1.0/24", "10.20.2.0/24"]
+private_subnet_cidrs = ["10.20.11.0/24", "10.20.12.0/24"]
+
+# Restrict in production (replace with your trusted ingress CIDRs/LB ranges)
+app_ingress_cidrs = ["0.0.0.0/0"]
+
+db_engine_version            = "16.3"
+db_instance_class            = "db.t4g.micro"
+db_allocated_storage         = 20
+db_max_allocated_storage     = 100
+db_name                      = "mbole_pay"
+db_username                  = "mbole"
+db_password                  = "" # leave empty to auto-generate
+db_multi_az                  = false
+db_backup_retention_period   = 7
+db_backup_window             = "01:00-02:00"
+db_maintenance_window        = "Sun:02:00-Sun:03:00"
+db_skip_final_snapshot       = false
+db_deletion_protection       = true
+db_performance_insights_enabled = true
+db_apply_immediately         = false
+
+tags = {
+  Owner = "mbole-team"
+  CostCenter = "engineering"
+}

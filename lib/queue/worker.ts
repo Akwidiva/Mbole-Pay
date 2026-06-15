@@ -1,27 +1,34 @@
-import { Worker, Queue } from 'bullmq'
-import IORedis from 'ioredis'
+import { Worker, Queue } from "bullmq";
+import { redisConnection } from "@/lib/queue/connection";
 
-const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379')
+type EmailJobPayload = {
+  to: string;
+  subject: string;
+  html: string;
+};
 
-export const emailQueue = new Queue('email', { connection })
+export const emailQueue = new Queue<EmailJobPayload>("email", {
+  connection: redisConnection,
+});
 
 // Worker to process email jobs
 export const startQueueWorker = () => {
-  const worker = new Worker('email', async job => {
-    // job.data should contain { to, subject, html }
-    console.log('Processing email job', job.id, job.name)
-    // For now just log; integrate with your email service
-    // import lib/services/email-service.ts and call send
-    return Promise.resolve(true)
-  }, { connection })
+  const worker = new Worker<EmailJobPayload>(
+    "email",
+    async (job) => {
+      console.log("Processing email job", job.id, job.name);
+      return true;
+    },
+    { connection: redisConnection }
+  );
 
-  worker.on('completed', job => {
-    console.log('Job completed', job.id)
-  })
+  worker.on("completed", (job) => {
+    console.log("Job completed", job.id);
+  });
 
-  worker.on('failed', (job, err) => {
-    console.error('Job failed', job?.id, err)
-  })
+  worker.on("failed", (job, err) => {
+    console.error("Job failed", job?.id, err);
+  });
 
-  return worker
-}
+  return worker;
+};
