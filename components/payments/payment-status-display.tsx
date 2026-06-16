@@ -173,7 +173,7 @@ export function PaymentStatusDisplay({
           <div className="flex justify-between">
             <span className="text-muted-foreground">Provider</span>
             <span className="font-semibold">
-              MTN MoMo
+              {status.provider === "FAPSHI" ? "Mobile Money (via Fapshi)" : status.provider}
             </span>
           </div>
           {status.providerRef && (

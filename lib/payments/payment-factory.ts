@@ -1,11 +1,34 @@
 import { MTNMoMoService } from './mtn-momo'
 import { FapshiService } from './fapshi'
-import { PaymentProvider } from '@/types/payments'
+import { PaymentProvider, PaymentStatus } from '@/types/payments'
 
 /**
  * Re-export PaymentProvider from types for convenience
  */
 export { PaymentProvider }
+
+/**
+ * Map a raw provider status string (e.g. Fapshi's "CREATED"/"SUCCESSFUL"/"EXPIRED")
+ * to our internal PaymentStatus. Returns null if the provider status doesn't
+ * map to a different local status (so no update should be made).
+ */
+export function mapProviderStatus(rawStatus: string | undefined | null): PaymentStatus | null {
+  const status = String(rawStatus || '').toUpperCase()
+
+  if (['SUCCESSFUL', 'SUCCESS', 'COMPLETED'].includes(status)) {
+    return PaymentStatus.COMPLETED
+  }
+
+  if (['FAILED', 'EXPIRED'].includes(status)) {
+    return PaymentStatus.FAILED
+  }
+
+  if (['CREATED', 'PENDING', 'PROCESSING'].includes(status)) {
+    return PaymentStatus.PROCESSING
+  }
+
+  return null
+}
 
 /**
  * Payment Factory Pattern
@@ -27,10 +50,14 @@ export class PaymentFactory {
   }
 
   /**
-   * Get all supported providers
+   * Get all supported providers.
+   *
+   * Fapshi is the sole supported provider: it aggregates MTN MoMo and
+   * Orange Money under one API, so a separate direct MTN MoMo integration
+   * is not needed.
    */
   static getSupportedProviders(): PaymentProvider[] {
-    return [PaymentProvider.MTN_MOMO, PaymentProvider.FAPSHI]
+    return [PaymentProvider.FAPSHI]
   }
 
   /**

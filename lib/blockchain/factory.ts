@@ -1,0 +1,104 @@
+import { ethers } from "ethers"
+
+const ABI = [
+  "function lockGroupRules(bytes32 groupId, string name, uint256 contributionAmount, string frequency, string payoutOrder, uint256 minMembers, uint256 maxMembers) external",
+  "function getGroupRules(bytes32 groupId) external view returns (tuple(string name, uint256 contributionAmount, string frequency, string payoutOrder, uint256 minMembers, uint256 maxMembers, address creator, uint256 createdAt))",
+  "function isLocked(bytes32 groupId) external view returns (bool)",
+  "event GroupRulesLocked(bytes32 indexed groupId, address indexed creator, uint256 contributionAmount, string frequency, string payoutOrder)",
+]
+
+function getProvider() {
+  const rpcUrl = process.env.BLOCKCHAIN_RPC_URL
+  if (!rpcUrl) throw new Error("BLOCKCHAIN_RPC_URL is not set")
+  return new ethers.JsonRpcProvider(rpcUrl)
+}
+
+function getContract(signerOrProvider?: ethers.Signer | ethers.Provider) {
+  const address = process.env.FACTORY_CONTRACT_ADDRESS
+  if (!address) throw new Error("FACTORY_CONTRACT_ADDRESS is not set")
+  const connection = signerOrProvider ?? getProvider()
+  return new ethers.Contract(address, ABI, connection)
+}
+
+function getSigner() {
+  const privateKey = process.env.DEPLOYER_PRIVATE_KEY
+  if (!privateKey) throw new Error("DEPLOYER_PRIVATE_KEY is not set")
+  return new ethers.Wallet(privateKey, getProvider())
+}
+
+/** Convert a DB cuid string to bytes32 (keccak256 hash) */
+export function dbIdToBytes32(id: string): string {
+  return ethers.keccak256(ethers.toUtf8Bytes(id))
+}
+
+export interface LockResult {
+  txHash: string
+  blockNumber: number
+  onChainGroupId: string // the bytes32 key used on-chain
+}
+
+/**
+ * Lock group rules on-chain. Called automatically during group creation.
+ * Returns the tx hash and on-chain group ID to store in the DB.
+ * Throws if blockchain is not configured (caller should handle gracefully in dev).
+ */
+export async function lockGroupRulesOnChain(params: {
+  dbGroupId: string
+  name: string
+  contributionAmount: number
+  frequency: string
+  payoutOrder: string
+  minMembers: number
+  maxMembers: number | null
+}): Promise<LockResult> {
+  const signer = getSigner()
+  const contract = getContract(signer)
+
+  const onChainGroupId = dbIdToBytes32(params.dbGroupId)
+
+  const tx = await contract.lockGroupRules(
+    onChainGroupId,
+    params.name,
+    BigInt(params.contributionAmount),
+    params.frequency,
+    params.payoutOrder,
+    BigInt(params.minMembers),
+    BigInt(params.maxMembers ?? 0)
+  )
+
+  const receipt = await tx.wait()
+
+  return {
+    txHash: receipt.hash,
+    blockNumber: receipt.blockNumber,
+    onChainGroupId,
+  }
+}
+
+/**
+ * Read the immutable rules for a group from the chain.
+ */
+export async function getGroupRulesFromChain(dbGroupId: string) {
+  const contract = getContract()
+  const onChainGroupId = dbIdToBytes32(dbGroupId)
+  const rules = await contract.getGroupRules(onChainGroupId)
+  return {
+    name:               rules.name,
+    contributionAmount: Number(rules.contributionAmount),
+    frequency:          rules.frequency,
+    payoutOrder:        rules.payoutOrder,
+    minMembers:         Number(rules.minMembers),
+    maxMembers:         Number(rules.maxMembers),
+    creator:            rules.creator,
+    createdAt:          new Date(Number(rules.createdAt) * 1000),
+  }
+}
+
+/** True if blockchain env vars are configured. */
+export function isBlockchainConfigured(): boolean {
+  return !!(
+    process.env.BLOCKCHAIN_RPC_URL &&
+    process.env.FACTORY_CONTRACT_ADDRESS &&
+    process.env.DEPLOYER_PRIVATE_KEY
+  )
+}

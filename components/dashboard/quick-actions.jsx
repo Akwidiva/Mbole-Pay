@@ -69,7 +69,7 @@ export function QuickActions() {
       </CardHeader>
       <CardContent>
         <motion.div
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+          className="grid grid-cols-2 gap-4 sm:grid-cols-3 auto-rows-[130px]"
           variants={containerVariants}
           initial="initial"
           animate="animate"
@@ -85,7 +85,7 @@ export function QuickActions() {
                   <Button
                     asChild
                     variant={action.variant}
-                    className={`h-auto flex-col items-start gap-2 p-4 justify-start text-left w-full ${action.className}`}
+                    className={`h-full flex-col items-start gap-2 p-4 justify-start text-left w-full ${action.className}`}
                   >
                     <Link href={action.href} className="w-full">
                       <motion.div whileHover={{ scale: 1.2, rotate: 10 }} transition={{ duration: 0.2 }}>
@@ -100,7 +100,7 @@ export function QuickActions() {
                     </Link>
                   </Button>
                 ) : (
-                  <div className={`h-auto flex-col items-start gap-2 p-4 justify-start text-left w-full ${action.className}`}>
+                  <div className={`h-full flex-col items-start gap-2 p-4 justify-start text-left w-full ${action.className}`}>
                     <motion.div whileHover={{ scale: 1.2, rotate: 10 }} transition={{ duration: 0.2 }}>
                       <action.icon className="h-5 w-5" />
                     </motion.div>

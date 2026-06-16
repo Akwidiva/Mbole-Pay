@@ -11,8 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Bell } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { NotificationsDropdown } from "@/components/notifications-dropdown"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { useSession } from "next-auth/react"
@@ -60,13 +59,7 @@ export function UserNav() {
         </div>
       ) : (
         <>
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-secondary text-secondary-foreground">
-              3
-            </Badge>
-            <span className="sr-only">Notifications</span>
-          </Button>
+          <NotificationsDropdown />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className={profileBtnClasses}>

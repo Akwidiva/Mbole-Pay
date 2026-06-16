@@ -27,10 +27,14 @@ services:
     depends_on:
       - postgres
       - redis
+    env_file:
+      - .env.local
     environment:
       NODE_ENV: production
       PORT: 3000
+      HOSTNAME: "0.0.0.0"
       DATABASE_URL: postgresql://mbole:mbole_password@postgres:5432/mbole_pay
+      REDIS_URL: redis://redis:6379
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: change-me-to-a-random-secret-key
       EMAIL_HOST: smtp.gmail.com
@@ -39,11 +43,60 @@ services:
       EMAIL_USER: your-email@gmail.com
       EMAIL_PASSWORD: your-app-password
       EMAIL_FROM: noreply@mbolepay.com
-      FAPSHI_BASE_URL: https://api.fapshi.com
-      FAPSHI_API_KEY: your-fapshi-api-key-here
-      FAPSHI_WEBHOOK_SECRET: your-fapshi-webhook-secret-here
     ports:
       - "3000:3000"
 
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    depends_on:
+      - app
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+      - loki
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+
+  loki:
+    image: grafana/loki:2.8.2
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+
+  promtail:
+    image: grafana/promtail:2.8.2
+    restart: unless-stopped
+    volumes:
+      - /var/log:/var/log
+    command: -config.file=/etc/promtail/config.yml
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.88.0
+    restart: unless-stopped
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./observability/otel/collector-config.yml:/etc/otel-collector/config.yml:ro
+
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:

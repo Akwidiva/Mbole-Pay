@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
-import { Copy, Check, Loader2, Settings } from "lucide-react"
+import { Copy, Check, Loader2, Settings, ShieldCheck, ShieldX, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 
 interface GroupSettingsPageProps {
@@ -24,17 +25,65 @@ interface Group {
   contributionAmount: number
   frequency: string
   cycleType: string
+  payoutOrder: string
+  minMembers: number
+  maxMembers: number | null
   inviteCode: string
   status: string
   creatorId: string
+  contractTxHash: string | null
+  contractGroupId: string | null
 }
 
 export function GroupSettingsPage({ groupId, onGroupUpdated }: GroupSettingsPageProps) {
+  const router = useRouter()
   const [group, setGroup] = useState<Group | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [inviting, setInviting] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [locking, setLocking] = useState(false)
+
+  const copyField = (value: string, field: string) => {
+    navigator.clipboard.writeText(value)
+    setCopiedField(field)
+    setTimeout(() => setCopiedField(null), 2000)
+  }
+
+  const deleteGroup = async () => {
+    if (!confirm(`Delete "${group?.name}"? This cannot be undone and will remove all contribution history.`)) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/groups/${groupId}`, { method: "DELETE" })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error)
+      }
+      toast({ title: "Group deleted" })
+      router.push("/groups")
+    } catch (err) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to delete group", variant: "destructive" })
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const lockOnChain = async () => {
+    setLocking(true)
+    try {
+      const res = await fetch(`/api/groups/${groupId}/lock-chain`, { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast({ title: "Locked on-chain", description: `Tx: ${data.txHash.slice(0, 18)}…` })
+      fetchGroup()
+    } catch (err) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to lock on-chain", variant: "destructive" })
+    } finally {
+      setLocking(false)
+    }
+  }
   const [inviteEmail, setInviteEmail] = useState("")
   const [formData, setFormData] = useState({ name: "", description: "" })
   const { toast } = useToast()
@@ -302,25 +351,129 @@ export function GroupSettingsPage({ groupId, onGroupUpdated }: GroupSettingsPage
 
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Frequency</p>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline">{group.frequency}</Badge>
-                </div>
+                <Badge variant="outline">{group.frequency}</Badge>
               </div>
 
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Payout Cycle</p>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="secondary">{group.cycleType}</Badge>
-                </div>
+                <Badge variant="secondary">{group.cycleType}</Badge>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Payout Order</p>
+                <Badge variant="outline">{group.payoutOrder ?? "SEQUENTIAL"}</Badge>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Min / Max Members</p>
+                <p className="text-sm font-medium">
+                  {group.minMembers} – {group.maxMembers ?? "∞"}
+                </p>
               </div>
 
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Status</p>
-                <div className="flex items-center space-x-2">
-                  <Badge variant={group.status === "ACTIVE" ? "default" : "destructive"}>{group.status}</Badge>
-                </div>
+                <Badge variant={group.status === "ACTIVE" ? "default" : "destructive"}>{group.status}</Badge>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Blockchain Verification Card */}
+        <Card className={group.contractTxHash ? "border-emerald-500/40" : "border-amber-400/40"}>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              {group.contractTxHash
+                ? <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                : <ShieldX className="h-5 w-5 text-amber-500" />}
+              <CardTitle>Blockchain Verification</CardTitle>
+            </div>
+            <CardDescription>
+              {group.contractTxHash
+                ? "Group rules are permanently locked on-chain. Nobody can change them, not even the admin."
+                : "Group rules have not been locked on-chain yet."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {group.contractTxHash ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-300">
+                    <ShieldCheck className="h-3 w-3 mr-1" /> Rules Locked
+                  </Badge>
+                </div>
+
+                <div className="space-y-3 rounded-lg border border-border/60 divide-y text-sm">
+                  {/* Transaction Hash */}
+                  <div className="flex items-start justify-between gap-4 p-3">
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground mb-0.5">Transaction Hash</p>
+                      <p className="font-mono text-xs break-all">{group.contractTxHash}</p>
+                    </div>
+                    <Button
+                      type="button" size="icon" variant="ghost"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => copyField(group.contractTxHash!, "txHash")}
+                    >
+                      {copiedField === "txHash"
+                        ? <Check className="h-3.5 w-3.5 text-emerald-500" />
+                        : <Copy className="h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
+
+                  {/* On-chain Group ID */}
+                  <div className="flex items-start justify-between gap-4 p-3">
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground mb-0.5">On-chain Group ID (bytes32)</p>
+                      <p className="font-mono text-xs break-all">{group.contractGroupId}</p>
+                    </div>
+                    <Button
+                      type="button" size="icon" variant="ghost"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => copyField(group.contractGroupId!, "groupId")}
+                    >
+                      {copiedField === "groupId"
+                        ? <Check className="h-3.5 w-3.5 text-emerald-500" />
+                        : <Copy className="h-3.5 w-3.5" />}
+                    </Button>
+                  </div>
+
+                  {/* Contract Address */}
+                  {process.env.NEXT_PUBLIC_FACTORY_CONTRACT_ADDRESS && (
+                    <div className="flex items-start justify-between gap-4 p-3">
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground mb-0.5">Factory Contract Address</p>
+                        <p className="font-mono text-xs break-all">{process.env.NEXT_PUBLIC_FACTORY_CONTRACT_ADDRESS}</p>
+                      </div>
+                      <Button
+                        type="button" size="icon" variant="ghost"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => copyField(process.env.NEXT_PUBLIC_FACTORY_CONTRACT_ADDRESS!, "contract")}
+                      >
+                        {copiedField === "contract"
+                          ? <Check className="h-3.5 w-3.5 text-emerald-500" />
+                          : <Copy className="h-3.5 w-3.5" />}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  Anyone can verify these rules are unchanged by querying the contract with the on-chain group ID above.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-4 text-sm text-amber-800 dark:text-amber-300">
+                  Rules were not locked on-chain when this group was created. This may happen if the blockchain node was not running at creation time.
+                </div>
+                <Button onClick={lockOnChain} disabled={locking} className="gap-2">
+                  {locking
+                    ? <><Loader2 className="h-4 w-4 animate-spin" /> Locking on-chain…</>
+                    : <><ShieldCheck className="h-4 w-4" /> Lock Rules On-Chain Now</>}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -332,10 +485,12 @@ export function GroupSettingsPage({ groupId, onGroupUpdated }: GroupSettingsPage
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Deleting a group will remove it for all members. All contribution history will be archived but inaccessible.
+              Deleting a group will permanently remove it for all members along with all contribution history. This cannot be undone.
             </p>
-            <Button variant="destructive" disabled>
-              Delete Group (Coming Soon)
+            <Button variant="destructive" onClick={deleteGroup} disabled={deleting} className="gap-2">
+              {deleting
+                ? <><Loader2 className="h-4 w-4 animate-spin" /> Deleting…</>
+                : <><Trash2 className="h-4 w-4" /> Delete Group</>}
             </Button>
           </CardContent>
         </Card>

@@ -5,6 +5,7 @@ import { PaymentStatus, PaymentProvider, ApiResponse } from "@/types/payments";
 import crypto from "crypto";
 import { createLogger } from "@/lib/observability/logger";
 import { paymentWebhookEvents, recordApiError } from "@/lib/observability/metrics";
+import { notifyPaymentReceived } from "@/lib/services/reminder-service";
 
 const logger = createLogger("payments.webhook")
 
@@ -192,6 +193,22 @@ export async function POST(request: NextRequest) {
 
       paymentWebhookEvents.inc({ provider, result: "completed" })
       logger.info("Contribution marked as PAID", { contributionId: payment.contributionId, userId: payment.userId })
+
+      // In-app notification
+      const paymentWithDetails = await prisma.payment.findUnique({
+        where: { id: payment.id },
+        include: { user: { select: { id: true, email: true, name: true } }, group: { select: { id: true, name: true } } },
+      })
+      if (paymentWithDetails) {
+        notifyPaymentReceived({
+          userId: paymentWithDetails.user.id,
+          userEmail: paymentWithDetails.user.email,
+          userName: paymentWithDetails.user.name ?? undefined,
+          amount: paymentWithDetails.amount,
+          groupId: paymentWithDetails.group.id,
+          groupName: paymentWithDetails.group.name,
+        }).catch(() => {}) // non-blocking
+      }
     }
 
     // If payment failed, increment retry count and log error

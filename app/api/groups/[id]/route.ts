@@ -95,6 +95,11 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           contributionAmount: group.contributionAmount,
           frequency: group.frequency,
           cycleType: group.cycleType,
+          payoutOrder: group.payoutOrder,
+          minMembers: group.minMembers,
+          maxMembers: group.maxMembers,
+          contractTxHash: group.contractTxHash,
+          contractGroupId: group.contractGroupId,
           inviteCode: group.inviteCode,
           creator_id: group.creator_id,
           createdAt: group.createdAt,
@@ -115,6 +120,42 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         error: "Failed to fetch group",
         details: error instanceof Error ? error.message : "Unknown error",
       },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+    const { id } = await params
+
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
+
+    const membership = await prisma.membership.findUnique({
+      where: { userId_groupId: { userId: user.id, groupId: id } },
+    })
+    if (membership?.role !== "ADMIN") {
+      return NextResponse.json({ error: "Only the group admin can delete the group" }, { status: 403 })
+    }
+
+    // Delete in dependency order
+    await prisma.payment.deleteMany({ where: { groupId: id } })
+    await prisma.contribution.deleteMany({ where: { groupId: id } })
+    await prisma.payout.deleteMany({ where: { groupId: id } })
+    await prisma.dispute.deleteMany({ where: { groupId: id } })
+    await prisma.groupInvitation.deleteMany({ where: { groupId: id } })
+    await prisma.membership.deleteMany({ where: { groupId: id } })
+    await prisma.group.delete({ where: { id } })
+
+    return NextResponse.json({ message: "Group deleted" }, { status: 200 })
+  } catch (error) {
+    console.error("Delete group error:", error instanceof Error ? error.message : error)
+    return NextResponse.json(
+      { error: "Failed to delete group", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     )
   }

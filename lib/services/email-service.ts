@@ -307,6 +307,117 @@ export const emailService = {
   },
 
   /**
+   * Send KYC approved notification
+   */
+  async sendKycApproved(email: string, data: { userName: string }): Promise<boolean> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #166534;">Identity Verified ✓</h2>
+        <p>Hi ${data.userName},</p>
+        <p>Great news — your identity documents have been reviewed and <strong>approved</strong>.</p>
+        <p>Your Mbole Pay account is now fully active. You can join and manage savings groups, make contributions, and receive payouts.</p>
+        <div style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 16px; border-radius: 4px; margin: 24px 0;">
+          <p style="margin: 0; color: #166534; font-weight: 600;">You're all set. Welcome to Mbole Pay.</p>
+        </div>
+        <hr style="margin: 32px 0; border: none; border-top: 1px solid #eee;">
+        <p style="color: #999; font-size: 12px;">© 2026 Mbole Pay — Community Savings Platform</p>
+      </div>
+    `
+    return this.sendEmail({
+      to: email,
+      subject: "Your Mbole Pay identity has been verified",
+      html,
+      text: `Hi ${data.userName}, your identity documents have been approved. Your account is now fully active.`,
+    })
+  },
+
+  /**
+   * Send KYC rejected notification
+   */
+  async sendKycRejected(
+    email: string,
+    data: { userName: string; reason: string }
+  ): Promise<boolean> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #991b1b;">Verification Unsuccessful</h2>
+        <p>Hi ${data.userName},</p>
+        <p>Unfortunately, we could not verify your identity with the documents submitted.</p>
+        <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 16px; border-radius: 4px; margin: 24px 0;">
+          <p style="margin: 0 0 8px; font-weight: 600; color: #991b1b;">Reason:</p>
+          <p style="margin: 0; color: #7f1d1d;">${data.reason}</p>
+        </div>
+        <p>Please sign in and re-upload your documents addressing the issue above.</p>
+        <hr style="margin: 32px 0; border: none; border-top: 1px solid #eee;">
+        <p style="color: #999; font-size: 12px;">© 2026 Mbole Pay — Community Savings Platform</p>
+      </div>
+    `
+    return this.sendEmail({
+      to: email,
+      subject: "Action required — Mbole Pay identity verification",
+      html,
+      text: `Hi ${data.userName}, your identity verification was unsuccessful. Reason: ${data.reason}. Please sign in and resubmit.`,
+    })
+  },
+
+  /**
+   * Send email verification OTP (used at signup)
+   */
+  async sendEmailVerification(
+    email: string,
+    data: { otp: string; userName: string }
+  ): Promise<boolean> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1a1a2e;">Verify your Mbole Pay account</h2>
+        <p>Hi ${data.userName},</p>
+        <p>Welcome to Mbole Pay! Enter this code to verify your email address and activate your account.</p>
+        <p>The code expires in <strong>10 minutes</strong>.</p>
+        <div style="background: #f0f4ff; border-radius: 12px; padding: 32px; margin: 24px 0; text-align: center;">
+          <p style="font-size: 42px; font-weight: 700; letter-spacing: 12px; margin: 0; color: #1e3a8a; font-family: monospace;">${data.otp}</p>
+        </div>
+        <p style="color: #555;">If you didn't create a Mbole Pay account, ignore this email.</p>
+        <hr style="margin: 32px 0; border: none; border-top: 1px solid #eee;">
+        <p style="color: #999; font-size: 12px;">© 2026 Mbole Pay — Community Savings Platform</p>
+      </div>
+    `
+    return this.sendEmail({
+      to: email,
+      subject: "Verify your Mbole Pay account",
+      html,
+      text: `Your Mbole Pay verification code is: ${data.otp}. It expires in 10 minutes.`,
+    })
+  },
+
+  /**
+   * Send MFA OTP email
+   */
+  async sendMfaOtp(
+    email: string,
+    data: { otp: string; userName: string }
+  ): Promise<boolean> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1a1a2e;">Your Mbole Pay sign-in code</h2>
+        <p>Hi ${data.userName},</p>
+        <p>Enter this code to complete your sign-in. It expires in <strong>5 minutes</strong>.</p>
+        <div style="background: #f0f4ff; border-radius: 12px; padding: 32px; margin: 24px 0; text-align: center;">
+          <p style="font-size: 42px; font-weight: 700; letter-spacing: 12px; margin: 0; color: #1e3a8a; font-family: monospace;">${data.otp}</p>
+        </div>
+        <p style="color: #555;">This code was requested for a high-value Njangi group login. If you did not request it, ignore this email — your account is safe.</p>
+        <hr style="margin: 32px 0; border: none; border-top: 1px solid #eee;">
+        <p style="color: #999; font-size: 12px;">© 2026 Mbole Pay — Community Savings Platform</p>
+      </div>
+    `
+    return this.sendEmail({
+      to: email,
+      subject: "Your Mbole Pay sign-in code",
+      html,
+      text: `Your Mbole Pay sign-in code is: ${data.otp}. It expires in 5 minutes.`,
+    })
+  },
+
+  /**
    * Send contribution reminder
    */
   async sendContributionReminder(
@@ -359,6 +470,86 @@ export const emailService = {
       subject: `Contribution Reminder - ${data.groupName}`,
       html,
       text: `Your contribution of ${data.amount} ${data.currency} to ${data.groupName} is due on ${new Date(data.dueDate).toLocaleDateString()}`,
+    });
+  },
+
+  async sendRoleAssigned(email: string, data: { userName: string; role: string; groupName: string; assignedBy: string }): Promise<boolean> {
+    return this.sendEmail({
+      to: email,
+      subject: `You've been made ${data.role} — ${data.groupName}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+        <h2>Role Update 🎖️</h2>
+        <p>Hi ${data.userName},</p>
+        <p><strong>${data.assignedBy}</strong> has appointed you as <strong>${data.role}</strong> in the group <strong>"${data.groupName}"</strong>.</p>
+        ${data.role === "TREASURER" ? "<p>As Treasurer you will manage financial flows and will be required to verify your identity with a one-time code at each sign-in.</p>" : ""}
+        <hr style="margin:30px 0;border:none;border-top:1px solid #ddd">
+        <p style="color:#999;font-size:12px">© 2026 Mbole Pay</p>
+      </div>`,
+      text: `You've been made ${data.role} in "${data.groupName}" by ${data.assignedBy}.`,
+    });
+  },
+
+  async sendRoleRemoved(email: string, data: { userName: string; oldRole: string; newRole: string; groupName: string; changedBy: string }): Promise<boolean> {
+    return this.sendEmail({
+      to: email,
+      subject: `Role changed in ${data.groupName}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+        <h2>Role Change</h2>
+        <p>Hi ${data.userName},</p>
+        <p>Your role in <strong>"${data.groupName}"</strong> has been changed from <strong>${data.oldRole}</strong> to <strong>${data.newRole}</strong> by ${data.changedBy}.</p>
+        <hr style="margin:30px 0;border:none;border-top:1px solid #ddd">
+        <p style="color:#999;font-size:12px">© 2026 Mbole Pay</p>
+      </div>`,
+      text: `Your role in "${data.groupName}" was changed from ${data.oldRole} to ${data.newRole} by ${data.changedBy}.`,
+    });
+  },
+
+  async sendMemberRemoved(email: string, data: { userName: string; groupName: string; removedBy: string }): Promise<boolean> {
+    return this.sendEmail({
+      to: email,
+      subject: `You've been removed from ${data.groupName}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+        <h2>Group Membership Update</h2>
+        <p>Hi ${data.userName},</p>
+        <p>You have been removed from the group <strong>"${data.groupName}"</strong> by ${data.removedBy}.</p>
+        <p>If you believe this was a mistake, please contact the group admin.</p>
+        <hr style="margin:30px 0;border:none;border-top:1px solid #ddd">
+        <p style="color:#999;font-size:12px">© 2026 Mbole Pay</p>
+      </div>`,
+      text: `You have been removed from "${data.groupName}" by ${data.removedBy}.`,
+    });
+  },
+
+  async sendGroupBroadcast(email: string, data: { userName: string; groupName: string; senderName: string; message: string }): Promise<boolean> {
+    return this.sendEmail({
+      to: email,
+      subject: `Message from ${data.senderName} · ${data.groupName}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+        <h2>Group Message 📣</h2>
+        <p>Hi ${data.userName},</p>
+        <p><strong>${data.senderName}</strong> sent a message to <strong>"${data.groupName}"</strong>:</p>
+        <div style="background:#f5f5f5;padding:16px;border-radius:8px;border-left:4px solid #1976d2;margin:16px 0">
+          <p style="margin:0">${data.message}</p>
+        </div>
+        <hr style="margin:30px 0;border:none;border-top:1px solid #ddd">
+        <p style="color:#999;font-size:12px">© 2026 Mbole Pay</p>
+      </div>`,
+      text: `${data.senderName} in "${data.groupName}": ${data.message}`,
+    });
+  },
+
+  async sendPaymentConfirmed(email: string, data: { userName: string; amount: number; groupName: string }): Promise<boolean> {
+    return this.sendEmail({
+      to: email,
+      subject: `Payment confirmed — ${data.groupName}`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+        <h2>Payment Confirmed ✅</h2>
+        <p>Hi ${data.userName},</p>
+        <p>Your contribution of <strong>XAF ${data.amount.toLocaleString()}</strong> to <strong>"${data.groupName}"</strong> has been received and confirmed.</p>
+        <hr style="margin:30px 0;border:none;border-top:1px solid #ddd">
+        <p style="color:#999;font-size:12px">© 2026 Mbole Pay</p>
+      </div>`,
+      text: `Your payment of XAF ${data.amount.toLocaleString()} to "${data.groupName}" was confirmed.`,
     });
   },
 };

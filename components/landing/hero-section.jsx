@@ -117,48 +117,44 @@ export function HeroSection() {
                 className="absolute inset-0 bg-gradient-to-br from-primary via-secondary to-accent rounded-full blur-[100px] opacity-20"
               ></motion.div>
               <div className="relative z-10 bg-muted border rounded-lg shadow-lg overflow-hidden h-full w-full flex items-center justify-center">
-                <div className="p-8 space-y-6 w-full max-w-md">
-                  <div className="space-y-2 text-center">
+                <div className="p-6 w-full max-w-md flex flex-col gap-4">
+                  <div className="text-center space-y-1">
                     <h3 className="text-2xl font-bold">Your Savings Overview</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {stats?.nextPayoutDate
-                        ? `Next payout: ${new Date(stats.nextPayoutDate).toLocaleDateString()}`
-                        : "Loading..."}
-                    </p>
+                    {stats?.nextPayoutDate && (
+                      <p className="text-sm text-muted-foreground">
+                        Next payout: {new Date(stats.nextPayoutDate).toLocaleDateString()}
+                      </p>
+                    )}
                   </div>
-                  <div className="space-y-4">
+                  <div className="flex flex-col gap-3">
                     {loading ? (
                       <>
-                        <div className="bg-background rounded-md p-4">
-                          <Skeleton className="h-24 w-full" />
-                        </div>
-                        <div className="bg-background rounded-md p-4 border border-secondary/30">
-                          <Skeleton className="h-24 w-full" />
-                        </div>
+                        <Skeleton className="h-[72px] w-full rounded-md" />
+                        <Skeleton className="h-[72px] w-full rounded-md" />
                       </>
                     ) : (
                       <>
-                        <div className="bg-background rounded-md p-4 flex justify-between items-center">
+                        <div className="bg-background rounded-md p-4 flex justify-between items-center min-h-[72px]">
                           <div>
-                            <p className="text-sm font-medium">Total Contributions</p>
-                            <p className="text-2xl font-bold">{formatCurrency(totalContributions)}</p>
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Contributions</p>
+                            <p className="text-2xl font-bold mt-0.5">{formatCurrency(totalContributions)}</p>
                           </div>
-                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-primary font-bold">{memberCount}</span>
+                          <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <span className="text-primary font-bold text-sm">{memberCount}</span>
                           </div>
                         </div>
-                        <div className="bg-background rounded-md p-4 flex justify-between items-center border border-secondary/30">
+                        <div className="bg-background rounded-md p-4 flex justify-between items-center border border-secondary/30 min-h-[72px]">
                           <div>
-                            <p className="text-sm font-medium">Your Pending Payout</p>
-                            <p className="text-2xl font-bold text-secondary">{formatCurrency(pendingPayout)}</p>
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Your Pending Payout</p>
+                            <p className="text-2xl font-bold text-secondary mt-0.5">{formatCurrency(pendingPayout)}</p>
                           </div>
-                          <div className="h-12 w-12 rounded-full bg-secondary/20 flex items-center justify-center">
-                            <span className="text-secondary font-bold">➜</span>
+                          <div className="h-11 w-11 rounded-full bg-secondary/20 flex items-center justify-center shrink-0">
+                            <ArrowRight className="h-5 w-5 text-secondary" />
                           </div>
                         </div>
                       </>
                     )}
-                    <Link href="/dashboard/payments">
+                    <Link href="/dashboard/payments" className="mt-4 block">
                       <Button className="w-full">Make Payment</Button>
                     </Link>
                   </div>

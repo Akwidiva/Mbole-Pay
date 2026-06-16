@@ -16,7 +16,18 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN corepack enable && corepack prepare pnpm@9.15.5 --activate && npx prisma generate && npx next build
 
+# Build a standalone prisma-migrate workspace via npm so that node_modules is flat
+# (no pnpm .pnpm/ virtual store) and @prisma/engines is reachable in the runner.
+RUN apk add --no-cache openssl \
+  && PRISMA_VER=$(node -p "require('./node_modules/prisma/package.json').version") \
+  && mkdir -p /prisma-migrate \
+  && cd /prisma-migrate \
+  && echo '{"name":"prisma-migrate","private":true}' > package.json \
+  && npm install --no-save --no-package-lock "prisma@${PRISMA_VER}" \
+  && cp -r /app/prisma ./prisma
+
 FROM base AS runner
+RUN apk add --no-cache openssl
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -26,9 +37,15 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
+# Standalone prisma-migrate workspace: prisma CLI + @prisma/engines binary + schema/migrations
+COPY --from=builder /prisma-migrate /prisma-migrate
+
+COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
 USER nextjs
 
 EXPOSE 3000
 ENV PORT=3000
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["./docker-entrypoint.sh"]

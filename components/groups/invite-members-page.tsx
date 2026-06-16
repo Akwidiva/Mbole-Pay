@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useGroups } from "@/hooks/use-groups"
@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { ExternalLink, Loader2, Mail, Users, Copy, ChevronLeft } from "lucide-react"
 
-export function InviteMembersPage() {
+export function InviteMembersPage() { // fixed: visibleGroups hoisted before useEffect
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const { groups, loading } = useGroups()
@@ -22,6 +22,9 @@ export function InviteMembersPage() {
   const [sending, setSending] = useState(false)
   const [inviteUrl, setInviteUrl] = useState("")
   const [inviteEmailAddress, setInviteEmailAddress] = useState("")
+
+  const visibleGroups = useMemo(() => groups.filter((group) => group.status !== "INACTIVE"), [groups])
+  const selectedGroup = useMemo(() => visibleGroups.find((group) => group.id === selectedGroupId), [visibleGroups, selectedGroupId])
 
   useEffect(() => {
     const groupIdFromQuery = searchParams.get("groupId") || ""
@@ -34,9 +37,6 @@ export function InviteMembersPage() {
       setSelectedGroupId(visibleGroups[0].id)
     }
   }, [searchParams, selectedGroupId, visibleGroups])
-
-  const visibleGroups = groups.filter((group) => group.status !== "INACTIVE")
-  const selectedGroup = visibleGroups.find((group) => group.id === selectedGroupId)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()

@@ -31,10 +31,10 @@ export function PaymentProviderSelector({
         };
       case "FAPSHI":
         return {
-          name: "Fapshi",
-          description: "Accept payments via Fapshi (aggregated MTN/Orange)",
+          name: "Mobile Money (via Fapshi)",
+          description: "Pay with MTN MoMo or Orange Money through Fapshi",
           icon: "🧾",
-          features: ["Hosted links or API integration", "Unified webhook", "Sandbox & live keys"],
+          features: ["USSD prompt to confirm payment", "Works with MTN MoMo & Orange Money", "Instant status updates"],
         };
     }
   };
@@ -95,6 +95,7 @@ export function PaymentProviderSelector({
                   </div>
 
                   <Button
+                    type="button"
                     className="w-full mt-4"
                     variant={isSelected ? "default" : "outline"}
                     disabled={disabled}
@@ -113,8 +114,8 @@ export function PaymentProviderSelector({
         <p className="font-semibold text-blue-900 dark:text-blue-100 mb-2">💡 How it works</p>
         <ul className="space-y-1 text-blue-800 dark:text-blue-200 text-xs">
           <li>
-            <strong>MTN MoMo:</strong> You'll receive a USSD prompt on your phone to confirm the
-            payment
+            You'll receive a USSD prompt on your phone (MTN MoMo or Orange Money) to confirm the
+            payment with your mobile money PIN
           </li>
         </ul>
       </div>

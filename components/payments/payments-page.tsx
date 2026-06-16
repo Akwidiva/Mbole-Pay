@@ -81,7 +81,7 @@ export function PaymentsPage({ initialPhoneNumber = "" }: PaymentsPageProps) {
               </div>
               <div className="rounded-2xl border bg-muted/30 p-4">
                 <p className="text-sm text-muted-foreground">Payment method</p>
-                <p className="text-2xl font-bold">MTN MoMo</p>
+                <p className="text-2xl font-bold">Fapshi</p>
               </div>
             </div>
 
@@ -138,7 +138,7 @@ export function PaymentsPage({ initialPhoneNumber = "" }: PaymentsPageProps) {
           <CardContent className="space-y-4 text-sm text-muted-foreground">
             <p>1. Pick the contribution you want to pay.</p>
             <p>2. Your saved phone number is used automatically when available.</p>
-            <p>3. Confirm the MTN MoMo prompt on your phone.</p>
+            <p>3. Confirm the mobile money prompt (MTN MoMo or Orange Money) on your phone.</p>
             <p>4. Return here to see the live payment status.</p>
 
             <div className="rounded-2xl border bg-muted/30 p-4 text-xs">

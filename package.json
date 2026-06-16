@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "chain:node": "hardhat node",
+    "chain:deploy": "hardhat run scripts/blockchain/deploy-factory.ts --network localhost",
+    "chain:deploy:testnet": "hardhat run scripts/blockchain/deploy-factory.ts --network polygonAmoy",
     "build": "next build",
     "build:clean": "powershell -Command \"if (Test-Path .next) { Remove-Item .next -Recurse -Force }; if (Test-Path .turbo) { Remove-Item .turbo -Recurse -Force }; pnpm build\"",
     "start": "next start",
@@ -62,6 +65,7 @@
     "date-fns": "^3.6.0",
     "docx": "^9.7.1",
     "embla-carousel-react": "8.5.1",
+    "ethers": "^6.16.0",
     "framer-motion": "^12.38.0",
     "input-otp": "1.4.1",
     "ioredis": "^5.3.2",
@@ -85,11 +89,13 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.19.19",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "hardhat": "^2.28.6",
     "jest": "^30.4.2",
     "jest-environment-node": "^30.4.1",
     "postcss": "^8",

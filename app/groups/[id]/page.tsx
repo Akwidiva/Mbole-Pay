@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -46,16 +46,22 @@ interface AnalyticsMetrics {
   nextPayoutAmount?: number;
 }
 
+const VALID_TABS = ["overview", "members", "analytics", "settings"];
+
 export default function GroupDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [group, setGroup] = useState<GroupData | null>(null);
   const [metrics, setMetrics] = useState<AnalyticsMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = searchParams?.get("tab");
+    return tab && VALID_TABS.includes(tab) ? tab : "overview";
+  });
 
   const groupId = params?.id as string;
 
@@ -110,7 +116,7 @@ export default function GroupDetailPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setMetrics(data.metrics || data);
+        setMetrics(data.data);
       }
     } catch (err) {
       console.error("Error fetching metrics:", err);

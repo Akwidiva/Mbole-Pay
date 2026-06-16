@@ -237,7 +237,7 @@ export function PaymentHistoryList({ groupId }: PaymentHistoryListProps) {
                       })}
                     </TableCell>
                     <TableCell className="text-sm">
-                      MTN MoMo
+                      Fapshi
                     </TableCell>
                     <TableCell className="text-xs font-mono">{payment.phoneNumber}</TableCell>
                     <TableCell className="font-semibold">

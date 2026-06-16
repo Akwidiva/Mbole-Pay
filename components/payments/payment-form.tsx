@@ -132,7 +132,7 @@ export function PaymentForm({
                       />
                     </FormControl>
                     <FormDescription className="text-xs">
-                      MTN MoMo number starting with 6, 7, or 9
+                      Mobile money number (MTN MoMo or Orange Money) starting with 6, 7, or 9
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -151,7 +151,7 @@ export function PaymentForm({
                   ℹ️ What happens next?
                 </p>
                 <p className="text-amber-800 dark:text-amber-200 text-xs">
-                  You'll receive a USSD prompt on your phone. Select 'Yes' to confirm and enter your MTN MoMo PIN to complete the payment.
+                  You'll receive a USSD prompt on your phone via Fapshi. Select 'Yes' to confirm and enter your mobile money PIN (MTN MoMo or Orange Money) to complete the payment.
                 </p>
               </div>
 

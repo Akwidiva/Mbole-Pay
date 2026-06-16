@@ -4,6 +4,10 @@ import { prisma } from "@/lib/db";
 import { PaymentFactory } from "@/lib/payments/payment-factory";
 import { PaymentStatus, ApiResponse, InitializePaymentResponse } from "@/types/payments";
 import { userHasPermission } from "@/lib/rbac";
+import { enqueuePaymentRetry } from "@/lib/queue/enqueue";
+import { bootstrapQueueWorkers } from "@/lib/queue/bootstrap";
+
+bootstrapQueueWorkers();
 
 /**
  * POST /api/payments/[id]/retry
@@ -184,13 +188,20 @@ export async function POST(
       description: `Retry payment for contribution`,
     });
 
-    // Update with provider reference
-    const providerRef = (paymentRequest as any).referenceId || (paymentRequest as any).transactionId;
+    // Update with provider reference (prefer the provider's own transaction id)
+    const providerRef = (paymentRequest as any).transactionId || (paymentRequest as any).referenceId;
     await prisma.payment.update({
       where: { id: paymentId },
       data: {
         providerRef: providerRef,
       },
+    });
+
+    // Queue a safety retry check to avoid blocking API latency.
+    await enqueuePaymentRetry({
+      paymentId: paymentId,
+      reason: "post_retry_safety_check",
+      requestedAt: new Date().toISOString(),
     });
 
     return NextResponse.json<ApiResponse<InitializePaymentResponse>>(

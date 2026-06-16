@@ -7,16 +7,22 @@ import { IPaymentProvider } from "./payment-factory";
  *
  * Environment variables:
  * - FAPSHI_BASE_URL
+ * - FAPSHI_API_USER
  * - FAPSHI_API_KEY
  */
 export class FapshiService implements IPaymentProvider {
   private baseUrl = process.env.FAPSHI_BASE_URL || "https://sandbox.fapshi.com";
+  private apiUser = process.env.FAPSHI_API_USER || "";
   private apiKey = process.env.FAPSHI_API_KEY || "";
+
+  private hasCredentials() {
+    return Boolean(this.apiUser && this.apiKey);
+  }
 
   private authHeaders() {
     return {
+      apiuser: this.apiUser,
       apikey: this.apiKey,
-      apiuser: this.apiKey,
       "Content-Type": "application/json",
     };
   }
@@ -30,7 +36,7 @@ export class FapshiService implements IPaymentProvider {
     const referenceId = uuidv4();
 
     try {
-      if (!this.apiKey) throw new Error("Missing Fapshi API key (FAPSHI_API_KEY)");
+      if (!this.hasCredentials()) throw new Error("Missing Fapshi credentials (FAPSHI_API_USER / FAPSHI_API_KEY)");
 
       const payload = {
         amount: data.amount,
@@ -46,6 +52,9 @@ export class FapshiService implements IPaymentProvider {
 
       return {
         referenceId,
+        // Fapshi's own transaction id (used for status checks) - prefer this
+        // over our locally-generated referenceId.
+        transactionId: res.data?.transId || res.data?.transactionId || res.data?.id,
         status: res.data?.status || "INITIATED",
         message: res.data?.message || "Payment request sent",
         data: res.data,
@@ -58,7 +67,7 @@ export class FapshiService implements IPaymentProvider {
 
   async getTransactionStatus(referenceId: string) {
     try {
-      if (!this.apiKey) throw new Error("Missing Fapshi API key (FAPSHI_API_KEY)");
+      if (!this.hasCredentials()) throw new Error("Missing Fapshi credentials (FAPSHI_API_USER / FAPSHI_API_KEY)");
 
       const res = await axios.get(`${this.baseUrl}/payment-status/${referenceId}`, {
         headers: this.authHeaders(),
@@ -87,7 +96,7 @@ export class FapshiService implements IPaymentProvider {
     const referenceId = uuidv4();
 
     try {
-      if (!this.apiKey) throw new Error("Missing Fapshi API key (FAPSHI_API_KEY)");
+      if (!this.hasCredentials()) throw new Error("Missing Fapshi credentials (FAPSHI_API_USER / FAPSHI_API_KEY)");
 
       const payload = {
         amount: data.amount,
@@ -115,7 +124,7 @@ export class FapshiService implements IPaymentProvider {
 
   async validateCredentials(): Promise<boolean> {
     try {
-      if (!this.apiKey) return false;
+      if (!this.hasCredentials()) return false;
 
       // Ping base URL with auth headers to validate credentials
       await axios.get(`${this.baseUrl}/`, {

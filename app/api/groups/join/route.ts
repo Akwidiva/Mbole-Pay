@@ -31,6 +31,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
     }
+    if ((user as any).kycStatus !== "APPROVED") {
+      return NextResponse.json(
+        { error: "Identity verification required. Complete KYC to join groups.", code: "KYC_REQUIRED" },
+        { status: 403 }
+      )
+    }
+
     const { inviteCode } = body
 
     if (!inviteCode) {

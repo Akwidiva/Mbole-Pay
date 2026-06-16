@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 import { pageVariants, containerVariants } from "@/lib/animations"
+import { KycPendingBanner } from "@/components/kyc-pending-banner"
 
 export function DashboardShell({ children }) {
   return (
@@ -12,7 +13,8 @@ export function DashboardShell({ children }) {
       exit="exit"
       className="flex-1 p-4 pt-6 md:p-8"
     >
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto space-y-4">
+        <KycPendingBanner />
         <motion.div
           variants={containerVariants}
           initial="initial"

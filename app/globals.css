@@ -142,6 +142,22 @@
   background-color: hsl(var(--soft-ivory));
 }
 
+/* Ensure Radix UI popper overlays (dropdowns, tooltips, etc.) always render above
+   framer-motion stacking contexts, which get GPU-composited at z:auto */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+/* Guarantee solid backgrounds on all Radix portal overlays */
+[data-radix-select-content],
+[data-radix-dropdown-menu-content],
+[data-radix-popover-content],
+[data-radix-context-menu-content],
+[data-radix-tooltip-content] {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+}
+
 /* Gradient text helper for stronger accents */
 .gradient-accent {
   background-clip: text;

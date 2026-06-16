@@ -52,6 +52,8 @@ export const authOptions: NextAuthOptions = {
           username: (user as any).username ?? null,
           phone: user.phone ?? null,
           role: user.role,
+          kycStatus: (user as any).kycStatus ?? "NONE",
+          image: (user as any).image ?? null,
         } as any
       },
     }),
@@ -75,11 +77,13 @@ export const authOptions: NextAuthOptions = {
             name: user.name ?? undefined,
           },
         });
-        // Store user id, username, and role in token
+        // Store user id, username, role, and kycStatus in token
         (user as any).id = dbUser.id;
         (user as any).username = (dbUser as any).username ?? null;
         (user as any).phone = dbUser.phone ?? null;
         (user as any).role = dbUser.role;
+        (user as any).kycStatus = (dbUser as any).kycStatus ?? "NONE";
+        (user as any).image = (dbUser as any).image ?? null;
         return true;
       } catch (e) {
         logger.error("SignIn callback error", { error: String(e) })
@@ -87,7 +91,7 @@ export const authOptions: NextAuthOptions = {
         return true
       }
     },
-    async jwt({ token, user }: any) {
+    async jwt({ token, user, trigger }: any) {
       if (user?.email) {
         token.email = user.email
         token.id = user.id
@@ -95,6 +99,21 @@ export const authOptions: NextAuthOptions = {
         token.phone = user.phone
         token.name = user.name
         token.role = user.role
+        token.kycStatus = user.kycStatus ?? "NONE"
+        token.picture = user.image ?? null
+      }
+      // Refresh kycStatus and image from DB when session.update() is called
+      if (trigger === "update" && token.id) {
+        try {
+          const fresh = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { kycStatus: true, image: true } as any,
+          })
+          if (fresh) {
+            token.kycStatus = (fresh as any).kycStatus ?? "NONE"
+            token.picture = (fresh as any).image ?? token.picture
+          }
+        } catch { /* non-fatal */ }
       }
       return token
     },
@@ -106,6 +125,8 @@ export const authOptions: NextAuthOptions = {
         session.user.phone = token.phone as string | null
         session.user.name = token.name as string | null
         session.user.role = token.role as string
+        session.user.kycStatus = token.kycStatus as string | null
+        session.user.image = token.picture as string | null
       }
       return session
     },

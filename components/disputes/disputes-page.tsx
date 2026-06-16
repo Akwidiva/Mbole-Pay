@@ -13,6 +13,7 @@ interface DisputesPageProps {
 
 export function DisputesPage({ groupId, groupName = "Group", userRole = "MEMBER" }: DisputesPageProps) {
   const [disputeCount, setDisputeCount] = useState(0);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   return (
     <div className="space-y-6">
@@ -46,12 +47,13 @@ export function DisputesPage({ groupId, groupName = "Group", userRole = "MEMBER"
 
       {/* File Dispute Button */}
       <div className="flex justify-end">
-        <DisputeForm groupId={groupId} onDisputeFiled={() => setDisputeCount(c => c + 1)} />
+        <DisputeForm groupId={groupId} onDisputeFiled={() => setRefreshTrigger(t => t + 1)} />
       </div>
 
       {/* Disputes List */}
-      <DisputeHistory 
-        groupId={groupId} 
+      <DisputeHistory
+        groupId={groupId}
+        refreshTrigger={refreshTrigger}
         onDisputesLoaded={(count) => setDisputeCount(count)}
       />
     </div>

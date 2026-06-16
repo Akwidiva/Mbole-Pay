@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/db";
+import { notifyDisputeFiled } from "@/lib/services/reminder-service";
 
 // GET /api/disputes?groupId=xxx - List disputes for a group
 export async function GET(request: NextRequest) {
@@ -34,22 +35,26 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all disputes for group
-    const disputes = await prisma.dispute.findMany({
-      where: { groupId },
-      include: {
-        votes: {
-          select: {
-            vote: true,
+    const [disputes, totalMembers] = await Promise.all([
+      prisma.dispute.findMany({
+        where: { groupId },
+        include: {
+          votes: {
+            select: {
+              vote: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.membership.count({ where: { groupId } }),
+    ]);
 
     // Calculate vote counts
     const formattedDisputes = disputes.map((dispute) => {
       const upholdCount = dispute.votes.filter((v) => v.vote === "UPHOLD").length;
       const rejectCount = dispute.votes.filter((v) => v.vote === "REJECT").length;
+      const total = upholdCount + rejectCount;
 
       return {
         id: dispute.id,
@@ -63,7 +68,9 @@ export async function GET(request: NextRequest) {
         votes: {
           uphold: upholdCount,
           reject: rejectCount,
-          total: upholdCount + rejectCount,
+          total,
+          totalMembers,
+          participated: totalMembers ? Math.round((total / totalMembers) * 100) : 0,
         },
       };
     });
@@ -116,6 +123,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const totalMembers = await prisma.membership.count({ where: { groupId } });
+
     // Create dispute
     const dispute = await prisma.dispute.create({
       data: {
@@ -132,6 +141,17 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Notify all other group members
+    const group = await prisma.group.findUnique({ where: { id: groupId }, select: { name: true } })
+    const filer = await prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true } })
+    notifyDisputeFiled({
+      groupId,
+      groupName: group?.name ?? "your group",
+      disputeTitle: title,
+      filedByName: filer?.name ?? "A member",
+      excludeUserId: session.user.id,
+    }).catch(() => {})
+
     return NextResponse.json(
       {
         success: true,
@@ -141,6 +161,8 @@ export async function POST(request: NextRequest) {
             uphold: 0,
             reject: 0,
             total: 0,
+            totalMembers,
+            participated: 0,
           },
         },
       },

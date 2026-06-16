@@ -20,15 +20,18 @@ interface Dispute {
     uphold: number;
     reject: number;
     total: number;
+    totalMembers: number;
+    participated: number;
   };
 }
 
 interface DisputeHistoryProps {
   groupId: string;
+  refreshTrigger?: number;
   onDisputesLoaded?: (count: number) => void;
 }
 
-export function DisputeHistory({ groupId, onDisputesLoaded }: DisputeHistoryProps) {
+export function DisputeHistory({ groupId, refreshTrigger, onDisputesLoaded }: DisputeHistoryProps) {
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +39,7 @@ export function DisputeHistory({ groupId, onDisputesLoaded }: DisputeHistoryProp
 
   useEffect(() => {
     fetchDisputes();
-  }, [groupId]);
+  }, [groupId, refreshTrigger]);
 
   async function fetchDisputes() {
     setLoading(true);

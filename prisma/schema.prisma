@@ -24,6 +24,21 @@ model User {
   payouts       Payout[]
   withdrawalRequests WithdrawalRequest[]
   invitationsSent GroupInvitation[] @relation("InvitationsSent")
+  notifications   Notification[]
+
+  image        String?
+
+  mfaOtp       String?
+  mfaOtpExpiry DateTime?
+
+  emailVerified Boolean @default(false)
+
+  kycStatus          String    @default("NONE") // "NONE" | "PENDING" | "APPROVED" | "REJECTED"
+  idDocumentCid      String?
+  selfiePhotoCid     String?
+  kycRejectionReason String?
+  kycSubmittedAt     DateTime?
+  kycReviewedAt      DateTime?
 }
 
 model Group {
@@ -31,9 +46,14 @@ model Group {
   name            String
   description     String?
   inviteCode      String   @unique
-  contributionAmount Int    // Amount each member must contribute
-  frequency       String   // "WEEKLY" | "MONTHLY" | "QUARTERLY"
+  contributionAmount Int
+  frequency       String   // "WEEKLY" | "BIWEEKLY" | "MONTHLY" | "QUARTERLY"
   cycleType       String   // "ROTATING" | "FIXED"
+  payoutOrder     String   @default("SEQUENTIAL") // "SEQUENTIAL" | "LOTTERY"
+  minMembers      Int      @default(2)
+  maxMembers      Int?
+  contractTxHash  String?  // blockchain tx hash from lockGroupRules()
+  contractGroupId String?  // keccak256(dbId) used as the on-chain key
   status          String   @default("ACTIVE") // "ACTIVE" | "INACTIVE"
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -188,6 +208,19 @@ model DisputeVote {
   createdAt DateTime @default(now())
 
   dispute Dispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "ROLE_ASSIGNED" | "ROLE_REMOVED" | "MEMBER_REMOVED" | "ADMIN_MESSAGE" | "PAYMENT_RECEIVED" | "KYC_APPROVED" | "KYC_REJECTED"
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  groupId   String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model NotificationPreference {

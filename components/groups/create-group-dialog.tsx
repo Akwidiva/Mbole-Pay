@@ -33,6 +33,9 @@ export function CreateGroupDialog({ open, onOpenChange, onSuccess }: CreateGroup
     contributionAmount: "5000",
     frequency: "MONTHLY",
     cycleType: "ROTATING",
+    payoutOrder: "SEQUENTIAL",
+    minMembers: "2",
+    maxMembers: "",
   })
 
   const handleChange = (
@@ -77,12 +80,24 @@ export function CreateGroupDialog({ open, onOpenChange, onSuccess }: CreateGroup
     setLoading(true)
 
     try {
+      const minMembers = parseInt(formData.minMembers) || 2
+      const maxMembers = formData.maxMembers ? parseInt(formData.maxMembers) : null
+
+      if (maxMembers !== null && maxMembers <= minMembers) {
+        toast({ title: "Error", description: "Maximum members must be greater than minimum members", variant: "destructive" })
+        setLoading(false)
+        return
+      }
+
       await createGroup({
         name: formData.name.trim(),
         description: formData.description.trim(),
         contributionAmount: parseInt(formData.contributionAmount),
         frequency: formData.frequency,
         cycleType: formData.cycleType,
+        payoutOrder: formData.payoutOrder,
+        minMembers,
+        maxMembers,
       })
 
       toast({
@@ -96,6 +111,9 @@ export function CreateGroupDialog({ open, onOpenChange, onSuccess }: CreateGroup
         contributionAmount: "5000",
         frequency: "MONTHLY",
         cycleType: "ROTATING",
+        payoutOrder: "SEQUENTIAL",
+        minMembers: "2",
+        maxMembers: "",
       })
 
       onOpenChange(false)
@@ -153,7 +171,7 @@ export function CreateGroupDialog({ open, onOpenChange, onSuccess }: CreateGroup
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Monthly Amount (XAF) *</Label>
+              <Label htmlFor="amount">Contribution Amount (XAF) *</Label>
               <Input
                 id="amount"
                 name="contributionAmount"
@@ -175,7 +193,7 @@ export function CreateGroupDialog({ open, onOpenChange, onSuccess }: CreateGroup
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="WEEKLY">Weekly</SelectItem>
-                  <SelectItem value="BIWEEKLY">Bi-weekly</SelectItem>
+                  <SelectItem value="BIWEEKLY">Fortnightly</SelectItem>
                   <SelectItem value="MONTHLY">Monthly</SelectItem>
                   <SelectItem value="QUARTERLY">Quarterly</SelectItem>
                 </SelectContent>
@@ -183,25 +201,71 @@ export function CreateGroupDialog({ open, onOpenChange, onSuccess }: CreateGroup
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="cycleType">Payout Cycle *</Label>
-            <Select value={formData.cycleType} onValueChange={(value) => handleSelectChange("cycleType", value)}>
-              <SelectTrigger id="cycleType" disabled={loading}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ROTATING">Rotating (Members take turns)</SelectItem>
-                <SelectItem value="FIXED">Fixed (Same recipient each cycle)</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="cycleType">Payout Cycle *</Label>
+              <Select value={formData.cycleType} onValueChange={(value) => handleSelectChange("cycleType", value)}>
+                <SelectTrigger id="cycleType" disabled={loading}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ROTATING">Rotating (everyone takes turns)</SelectItem>
+                  <SelectItem value="FIXED">Fixed (same recipient always)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="payoutOrder">Payout Order *</Label>
+              <Select value={formData.payoutOrder} onValueChange={(value) => handleSelectChange("payoutOrder", value)}>
+                <SelectTrigger id="payoutOrder" disabled={loading}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SEQUENTIAL">Sequential (fixed queue)</SelectItem>
+                  <SelectItem value="LOTTERY">Lottery (random draw)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="minMembers">Min Members *</Label>
+              <Input
+                id="minMembers"
+                name="minMembers"
+                type="number"
+                placeholder="2"
+                value={formData.minMembers}
+                onChange={handleChange}
+                disabled={loading}
+                min="2"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="maxMembers">Max Members <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Input
+                id="maxMembers"
+                name="maxMembers"
+                type="number"
+                placeholder="No limit"
+                value={formData.maxMembers}
+                onChange={handleChange}
+                disabled={loading}
+                min={String(parseInt(formData.minMembers || "2") + 1)}
+              />
+            </div>
           </div>
 
           <div className="bg-muted p-3 rounded-lg text-sm">
-            <p className="font-medium mb-1">💡 Group Setup:</p>
+            <p className="font-medium mb-1">Group rules are locked after creation</p>
             <ul className="text-muted-foreground space-y-1 text-xs">
               <li>• You'll be the admin with full control</li>
               <li>• Share the invite code to add members</li>
-              <li>• Each member contributes {formData.contributionAmount} XAF {formData.frequency.toLowerCase()}</li>
+              <li>• Each member contributes {formData.contributionAmount} XAF · {formData.frequency.toLowerCase()} · {formData.payoutOrder.toLowerCase()} payout order</li>
             </ul>
           </div>
 

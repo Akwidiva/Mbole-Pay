@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, Building2, Gauge, LogOut, Menu, ShieldAlert, X } from "lucide-react"
+import { BarChart3, Building2, Gauge, LogOut, Menu, ShieldAlert, BadgeCheck, X } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { MboleLogo } from "@/components/mbole-logo"
@@ -19,6 +19,7 @@ export function AdminNavbar() {
     { href: "/admin/users", label: "Users", icon: BarChart3 },
     { href: "/admin/groups", label: "Groups", icon: Building2 },
     { href: "/admin/disputes", label: "Disputes", icon: ShieldAlert },
+    { href: "/admin/kyc", label: "KYC", icon: BadgeCheck },
   ]
 
   return (

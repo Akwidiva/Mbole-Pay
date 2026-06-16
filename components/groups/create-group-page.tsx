@@ -49,8 +49,7 @@ export function CreateGroupPage() {
         cycleType: formData.cycleType,
       })
       toast({ title: "Success", description: "Group created" })
-      // return to the groups page so the new group appears in the list
-      router.push('/groups')
+      router.push(`/groups/${group.id}`)
     } catch (err) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to create group", variant: "destructive" })
     } finally {
@@ -108,6 +107,7 @@ export function CreateGroupPage() {
             </SelectContent>
           </Select>
         </div>
+
 
         <div className="flex justify-end space-x-2">
           <Button variant="outline" onClick={() => router.push('/groups')} disabled={loading}>Cancel</Button>

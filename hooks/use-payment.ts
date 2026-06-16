@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import {
   PaymentStatus,
@@ -18,7 +18,7 @@ export function usePayment(options: UsePaymentOptions = {}) {
   const { onSuccess, onError, pollInterval = 3000 } = options;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pollTimeout, setPollTimeout] = useState<NodeJS.Timeout | null>(null);
+  const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
    * Initialize a payment request
@@ -115,7 +115,7 @@ export function usePayment(options: UsePaymentOptions = {}) {
           // Stop polling if completed or failed
           if (status.status === "COMPLETED" || status.status === "FAILED") {
             clearInterval(interval);
-            setPollTimeout(null);
+            pollTimeoutRef.current = null;
             return;
           }
         }
@@ -123,11 +123,11 @@ export function usePayment(options: UsePaymentOptions = {}) {
         // Stop polling after max duration
         if (elapsed >= maxDuration) {
           clearInterval(interval);
-          setPollTimeout(null);
+          pollTimeoutRef.current = null;
         }
       }, pollInterval);
 
-      setPollTimeout(interval as any);
+      pollTimeoutRef.current = interval;
       return () => clearInterval(interval);
     },
     [pollInterval, getPaymentStatus]
@@ -202,11 +202,11 @@ export function usePayment(options: UsePaymentOptions = {}) {
    * Stop polling
    */
   const stopPolling = useCallback(() => {
-    if (pollTimeout) {
-      clearTimeout(pollTimeout);
-      setPollTimeout(null);
+    if (pollTimeoutRef.current) {
+      clearInterval(pollTimeoutRef.current);
+      pollTimeoutRef.current = null;
     }
-  }, [pollTimeout]);
+  }, []);
 
   return {
     loading,

@@ -8,6 +8,9 @@ interface Group {
   contributionAmount: number
   frequency: string
   cycleType: string
+  payoutOrder: string
+  minMembers: number
+  maxMembers: number | null
   status: string
   createdAt: string
   creatorId: string

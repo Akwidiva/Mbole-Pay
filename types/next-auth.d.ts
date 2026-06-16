@@ -11,6 +11,7 @@ declare module "next-auth" {
       phone?: string | null
       role?: string | null
       image?: string | null
+      kycStatus?: string | null
     }
   }
 
@@ -19,6 +20,7 @@ declare module "next-auth" {
     username?: string | null
     phone?: string | null
     role?: string | null
+    kycStatus?: string | null
   }
 }
 
@@ -28,6 +30,6 @@ declare module "next-auth/jwt" {
     username?: string | null
     phone?: string | null
     role?: string | null
+    kycStatus?: string | null
   }
 }
-

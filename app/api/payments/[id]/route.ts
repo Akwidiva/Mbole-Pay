@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/db";
-import { PaymentFactory } from "@/lib/payments/payment-factory";
-import { ApiResponse, PaymentStatusResponse } from "@/types/payments";
+import { PaymentFactory, mapProviderStatus } from "@/lib/payments/payment-factory";
+import { ApiResponse, PaymentStatusResponse, PaymentStatus } from "@/types/payments";
 import { userHasPermission } from "@/lib/rbac";
 
 /**
@@ -121,14 +121,15 @@ export async function GET(
       try {
         const paymentFactory = PaymentFactory.getProvider(payment.provider as any);
         const providerStatus = await paymentFactory.getTransactionStatus(payment.providerRef) as any;
+        const mappedStatus = mapProviderStatus(providerStatus.status);
 
-        // Update status if changed
-        if (providerStatus.status !== payment.status) {
+        // Update status if it maps to something different from our current status
+        if (mappedStatus && mappedStatus !== payment.status) {
           const updated = await prisma.payment.update({
             where: { id: paymentId },
             data: {
-              status: providerStatus.status,
-              errorMessage: providerStatus.errorMessage,
+              status: mappedStatus,
+              errorMessage: mappedStatus === PaymentStatus.FAILED ? "Payment failed at provider" : null,
             },
           });
 
@@ -136,7 +137,7 @@ export async function GET(
           errorMessage = updated.errorMessage;
 
           // If payment completed, update contribution
-          if (providerStatus.status === "COMPLETED" && payment.contributionId) {
+          if (mappedStatus === PaymentStatus.COMPLETED && payment.contributionId) {
             await prisma.contribution.update({
               where: { id: payment.contributionId },
               data: {

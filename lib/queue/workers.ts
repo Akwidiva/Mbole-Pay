@@ -3,6 +3,10 @@ import { redisConnection } from "@/lib/queue/connection";
 import { QUEUE_NAMES } from "@/lib/queue/queues";
 import type { QueueJobPayloadMap } from "@/lib/queue/jobs";
 import { notificationEventHandler } from "@/lib/services/notification-event-handler";
+import { prisma } from "@/lib/db";
+import { PaymentFactory, mapProviderStatus } from "@/lib/payments/payment-factory";
+import { PaymentStatus } from "@/types/payments";
+import { runReminderTick } from "@/lib/services/reminder-service";
 
 let workersStarted = false;
 let workers: Worker[] = [];
@@ -38,13 +42,88 @@ function createPaymentRetryWorker() {
   const worker = new Worker<QueueJobPayloadMap["payment.retry"]>(
     QUEUE_NAMES.paymentRetries,
     async (job) => {
+      const { paymentId } = job.data;
       console.log("[queue][payment-retries] processing", job.id, job.data);
-      // TODO: wire real retry logic to payment provider polling/retry service.
-      return { ok: true };
+
+      const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
+      if (!payment) {
+        console.warn(`[queue][payment-retries] payment ${paymentId} not found, skipping`);
+        return { ok: true, skipped: true };
+      }
+
+      // Already resolved (e.g. webhook arrived first) - nothing to do.
+      if (payment.status === PaymentStatus.COMPLETED || payment.status === PaymentStatus.FAILED) {
+        return { ok: true, status: payment.status };
+      }
+
+      if (!payment.providerRef) {
+        throw new Error(`Payment ${paymentId} has no providerRef yet`);
+      }
+
+      const providerInstance = PaymentFactory.getProvider(payment.provider as any);
+      const result = await providerInstance.getTransactionStatus(payment.providerRef);
+      const providerStatus = String(result?.status || "").toUpperCase();
+      const mappedStatus = mapProviderStatus(providerStatus);
+
+      if (mappedStatus === PaymentStatus.COMPLETED) {
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: { status: PaymentStatus.COMPLETED },
+        });
+
+        if (payment.contributionId) {
+          await prisma.contribution.update({
+            where: { id: payment.contributionId },
+            data: { status: "PAID", paidAt: new Date() },
+          });
+        }
+
+        return { ok: true, status: "COMPLETED" };
+      }
+
+      if (mappedStatus === PaymentStatus.FAILED) {
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: PaymentStatus.FAILED,
+            errorMessage: `Payment ${providerStatus.toLowerCase()} at provider`,
+          },
+        });
+        return { ok: true, status: "FAILED" };
+      }
+
+      // Still pending/processing at the provider - throw so BullMQ retries with backoff.
+      throw new Error(`Payment ${paymentId} still ${providerStatus || "pending"} at provider`);
     },
     { connection: redisConnection, concurrency: 5 }
   );
   bindWorkerEvents(worker, "payment-retries");
+
+  // Once all retry attempts are exhausted and the provider never confirmed,
+  // mark the payment FAILED so the user can retry via /api/payments/[id]/retry.
+  worker.on("failed", async (job, err) => {
+    if (!job) return;
+    const attempts = job.opts.attempts ?? 1;
+    if (job.attemptsMade < attempts) return;
+
+    const { paymentId } = job.data;
+    try {
+      const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
+      if (payment && payment.status !== PaymentStatus.COMPLETED && payment.status !== PaymentStatus.FAILED) {
+        await prisma.payment.update({
+          where: { id: paymentId },
+          data: {
+            status: PaymentStatus.FAILED,
+            errorMessage: "Payment timed out - no confirmation received",
+          },
+        });
+        console.warn(`[queue][payment-retries] marked payment ${paymentId} FAILED after exhausting retries`, err);
+      }
+    } catch (markError) {
+      console.error("[queue][payment-retries] failed to mark payment FAILED after retries exhausted", markError);
+    }
+  });
+
   return worker;
 }
 
@@ -67,7 +146,7 @@ function createSchedulerWorker() {
     QUEUE_NAMES.scheduler,
     async (job) => {
       console.log("[queue][scheduler] tick", job.id, job.data);
-      // TODO: enqueue contribution reminders, overdue payment retries, periodic reports.
+      await runReminderTick();
       return { ok: true };
     },
     { connection: redisConnection, concurrency: 1 }

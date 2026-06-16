@@ -8,8 +8,13 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { createLogger } from "@/lib/observability/logger";
 import { paymentInitializationEvents, recordApiError } from "@/lib/observability/metrics";
 import { enqueuePaymentRetry } from "@/lib/queue/enqueue";
+import { bootstrapQueueWorkers } from "@/lib/queue/bootstrap";
 
 const logger = createLogger("payments.initialize")
+
+// Ensure the payment-retry worker (and other queue workers) are running so
+// the post-initialize safety-check job enqueued below actually gets processed.
+bootstrapQueueWorkers();
 
 /**
  * POST /api/payments/initialize
@@ -103,6 +108,22 @@ export async function POST(request: NextRequest) {
           timestamp: new Date(),
         },
         { status: 404 }
+      );
+    }
+
+    if ((user as any).kycStatus !== "APPROVED") {
+      paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "kyc_required" })
+      logger.warn("Payment initialization rejected: KYC not approved", { userId: user.id, kycStatus: (user as any).kycStatus })
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          error: {
+            code: "KYC_REQUIRED",
+            message: "Identity verification required. Complete KYC to make payments.",
+          },
+          timestamp: new Date(),
+        },
+        { status: 403 }
       );
     }
 
@@ -217,7 +238,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for duplicate pending payments
+    // Check for duplicate pending payments. Only payments created within the
+    // configured timeout window are treated as blocking; older stuck rows are
+    // marked FAILED so a new attempt can proceed instead of being blocked forever.
+    const timeoutMinutes = Number(process.env.PAYMENT_TIMEOUT_MINUTES) || 15;
+    const timeoutThreshold = new Date(Date.now() - timeoutMinutes * 60 * 1000);
+
     const existingPayment = await prisma.payment.findFirst({
       where: {
         contributionId: contributionId,
@@ -226,23 +252,34 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingPayment) {
-      paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "duplicate" })
-      logger.warn("Payment initialization rejected: duplicate pending payment", { contributionId, existingPaymentId: existingPayment.id })
-      return NextResponse.json<ApiResponse>(
-        {
-          success: false,
-          error: {
-            code: "DUPLICATE_PAYMENT",
-            message: "A payment is already pending for this contribution",
-            details: {
-              paymentId: existingPayment.id,
-              status: existingPayment.status,
+      if (existingPayment.createdAt > timeoutThreshold) {
+        paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "duplicate" })
+        logger.warn("Payment initialization rejected: duplicate pending payment", { contributionId, existingPaymentId: existingPayment.id })
+        return NextResponse.json<ApiResponse>(
+          {
+            success: false,
+            error: {
+              code: "DUPLICATE_PAYMENT",
+              message: "A payment is already pending for this contribution",
+              details: {
+                paymentId: existingPayment.id,
+                status: existingPayment.status,
+              },
             },
+            timestamp: new Date(),
           },
-          timestamp: new Date(),
+          { status: 409 }
+        );
+      }
+
+      await prisma.payment.update({
+        where: { id: existingPayment.id },
+        data: {
+          status: PaymentStatus.FAILED,
+          errorMessage: "Payment timed out",
         },
-        { status: 409 }
-      );
+      });
+      logger.warn("Stale pending payment marked as FAILED", { contributionId, paymentId: existingPayment.id });
     }
 
     // Create payment record in database
@@ -264,15 +301,47 @@ export async function POST(request: NextRequest) {
     const paymentFactory = PaymentFactory.getProvider(resolvedProvider as any);
     const externalId = paymentRecord.id;
 
-    const paymentRequest = await paymentFactory.requestToPay({
-      amount: paymentAmount,
-      phoneNumber: phoneNumber.replace(/\s/g, ""),
-      externalId: externalId,
-      description: `Payment for ${contribution.group.name}`,
-    });
+    let paymentRequest;
+    try {
+      paymentRequest = await paymentFactory.requestToPay({
+        amount: paymentAmount,
+        phoneNumber: phoneNumber.replace(/\s/g, ""),
+        externalId: externalId,
+        description: `Payment for ${contribution.group.name}`,
+      });
+    } catch (providerError: any) {
+      const providerErrorMessage = providerError?.message || "Provider request failed";
 
-    // Update payment record with provider reference
-    const providerRef = (paymentRequest as any).referenceId || (paymentRequest as any).transactionId;
+      await prisma.payment.update({
+        where: { id: paymentRecord.id },
+        data: {
+          status: PaymentStatus.FAILED,
+          errorMessage: providerErrorMessage,
+        },
+      });
+
+      paymentInitializationEvents.inc({ provider: String(resolvedProvider), result: "provider_error" });
+      recordApiError("/api/payments/initialize", 500);
+      logger.error("Payment initialization failed at provider", { paymentId: paymentRecord.id, provider: resolvedProvider, error: providerErrorMessage });
+
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          error: {
+            code: "PAYMENT_INIT_ERROR",
+            message: providerErrorMessage,
+            details: { paymentId: paymentRecord.id },
+          },
+          timestamp: new Date(),
+        },
+        { status: 500 }
+      );
+    }
+
+    // Update payment record with provider reference (prefer the provider's
+    // own transaction id - needed for later status checks - falling back to
+    // our locally-generated reference if the provider didn't return one)
+    const providerRef = (paymentRequest as any).transactionId || (paymentRequest as any).referenceId;
     await prisma.payment.update({
       where: { id: paymentRecord.id },
       data: {
