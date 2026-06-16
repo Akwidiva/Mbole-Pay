@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/c/Desktop/Projects/Mbole-Pay\" && docker compose up -d --build 2>&1 | tail -n 5)",
+      "Read(//c/Desktop/Projects/Mbole-Pay/**)",
+      "Bash(cd \"/c/Desktop/Projects/Mbole-Pay\" && sleep 5 && docker exec mbole-pay-postgres-1 psql -U mbole -d mbole_pay -c \"UPDATE \\\\\"Contribution\\\\\" SET status='PENDING', \\\\\"paidAt\\\\\"=NULL WHERE id='cmqffo1nj0006o401qj6rqu00'; DELETE FROM \\\\\"Payment\\\\\" WHERE \\\\\"contributionId\\\\\"='cmqffo1nj0006o401qj6rqu00';\")",
+      "Bash(cd \"/c/Desktop/Projects/Mbole-Pay\" && docker exec mbole-pay-postgres-1 psql -U mbole -d mbole_pay -c \"SELECT id, status, \\\\\"paidAt\\\\\", \\\\\"dueDate\\\\\", \\\\\"userId\\\\\" FROM \\\\\"Contribution\\\\\" WHERE id='cmqffo1nj0006o401qj6rqu00';\")",
+      "Bash(node debug-invite.js)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\fongu\\AppData\\Local\\Temp\\pw"
+    ]
+  }
+}
