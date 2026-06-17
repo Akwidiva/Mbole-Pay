@@ -1,14 +1,13 @@
 const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+const parsed = new URL(redisUrl);
+const isTls = parsed.protocol === "rediss:";
 
-/**
- * Shared BullMQ connection options.
- * Using plain options avoids ioredis type conflicts between package instances.
- */
 export const redisConnection = {
-  host: new URL(redisUrl).hostname,
-  port: Number(new URL(redisUrl).port || 6379),
-  username: new URL(redisUrl).username || undefined,
-  password: new URL(redisUrl).password || undefined,
+  host: parsed.hostname,
+  port: Number(parsed.port || (isTls ? 6380 : 6379)),
+  username: parsed.username || undefined,
+  password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
+  tls: isTls ? {} : undefined,
   maxRetriesPerRequest: null as null,
 };
 
