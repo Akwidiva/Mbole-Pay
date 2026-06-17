@@ -30,7 +30,7 @@ app-1  | [queue] workers started
 | Prometheus | http://localhost:9090 | — |
 | PostgreSQL | localhost:5432 | mbole / mbole_password |
 | Redis | localhost:6379 | — |
-| Blockchain (Polygon Amoy) | https://amoy.polygonscan.com/address/0x8a8855cEA52AD03eD4D8D0621E7f20484B731f1c | NjangiGroupFactory contract |
+| Blockchain (Polygon Amoy) | https://amoy.polygonscan.com/address/0xd76D93575Bfa2c99f5dD5E1965220607660175AF | NjangiGroupFactory contract |
 | Deployer wallet | https://amoy.polygonscan.com/address/0x593cb545E30Ed2868B7FfA26A3A6DA9253274508 | — |
 
 To stop: `docker compose down`

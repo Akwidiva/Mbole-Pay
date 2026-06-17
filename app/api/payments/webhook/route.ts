@@ -6,6 +6,7 @@ import crypto from "crypto";
 import { createLogger } from "@/lib/observability/logger";
 import { paymentWebhookEvents, recordApiError } from "@/lib/observability/metrics";
 import { notifyPaymentReceived } from "@/lib/services/reminder-service";
+import { recordCycleOnChain } from "@/lib/blockchain/factory";
 
 const logger = createLogger("payments.webhook")
 
@@ -181,15 +182,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // If payment completed, update contribution status
+    // If payment completed, update contribution status then check for auto-payout
     if (updatedStatus === PaymentStatus.COMPLETED && payment.contributionId) {
-      await prisma.contribution.update({
+      const contribution = await prisma.contribution.update({
         where: { id: payment.contributionId },
-        data: {
-          status: "PAID",
-          paidAt: new Date(),
-        },
-      });
+        data: { status: "PAID", paidAt: new Date() },
+      })
 
       paymentWebhookEvents.inc({ provider, result: "completed" })
       logger.info("Contribution marked as PAID", { contributionId: payment.contributionId, userId: payment.userId })
@@ -207,8 +205,13 @@ export async function POST(request: NextRequest) {
           amount: paymentWithDetails.amount,
           groupId: paymentWithDetails.group.id,
           groupName: paymentWithDetails.group.name,
-        }).catch(() => {}) // non-blocking
+        }).catch(() => {})
       }
+
+      // Auto-payout: check if ALL contributions for this cycle are now PAID
+      triggerPayoutIfComplete(payment.groupId, contribution.cycle).catch((err) =>
+        logger.error("Auto-payout check failed", { groupId: payment.groupId, error: String(err) })
+      )
     }
 
     // If payment failed, increment retry count and log error
@@ -260,6 +263,126 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// ── Auto-payout logic ────────────────────────────────────────────────────────
+
+async function triggerPayoutIfComplete(groupId: string, cycle: number) {
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    include: {
+      memberships: {
+        include: { user: { select: { id: true, name: true, phone: true } } },
+        orderBy: { createdAt: "asc" },
+      },
+    },
+  })
+  if (!group) return
+
+  // Only process if this cycle matches the group's current active cycle
+  if (group.currentCycle !== cycle) return
+
+  // Check if a payout was already triggered
+  const existingPayout = await prisma.payout.findFirst({ where: { groupId, cycle } })
+  if (existingPayout && existingPayout.status !== "SCHEDULED") return
+
+  // Check all contributions for this cycle
+  const contributions = await prisma.contribution.findMany({ where: { groupId, cycle } })
+  if (contributions.length === 0) return
+  const allPaid = contributions.every((c) => c.status === "PAID")
+  if (!allPaid) return
+
+  const memberCount = group.memberships.length
+  const totalPool = group.contributionAmount * memberCount
+
+  // Determine recipient
+  let recipientMembership
+  if (group.payoutOrder === "LOTTERY" && existingPayout) {
+    // Recipient was selected at cycle start
+    recipientMembership = group.memberships.find((m) => m.userId === existingPayout.recipientId)
+  } else {
+    // SEQUENTIAL: current index in join order
+    const idx = group.currentRecipientIndex % memberCount
+    recipientMembership = group.memberships[idx]
+  }
+
+  if (!recipientMembership) return
+
+  const recipientPhone = recipientMembership.user.phone
+  if (!recipientPhone) {
+    console.error("Auto-payout: recipient has no phone number", { userId: recipientMembership.userId })
+    return
+  }
+
+  // Create/update the payout record
+  const payoutData = {
+    groupId,
+    recipientId: recipientMembership.userId,
+    amount: totalPool,
+    currency: "XAF",
+    status: "PROCESSING",
+    provider: "FAPSHI",
+    phoneNumber: recipientPhone,
+    scheduledDate: new Date(),
+    cycle,
+  }
+
+  let payout
+  if (existingPayout) {
+    payout = await prisma.payout.update({
+      where: { id: existingPayout.id },
+      data: { status: "PROCESSING", processedDate: new Date() },
+    })
+  } else {
+    payout = await prisma.payout.create({ data: payoutData })
+  }
+
+  // Trigger Fapshi transfer to recipient
+  try {
+    const fapshi = PaymentFactory.getProvider("FAPSHI" as any)
+    await fapshi.transfer({
+      amount: totalPool,
+      phoneNumber: recipientPhone,
+      externalId: `payout-${groupId}-cycle-${cycle}`,
+      description: `Njangi payout — ${group.name} cycle ${cycle}`,
+    })
+
+    // Mark payout completed
+    await prisma.payout.update({
+      where: { id: payout.id },
+      data: { status: "COMPLETED", processedDate: new Date() },
+    })
+
+    // Advance to next cycle
+    const nextRecipientIndex = (group.currentRecipientIndex + 1) % memberCount
+    await prisma.group.update({
+      where: { id: groupId },
+      data: {
+        currentCycle: group.currentCycle + 1,
+        currentRecipientIndex: nextRecipientIndex,
+      },
+    })
+
+    console.log(`[payout] Cycle ${cycle} complete for group ${groupId} — paid ${totalPool} XAF to ${recipientPhone}`)
+
+    // Record cycle completion on-chain (non-blocking)
+    recordCycleOnChain({
+      dbGroupId: groupId,
+      cycle,
+      dbRecipientId: recipientMembership.userId,
+      amount: totalPool,
+      memberCount,
+    }).catch((err) => console.warn("[blockchain] recordCycleComplete failed (non-fatal):", err.message))
+
+  } catch (err: any) {
+    await prisma.payout.update({
+      where: { id: payout.id },
+      data: { status: "FAILED", errorMessage: err.message },
+    })
+    console.error("[payout] Fapshi transfer failed:", err.message)
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * GET /api/payments/webhook

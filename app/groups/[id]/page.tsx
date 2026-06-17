@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AnalyticsDashboard } from "@/components/analytics";
 import { MemberManagement } from "@/components/groups/member-management";
 import { GroupSettingsPage } from "@/components/groups/group-settings-page";
+import { CycleCard } from "@/components/groups/cycle-card";
 import { Users, TrendingUp, Settings, ChevronLeft, DollarSign, Calendar, Mail } from "lucide-react";
 import Link from "next/link";
 
@@ -266,6 +267,8 @@ export default function GroupDetailPage() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-4">
+            {/* Cycle / Pay Now card — always first */}
+            <CycleCard groupId={groupId} />
             {/* Real-Time Financial Stats */}
             {metricsLoading ? (
               <div className="grid gap-4 md:grid-cols-3">

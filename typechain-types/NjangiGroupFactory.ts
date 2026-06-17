@@ -58,11 +58,27 @@ export declare namespace NjangiGroupFactory {
 
 export interface NjangiGroupFactoryInterface extends Interface {
   getFunction(
-    nameOrSignature: "getGroupRules" | "isLocked" | "lockGroupRules"
+    nameOrSignature:
+      | "getCompletedCycles"
+      | "getCycleRecipient"
+      | "getGroupRules"
+      | "isLocked"
+      | "lockGroupRules"
+      | "recordCycleComplete"
   ): FunctionFragment;
 
-  getEvent(nameOrSignatureOrTopic: "GroupRulesLocked"): EventFragment;
+  getEvent(
+    nameOrSignatureOrTopic: "CycleCompleted" | "GroupRulesLocked"
+  ): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "getCompletedCycles",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getCycleRecipient",
+    values: [BytesLike, BigNumberish]
+  ): string;
   encodeFunctionData(
     functionFragment: "getGroupRules",
     values: [BytesLike]
@@ -80,7 +96,19 @@ export interface NjangiGroupFactoryInterface extends Interface {
       BigNumberish
     ]
   ): string;
+  encodeFunctionData(
+    functionFragment: "recordCycleComplete",
+    values: [BytesLike, BigNumberish, BytesLike, BigNumberish, BigNumberish]
+  ): string;
 
+  decodeFunctionResult(
+    functionFragment: "getCompletedCycles",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getCycleRecipient",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "getGroupRules",
     data: BytesLike
@@ -90,6 +118,41 @@ export interface NjangiGroupFactoryInterface extends Interface {
     functionFragment: "lockGroupRules",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "recordCycleComplete",
+    data: BytesLike
+  ): Result;
+}
+
+export namespace CycleCompletedEvent {
+  export type InputTuple = [
+    groupId: BytesLike,
+    cycle: BigNumberish,
+    recipientId: BytesLike,
+    amount: BigNumberish,
+    memberCount: BigNumberish,
+    timestamp: BigNumberish
+  ];
+  export type OutputTuple = [
+    groupId: string,
+    cycle: bigint,
+    recipientId: string,
+    amount: bigint,
+    memberCount: bigint,
+    timestamp: bigint
+  ];
+  export interface OutputObject {
+    groupId: string;
+    cycle: bigint;
+    recipientId: string;
+    amount: bigint;
+    memberCount: bigint;
+    timestamp: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace GroupRulesLockedEvent {
@@ -163,6 +226,18 @@ export interface NjangiGroupFactory extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  getCompletedCycles: TypedContractMethod<
+    [groupId: BytesLike],
+    [bigint],
+    "view"
+  >;
+
+  getCycleRecipient: TypedContractMethod<
+    [groupId: BytesLike, cycle: BigNumberish],
+    [string],
+    "view"
+  >;
+
   getGroupRules: TypedContractMethod<
     [groupId: BytesLike],
     [NjangiGroupFactory.GroupRulesStructOutput],
@@ -185,10 +260,32 @@ export interface NjangiGroupFactory extends BaseContract {
     "nonpayable"
   >;
 
+  recordCycleComplete: TypedContractMethod<
+    [
+      groupId: BytesLike,
+      cycle: BigNumberish,
+      recipientId: BytesLike,
+      amount: BigNumberish,
+      memberCount: BigNumberish
+    ],
+    [void],
+    "nonpayable"
+  >;
+
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
 
+  getFunction(
+    nameOrSignature: "getCompletedCycles"
+  ): TypedContractMethod<[groupId: BytesLike], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "getCycleRecipient"
+  ): TypedContractMethod<
+    [groupId: BytesLike, cycle: BigNumberish],
+    [string],
+    "view"
+  >;
   getFunction(
     nameOrSignature: "getGroupRules"
   ): TypedContractMethod<
@@ -214,7 +311,27 @@ export interface NjangiGroupFactory extends BaseContract {
     [void],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "recordCycleComplete"
+  ): TypedContractMethod<
+    [
+      groupId: BytesLike,
+      cycle: BigNumberish,
+      recipientId: BytesLike,
+      amount: BigNumberish,
+      memberCount: BigNumberish
+    ],
+    [void],
+    "nonpayable"
+  >;
 
+  getEvent(
+    key: "CycleCompleted"
+  ): TypedContractEvent<
+    CycleCompletedEvent.InputTuple,
+    CycleCompletedEvent.OutputTuple,
+    CycleCompletedEvent.OutputObject
+  >;
   getEvent(
     key: "GroupRulesLocked"
   ): TypedContractEvent<
@@ -224,6 +341,17 @@ export interface NjangiGroupFactory extends BaseContract {
   >;
 
   filters: {
+    "CycleCompleted(bytes32,uint256,bytes32,uint256,uint256,uint256)": TypedContractEvent<
+      CycleCompletedEvent.InputTuple,
+      CycleCompletedEvent.OutputTuple,
+      CycleCompletedEvent.OutputObject
+    >;
+    CycleCompleted: TypedContractEvent<
+      CycleCompletedEvent.InputTuple,
+      CycleCompletedEvent.OutputTuple,
+      CycleCompletedEvent.OutputObject
+    >;
+
     "GroupRulesLocked(bytes32,address,uint256,string,string)": TypedContractEvent<
       GroupRulesLockedEvent.InputTuple,
       GroupRulesLockedEvent.OutputTuple,

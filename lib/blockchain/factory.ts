@@ -2,9 +2,13 @@ import { ethers } from "ethers"
 
 const ABI = [
   "function lockGroupRules(bytes32 groupId, string name, uint256 contributionAmount, string frequency, string payoutOrder, uint256 minMembers, uint256 maxMembers) external",
+  "function recordCycleComplete(bytes32 groupId, uint256 cycle, bytes32 recipientId, uint256 amount, uint256 memberCount) external",
   "function getGroupRules(bytes32 groupId) external view returns (tuple(string name, uint256 contributionAmount, string frequency, string payoutOrder, uint256 minMembers, uint256 maxMembers, address creator, uint256 createdAt))",
   "function isLocked(bytes32 groupId) external view returns (bool)",
+  "function getCompletedCycles(bytes32 groupId) external view returns (uint256)",
+  "function getCycleRecipient(bytes32 groupId, uint256 cycle) external view returns (bytes32)",
   "event GroupRulesLocked(bytes32 indexed groupId, address indexed creator, uint256 contributionAmount, string frequency, string payoutOrder)",
+  "event CycleCompleted(bytes32 indexed groupId, uint256 indexed cycle, bytes32 recipientId, uint256 amount, uint256 memberCount, uint256 timestamp)",
 ]
 
 function getProvider() {
@@ -92,6 +96,36 @@ export async function getGroupRulesFromChain(dbGroupId: string) {
     creator:            rules.creator,
     createdAt:          new Date(Number(rules.createdAt) * 1000),
   }
+}
+
+/**
+ * Record a completed payout cycle on-chain.
+ * Emits a CycleCompleted event that is permanently stored on Polygon.
+ * Non-fatal — caller should catch and log.
+ */
+export async function recordCycleOnChain(params: {
+  dbGroupId: string
+  cycle: number
+  dbRecipientId: string
+  amount: number
+  memberCount: number
+}): Promise<string> {
+  const signer = getSigner()
+  const contract = getContract(signer)
+
+  const onChainGroupId = dbIdToBytes32(params.dbGroupId)
+  const onChainRecipientId = dbIdToBytes32(params.dbRecipientId)
+
+  const tx = await contract.recordCycleComplete(
+    onChainGroupId,
+    BigInt(params.cycle),
+    onChainRecipientId,
+    BigInt(params.amount),
+    BigInt(params.memberCount)
+  )
+
+  const receipt = await tx.wait()
+  return receipt.hash
 }
 
 /** True if blockchain env vars are configured. */

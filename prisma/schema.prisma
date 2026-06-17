@@ -52,10 +52,12 @@ model Group {
   payoutOrder     String   @default("SEQUENTIAL") // "SEQUENTIAL" | "LOTTERY"
   minMembers      Int      @default(2)
   maxMembers      Int?
-  contractTxHash  String?  // blockchain tx hash from lockGroupRules()
-  contractGroupId String?  // keccak256(dbId) used as the on-chain key
-  status          String   @default("ACTIVE") // "ACTIVE" | "INACTIVE"
-  createdAt       DateTime @default(now())
+  contractTxHash        String?
+  contractGroupId       String?
+  status                String   @default("ACTIVE") // "ACTIVE" | "INACTIVE"
+  currentCycle          Int      @default(1)
+  currentRecipientIndex Int      @default(0)
+  createdAt             DateTime @default(now())
   updatedAt       DateTime @updatedAt
   creator_id      String
   memberships     Membership[]
@@ -102,6 +104,7 @@ model Contribution {
   id        String   @id @default(cuid())
   amount    Int
   status    String   @default("PENDING") // "PENDING" | "PAID" | "OVERDUE"
+  cycle     Int      @default(1)
   dueDate   DateTime
   paidAt    DateTime?
   createdAt DateTime @default(now())
@@ -172,10 +175,11 @@ model Payout {
   currency        String   @default("XAF")
   status          String   @default("PENDING") // PENDING, SCHEDULED, PROCESSING, COMPLETED, FAILED
   
+  cycle           Int      @default(1)
   provider        String                        // MTN_MOMO or ORANGE_MONEY
   providerRef     String?  @unique
   phoneNumber     String
-  
+  cycleTxHash     String?
   scheduledDate   DateTime
   processedDate   DateTime?
   

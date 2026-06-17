@@ -3,8 +3,9 @@ pragma solidity ^0.8.20;
 
 /**
  * @title NjangiGroupFactory
- * @notice Stores njangi group rules immutably on-chain.
+ * @notice Stores njangi group rules immutably on-chain and records each cycle completion.
  *         Rules are written once at group creation and can never be changed.
+ *         Each payout cycle is recorded permanently so the full history is auditable.
  */
 contract NjangiGroupFactory {
     struct GroupRules {
@@ -21,6 +22,10 @@ contract NjangiGroupFactory {
     // groupId (keccak256 of the DB cuid) => immutable rules
     mapping(bytes32 => GroupRules) private _groups;
 
+    // groupId => cycle number => recipient DB id hash
+    mapping(bytes32 => mapping(uint256 => bytes32)) private _cycleRecipients;
+    mapping(bytes32 => uint256) private _completedCycles;
+
     event GroupRulesLocked(
         bytes32 indexed groupId,
         address indexed creator,
@@ -29,16 +34,15 @@ contract NjangiGroupFactory {
         string  payoutOrder
     );
 
-    /**
-     * @notice Lock group rules on-chain. Can only be called once per groupId.
-     * @param groupId      keccak256 hash of the database group ID
-     * @param name         Human-readable group name
-     * @param contributionAmount Amount in XAF each member contributes
-     * @param frequency    Contribution frequency string
-     * @param payoutOrder  "SEQUENTIAL" or "LOTTERY"
-     * @param minMembers   Minimum members required
-     * @param maxMembers   Maximum members allowed (0 = unlimited)
-     */
+    event CycleCompleted(
+        bytes32 indexed groupId,
+        uint256 indexed cycle,
+        bytes32 recipientId,
+        uint256 amount,
+        uint256 memberCount,
+        uint256 timestamp
+    );
+
     function lockGroupRules(
         bytes32 groupId,
         string  calldata name,
@@ -68,17 +72,45 @@ contract NjangiGroupFactory {
     }
 
     /**
-     * @notice Read the immutable rules for a group.
+     * @notice Record that a contribution cycle has completed and a payout was made.
+     *         Creates a permanent, public, auditable record of every payout.
+     * @param groupId     keccak256 of the DB group ID
+     * @param cycle       Cycle number (1, 2, 3 ...)
+     * @param recipientId keccak256 of the DB recipient user ID
+     * @param amount      Total XAF paid out (contributionAmount * memberCount)
+     * @param memberCount Number of contributing members this cycle
      */
+    function recordCycleComplete(
+        bytes32 groupId,
+        uint256 cycle,
+        bytes32 recipientId,
+        uint256 amount,
+        uint256 memberCount
+    ) external {
+        require(_groups[groupId].createdAt != 0, "Group not found");
+        require(_cycleRecipients[groupId][cycle] == bytes32(0), "Cycle already recorded");
+        require(amount > 0, "Amount must be positive");
+
+        _cycleRecipients[groupId][cycle] = recipientId;
+        _completedCycles[groupId] = cycle;
+
+        emit CycleCompleted(groupId, cycle, recipientId, amount, memberCount, block.timestamp);
+    }
+
     function getGroupRules(bytes32 groupId) external view returns (GroupRules memory) {
         require(_groups[groupId].createdAt != 0, "Group not found");
         return _groups[groupId];
     }
 
-    /**
-     * @notice Check if rules have been locked for a group.
-     */
     function isLocked(bytes32 groupId) external view returns (bool) {
         return _groups[groupId].createdAt != 0;
+    }
+
+    function getCompletedCycles(bytes32 groupId) external view returns (uint256) {
+        return _completedCycles[groupId];
+    }
+
+    function getCycleRecipient(bytes32 groupId, uint256 cycle) external view returns (bytes32) {
+        return _cycleRecipients[groupId][cycle];
     }
 }
