@@ -19,6 +19,12 @@ yarn-error.log*
 # env files
 .env*
 
+# Terraform
+infra/.terraform/
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+
 # vercel
 .vercel
 
