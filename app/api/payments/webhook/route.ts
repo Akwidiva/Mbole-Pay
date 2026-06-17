@@ -27,71 +27,32 @@ export async function POST(request: NextRequest) {
     let transactionStatus: string;
     let transactionId: string;
 
-    // Detect provider by payload structure
-    if (body.transactionStatus || body.payer) {
-      // MTN Momo webhook format
-      provider = PaymentProvider.MTN_MOMO;
-      externalId = body.externalId;
-      transactionStatus = body.transactionStatus;
-      transactionId = body.transactionId;
-    } else if (body.status && body.phoneNumber && body.source !== "fapshi") {
-      // Orange Money webhook format
-      provider = PaymentProvider.ORANGE_MONEY;
-      externalId = body.externalId;
-      transactionStatus = body.status;
-      transactionId = body.transactionId;
+    // Fapshi sends x-wh-secret header — use it as primary detection
+    const whSecret = request.headers.get("x-wh-secret");
+    const fSecret = process.env.FAPSHI_WEBHOOK_SECRET || "";
 
-      // Verify webhook signature for Orange Money
-      const signature = body.signature;
-      const secretKey = process.env.ORANGE_MONEY_API_SECRET || "";
-      const payload = JSON.stringify(body);
-      const expectedSignature = crypto
-        .createHmac("sha256", secretKey)
-        .update(payload)
-        .digest("hex");
+    if (whSecret !== null || body.transId || body.externalId) {
+      // Fapshi webhook
+      provider = PaymentProvider.FAPSHI;
 
-      if (signature !== expectedSignature) {
+      // Verify plain-text secret matches what we configured
+      if (fSecret && whSecret !== fSecret) {
         paymentWebhookEvents.inc({ provider, result: "invalid_signature" })
-        logger.warn("Webhook rejected: invalid Orange Money signature")
+        logger.warn("Webhook rejected: invalid Fapshi secret", { received: whSecret })
         return NextResponse.json<ApiResponse>(
           {
             success: false,
-            error: {
-              code: "INVALID_SIGNATURE",
-              message: "Webhook signature verification failed",
-            },
+            error: { code: "INVALID_SIGNATURE", message: "Fapshi webhook secret mismatch" },
             timestamp: new Date(),
           },
           { status: 401 }
         );
       }
-    } else if (body.source === "fapshi" || body.fapshi_transaction_id || body.gateway === "fapshi" || request.headers.get("x-fapshi-signature")) {
-      // Fapshi webhook assumed format
-      provider = PaymentProvider.FAPSHI;
-      // Fapshi may include an external_id or reference; try common fields
-      externalId = body.external_id || body.externalId || body.reference || body.payment_id || body.paymentId;
-      transactionStatus = body.status || body.transaction_status || body.state;
-      transactionId = body.fapshi_transaction_id || body.id || body.transaction_id || body.transactionId;
 
-      // Optional: verify signature if FAPSHI_SECRET configured
-      const fSignature = request.headers.get("x-fapshi-signature") || body.signature;
-      const fSecret = process.env.FAPSHI_WEBHOOK_SECRET || "";
-      if (fSecret && fSignature) {
-        const payload = JSON.stringify(body);
-        const expected = crypto.createHmac("sha256", fSecret).update(payload).digest("hex");
-        if (expected !== fSignature) {
-          paymentWebhookEvents.inc({ provider, result: "invalid_signature" })
-          logger.warn("Webhook rejected: invalid Fapshi signature")
-          return NextResponse.json<ApiResponse>(
-            {
-              success: false,
-              error: { code: "INVALID_SIGNATURE", message: "Fapshi webhook signature mismatch" },
-              timestamp: new Date(),
-            },
-            { status: 401 }
-          );
-        }
-      }
+      // Fapshi payload fields: transId, status, externalId, amount
+      externalId = body.externalId;
+      transactionStatus = body.status;
+      transactionId = body.transId;
     } else {
       paymentWebhookEvents.inc({ provider: "unknown", result: "unknown_provider" })
       logger.warn("Webhook rejected: unknown provider", { body })
@@ -156,10 +117,12 @@ export async function POST(request: NextRequest) {
     let errorMessage: string | null = null;
 
     switch (transactionStatus) {
+      case "SUCCESSFUL":
       case "COMPLETED":
         updatedStatus = PaymentStatus.COMPLETED;
         break;
       case "FAILED":
+      case "EXPIRED":
         updatedStatus = PaymentStatus.FAILED;
         errorMessage = "Payment failed at provider";
         break;
