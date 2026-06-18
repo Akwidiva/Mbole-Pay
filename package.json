@@ -7,7 +7,7 @@
     "chain:node": "hardhat node",
     "chain:deploy": "hardhat run scripts/blockchain/deploy-factory.ts --network localhost",
     "chain:deploy:testnet": "hardhat run scripts/blockchain/deploy-factory.ts --network polygonAmoy",
-    "build": "next build",
+    "build": "prisma generate && prisma migrate deploy && next build",
     "build:clean": "powershell -Command \"if (Test-Path .next) { Remove-Item .next -Recurse -Force }; if (Test-Path .turbo) { Remove-Item .turbo -Recurse -Force }; pnpm build\"",
     "start": "next start",
     "lint": "next lint",
