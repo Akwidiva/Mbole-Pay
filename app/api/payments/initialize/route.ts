@@ -349,10 +349,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update payment record with provider reference (prefer the provider's
-    // own transaction id - needed for later status checks - falling back to
-    // our locally-generated reference if the provider didn't return one)
     const providerRef = (paymentRequest as any).transactionId || (paymentRequest as any).referenceId;
+    const checkoutLink = (paymentRequest as any).checkoutLink || null;
     await prisma.payment.update({
       where: { id: paymentRecord.id },
       data: {
@@ -381,8 +379,11 @@ export async function POST(request: NextRequest) {
           amount: paymentAmount,
           currency: "XAF",
           phoneNumber: phoneNumber.replace(/\s/g, ""),
-          message: "Payment initialized. Check your phone for payment prompt.",
-          expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes
+          redirectUrl: checkoutLink,
+          message: checkoutLink
+            ? "Redirecting to Fapshi checkout to complete payment."
+            : "Payment initialized. Check your phone for payment prompt.",
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000),
         },
         timestamp: new Date(),
       },

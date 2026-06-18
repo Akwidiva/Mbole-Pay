@@ -50,16 +50,15 @@ export class FapshiService implements IPaymentProvider {
         message: data.description,
       };
 
-      const res = await axios.post(`${this.baseUrl}/direct-pay`, payload, {
+      const res = await axios.post(`${this.baseUrl}/initiate-pay`, payload, {
         headers: this.authHeaders(),
         timeout: 10000,
       });
 
       return {
         referenceId,
-        // Fapshi's own transaction id (used for status checks) - prefer this
-        // over our locally-generated referenceId.
         transactionId: res.data?.transId || res.data?.transactionId || res.data?.id,
+        checkoutLink: res.data?.link || null,
         status: res.data?.status || "INITIATED",
         message: res.data?.message || "Payment request sent",
         data: res.data,

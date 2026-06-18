@@ -118,12 +118,26 @@ export function CycleCard({ groupId }: CycleCardProps) {
         return
       }
 
+      // Hosted checkout flow — redirect to Fapshi's payment page
+      if (json.data?.redirectUrl) {
+        toast({ title: "Redirecting to payment...", description: "Complete your payment on Fapshi's secure page." })
+        window.open(json.data.redirectUrl, "_blank")
+        // Poll for confirmation after redirect
+        let attempts = 0
+        const poll = setInterval(async () => {
+          attempts++
+          await fetchCycle()
+          if (attempts >= 36) clearInterval(poll) // poll 3 min
+        }, 5000)
+        return
+      }
+
+      // USSD direct-pay flow (once Direct Pay is approved)
       toast({
         title: "Check your phone!",
         description: `A payment prompt was sent to ${data.myPhone}. Enter your 5-digit MTN MoMo PIN to confirm.`,
       })
 
-      // Poll for payment confirmation every 5 seconds for 2 minutes
       let attempts = 0
       const poll = setInterval(async () => {
         attempts++
