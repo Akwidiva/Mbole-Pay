@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ExternalLink, Loader2, Mail, Users, Copy, ChevronLeft } from "lucide-react"
+import { ExternalLink, Loader2, Mail, Users, Copy, ChevronLeft, CheckCircle2 } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export function InviteMembersPage() { // fixed: visibleGroups hoisted before useEffect
   const searchParams = useSearchParams()
@@ -204,20 +205,29 @@ export function InviteMembersPage() { // fixed: visibleGroups hoisted before use
           </form>
 
           {inviteUrl && (
-            <div className="mt-6 rounded-2xl border bg-muted/30 p-4">
-              <p className="text-sm font-medium">Invite link for {inviteEmailAddress}</p>
-              <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center">
-                <code className="flex-1 rounded-lg bg-background px-3 py-2 text-xs break-all">{inviteUrl}</code>
-                <Button type="button" variant="outline" onClick={copyInviteLink}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy Link
-                </Button>
-                <Button asChild type="button">
-                  <Link href={inviteUrl} target="_blank">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Open
-                  </Link>
-                </Button>
+            <div className="mt-6 space-y-3">
+              <Alert className="border-green-200 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-100">
+                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <AlertTitle>Invitation sent!</AlertTitle>
+                <AlertDescription>
+                  An email with the join link has been sent to <strong>{inviteEmailAddress}</strong>. Share the link below if they don't receive it.
+                </AlertDescription>
+              </Alert>
+              <div className="rounded-2xl border bg-muted/30 p-4">
+                <p className="text-sm font-medium text-muted-foreground mb-3">Join link</p>
+                <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                  <code className="flex-1 rounded-lg bg-background px-3 py-2 text-xs break-all">{inviteUrl}</code>
+                  <Button type="button" variant="outline" onClick={copyInviteLink}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copy
+                  </Button>
+                  <Button asChild type="button">
+                    <Link href={inviteUrl} target="_blank">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Open
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </div>
           )}

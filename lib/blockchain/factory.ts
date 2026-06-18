@@ -2,6 +2,7 @@ import { ethers } from "ethers"
 
 const ABI = [
   "function lockGroupRules(bytes32 groupId, string name, uint256 contributionAmount, string frequency, string payoutOrder, uint256 minMembers, uint256 maxMembers) external",
+  "function recordContribution(bytes32 groupId, uint256 cycle, bytes32 memberId, uint256 amount, bool isRecipientOffset) external",
   "function recordCycleComplete(bytes32 groupId, uint256 cycle, bytes32 recipientId, uint256 amount, uint256 memberCount) external",
   "function getGroupRules(bytes32 groupId) external view returns (tuple(string name, uint256 contributionAmount, string frequency, string payoutOrder, uint256 minMembers, uint256 maxMembers, address creator, uint256 createdAt))",
   "function isLocked(bytes32 groupId) external view returns (bool)",
@@ -96,6 +97,36 @@ export async function getGroupRulesFromChain(dbGroupId: string) {
     creator:            rules.creator,
     createdAt:          new Date(Number(rules.createdAt) * 1000),
   }
+}
+
+/**
+ * Record a single member contribution on-chain.
+ * isRecipientOffset = true when the recipient's contribution is auto-confirmed.
+ * Non-fatal — caller should catch and log.
+ */
+export async function recordContributionOnChain(params: {
+  dbGroupId: string
+  cycle: number
+  dbMemberId: string
+  amount: number
+  isRecipientOffset: boolean
+}): Promise<string> {
+  const signer = getSigner()
+  const contract = getContract(signer)
+
+  const onChainGroupId = dbIdToBytes32(params.dbGroupId)
+  const onChainMemberId = dbIdToBytes32(params.dbMemberId)
+
+  const tx = await contract.recordContribution(
+    onChainGroupId,
+    BigInt(params.cycle),
+    onChainMemberId,
+    BigInt(params.amount),
+    params.isRecipientOffset
+  )
+
+  const receipt = await tx.wait()
+  return receipt.hash
 }
 
 /**

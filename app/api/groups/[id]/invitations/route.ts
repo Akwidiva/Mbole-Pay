@@ -4,10 +4,11 @@ import { v4 as uuid } from "uuid"
 import prisma from "@/lib/db"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { checkGroupRole, roleErrorResponse } from "@/lib/role-middleware"
-import { sendGroupInvitation } from "@/lib/notifications/utils"
+import { emailService } from "@/lib/services/email-service"
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
-  const roleCheck = await checkGroupRole(params.id, "ADMIN")
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const roleCheck = await checkGroupRole(id, "ADMIN")
   if (!roleCheck.authorized) {
     return roleErrorResponse(roleCheck.error, 403)
   }
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     const group = await prisma.group.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       select: { id: true, name: true, inviteCode: true },
     })
 
@@ -33,12 +34,33 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const inviter = session?.user?.email
       ? await prisma.user.findUnique({
           where: { email: session.user.email },
-          select: { id: true, email: true, phone: true },
+          select: { id: true, name: true, email: true, phone: true },
         })
       : null
 
     if (!inviter) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Membership is locked once cycles start and stays locked until every current
+    // member has received a payout (full rotation). Only then can new members join
+    // for the next rotation.
+    const cycleStarted = await prisma.contribution.findFirst({ where: { groupId: group.id } })
+    if (cycleStarted) {
+      const memberCount = await prisma.membership.count({ where: { groupId: group.id } })
+      const completedPayouts = await prisma.payout.count({
+        where: { groupId: group.id, status: "COMPLETED" },
+      })
+      const fullRotationDone = completedPayouts >= memberCount
+      if (!fullRotationDone) {
+        const remaining = memberCount - completedPayouts
+        return NextResponse.json(
+          {
+            error: `The rotation is in progress. New members can only join after all ${memberCount} members have received a payout. ${remaining} member${remaining === 1 ? "" : "s"} still waiting for their turn.`,
+          },
+          { status: 409 }
+        )
+      }
     }
 
     const existingMembership = await prisma.membership.findUnique({
@@ -55,18 +77,11 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     const existingPending = await prisma.groupInvitation.findFirst({
-      where: {
-        groupId: group.id,
-        email,
-        status: "PENDING",
-      },
+      where: { groupId: group.id, email, status: "PENDING" },
     })
 
-    if (existingPending) {
-      return NextResponse.json({ error: "An invitation is already pending for this email" }, { status: 409 })
-    }
-
-    const invitation = await prisma.groupInvitation.create({
+    // If invitation already exists, just resend the email
+    const invitation = existingPending ?? await prisma.groupInvitation.create({
       data: {
         token: uuid(),
         groupId: group.id,
@@ -81,23 +96,28 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       },
     })
 
-    const invitee = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, email: true, phone: true },
-    })
+    const inviterName = inviter.name || inviter.email
+    const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000"}/invites/${invitation.token}`
 
-    await sendGroupInvitation(
-      invitee?.id || email,
-      email,
-      invitee?.phone || "",
-      group.name,
-      group.inviteCode,
-      `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/invites/${invitation.token}`
-    )
+    await emailService.sendEmail({
+      to: email,
+      subject: `${inviterName} invited you to join ${group.name} on Mbole Pay`,
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+          <h2 style="color:#1a1a2e">You've been invited!</h2>
+          <p><strong>${inviterName}</strong> has invited you to join the savings group <strong>${group.name}</strong> on Mbole Pay.</p>
+          <a href="${inviteLink}" style="display:inline-block;margin:16px 0;padding:12px 24px;background:#059669;color:#fff;text-decoration:none;border-radius:8px;font-weight:600">
+            Accept Invitation
+          </a>
+          <p style="color:#666;font-size:13px">This link expires in 7 days. If you don't have an account yet, you can sign up after clicking the link — you'll be added to the group automatically.</p>
+          <p style="color:#aaa;font-size:12px">If you didn't expect this invitation, you can ignore this email.</p>
+        </div>
+      `,
+    }).catch((err: any) => console.error("[invitation] email send failed:", err))
 
     return NextResponse.json(
       {
-        message: "Invitation created",
+        message: existingPending ? "Invitation resent" : "Invitation created",
         invitation,
         acceptUrl: `/invites/${invitation.token}`,
       },

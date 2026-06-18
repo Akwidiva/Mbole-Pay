@@ -43,6 +43,15 @@ contract NjangiGroupFactory {
         uint256 timestamp
     );
 
+    event ContributionRecorded(
+        bytes32 indexed groupId,
+        uint256 indexed cycle,
+        bytes32 indexed memberId,
+        uint256 amount,
+        bool isRecipientOffset, // true when recipient's share is auto-confirmed
+        uint256 timestamp
+    );
+
     function lockGroupRules(
         bytes32 groupId,
         string  calldata name,
@@ -80,6 +89,24 @@ contract NjangiGroupFactory {
      * @param amount      Total XAF paid out (contributionAmount * memberCount)
      * @param memberCount Number of contributing members this cycle
      */
+    /**
+     * @notice Record that a member has made their contribution for a cycle.
+     * @param isRecipientOffset true when the recipient's contribution is auto-confirmed
+     *        (their share is offset against the payout they receive).
+     */
+    function recordContribution(
+        bytes32 groupId,
+        uint256 cycle,
+        bytes32 memberId,
+        uint256 amount,
+        bool isRecipientOffset
+    ) external {
+        require(_groups[groupId].createdAt != 0, "Group not found");
+        require(amount > 0, "Amount must be positive");
+
+        emit ContributionRecorded(groupId, cycle, memberId, amount, isRecipientOffset, block.timestamp);
+    }
+
     function recordCycleComplete(
         bytes32 groupId,
         uint256 cycle,

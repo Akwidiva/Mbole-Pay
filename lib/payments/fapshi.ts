@@ -19,6 +19,11 @@ export class FapshiService implements IPaymentProvider {
     return Boolean(this.apiUser && this.apiKey);
   }
 
+  // Fapshi expects 9-digit local format (e.g. "682019181"), not "+237682019181"
+  private toLocalPhone(phone: string): string {
+    return phone.replace(/^\+237/, "").replace(/^237/, "").replace(/\s/g, "")
+  }
+
   private authHeaders() {
     return {
       apiuser: this.apiUser,
@@ -40,7 +45,7 @@ export class FapshiService implements IPaymentProvider {
 
       const payload = {
         amount: data.amount,
-        phone: data.phoneNumber,
+        phone: this.toLocalPhone(data.phoneNumber),
         externalId: data.externalId,
         message: data.description,
       };
@@ -100,7 +105,7 @@ export class FapshiService implements IPaymentProvider {
 
       const payload = {
         amount: data.amount,
-        phone: data.phoneNumber,
+        phone: this.toLocalPhone(data.phoneNumber),
         externalId: data.externalId,
         message: data.description,
       };

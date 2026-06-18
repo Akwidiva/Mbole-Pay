@@ -238,64 +238,75 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for duplicate pending payments. Only payments created within the
-    // configured timeout window are treated as blocking; older stuck rows are
-    // marked FAILED so a new attempt can proceed instead of being blocked forever.
+    // Find any existing payment for this contribution (any status)
     const timeoutMinutes = Number(process.env.PAYMENT_TIMEOUT_MINUTES) || 15;
     const timeoutThreshold = new Date(Date.now() - timeoutMinutes * 60 * 1000);
 
     const existingPayment = await prisma.payment.findFirst({
-      where: {
-        contributionId: contributionId,
-        status: { in: ["PENDING", "PROCESSING"] },
-      },
+      where: { contributionId },
     });
 
     if (existingPayment) {
-      if (existingPayment.createdAt > timeoutThreshold) {
-        paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "duplicate" })
-        logger.warn("Payment initialization rejected: duplicate pending payment", { contributionId, existingPaymentId: existingPayment.id })
-        return NextResponse.json<ApiResponse>(
-          {
-            success: false,
-            error: {
-              code: "DUPLICATE_PAYMENT",
-              message: "A payment is already pending for this contribution",
-              details: {
-                paymentId: existingPayment.id,
-                status: existingPayment.status,
+      // Block if a fresh PENDING/PROCESSING payment already exists
+      if (
+        existingPayment.status === PaymentStatus.PENDING ||
+        existingPayment.status === PaymentStatus.PROCESSING
+      ) {
+        if (existingPayment.createdAt > timeoutThreshold) {
+          paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "duplicate" })
+          logger.warn("Duplicate pending payment blocked", { contributionId, existingPaymentId: existingPayment.id })
+          return NextResponse.json<ApiResponse>(
+            {
+              success: false,
+              error: {
+                code: "DUPLICATE_PAYMENT",
+                message: "A payment is already pending for this contribution",
+                details: { paymentId: existingPayment.id, status: existingPayment.status },
               },
+              timestamp: new Date(),
             },
-            timestamp: new Date(),
-          },
-          { status: 409 }
-        );
+            { status: 409 }
+          );
+        }
+        // Stale — mark failed so we can reuse the record
+        await prisma.payment.update({
+          where: { id: existingPayment.id },
+          data: { status: PaymentStatus.FAILED, errorMessage: "Payment timed out" },
+        });
       }
-
-      await prisma.payment.update({
-        where: { id: existingPayment.id },
-        data: {
-          status: PaymentStatus.FAILED,
-          errorMessage: "Payment timed out",
-        },
-      });
-      logger.warn("Stale pending payment marked as FAILED", { contributionId, paymentId: existingPayment.id });
     }
 
-    // Create payment record in database
-    const paymentRecord = await prisma.payment.create({
-      data: {
-        userId: user.id,
-        groupId: groupId,
-        contributionId: contributionId,
-        amount: paymentAmount,
-        currency: "XAF",
-        status: PaymentStatus.PENDING,
-        provider: resolvedProvider,
-        phoneNumber: phoneNumber.replace(/\s/g, ""),
-        retryCount: 0,
-      },
-    });
+    // Reuse an existing FAILED record (unique constraint on contributionId) or create fresh
+    let paymentRecord;
+    if (existingPayment) {
+      paymentRecord = await prisma.payment.update({
+        where: { id: existingPayment.id },
+        data: {
+          status: PaymentStatus.PENDING,
+          provider: resolvedProvider,
+          phoneNumber: phoneNumber.replace(/\s/g, ""),
+          providerRef: null,
+          errorMessage: null,
+          retryCount: (existingPayment.retryCount ?? 0) + 1,
+          updatedAt: new Date(),
+        },
+      });
+      logger.info("Reusing existing payment record for retry", { paymentId: paymentRecord.id, retryCount: paymentRecord.retryCount });
+    } else {
+      paymentRecord = await prisma.payment.create({
+        data: {
+          userId: user.id,
+          groupId: groupId,
+          contributionId: contributionId,
+          amount: paymentAmount,
+          currency: "XAF",
+          status: PaymentStatus.PENDING,
+          provider: resolvedProvider,
+          phoneNumber: phoneNumber.replace(/\s/g, ""),
+          retryCount: 0,
+        },
+      });
+    }
 
     // Initialize payment with provider
     const paymentFactory = PaymentFactory.getProvider(resolvedProvider as any);

@@ -3,15 +3,16 @@ import { getServerSession } from "next-auth/next"
 import prisma from "@/lib/db"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
-export async function POST(request: NextRequest, { params }: { params: { token: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   try {
+    const { token } = await params
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const invitation = await prisma.groupInvitation.findUnique({
-      where: { token: params.token },
+      where: { token },
       include: {
         group: true,
       },
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
 
     if (invitation.expiresAt < new Date()) {
       await prisma.groupInvitation.update({
-        where: { token: params.token },
+        where: { token: token },
         data: { status: "EXPIRED" },
       })
       return NextResponse.json({ error: "Invitation has expired" }, { status: 410 })
@@ -46,6 +47,26 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
+    // Membership locked from first cycle until every member has received a payout
+    const cycleStarted = await prisma.contribution.findFirst({
+      where: { groupId: invitation.groupId },
+    })
+    if (cycleStarted) {
+      const memberCount = await prisma.membership.count({ where: { groupId: invitation.groupId } })
+      const completedPayouts = await prisma.payout.count({
+        where: { groupId: invitation.groupId, status: "COMPLETED" },
+      })
+      if (completedPayouts < memberCount) {
+        const remaining = memberCount - completedPayouts
+        return NextResponse.json(
+          {
+            error: `The group rotation is still in progress — ${remaining} member${remaining === 1 ? "" : "s"} still waiting for their turn. You can join once everyone has received a payout.`,
+          },
+          { status: 409 }
+        )
+      }
+    }
+
     const existingMembership = await prisma.membership.findUnique({
       where: {
         userId_groupId: {
@@ -57,7 +78,7 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
 
     if (existingMembership) {
       await prisma.groupInvitation.update({
-        where: { token: params.token },
+        where: { token: token },
         data: { status: "ACCEPTED", acceptedAt: new Date() },
       })
 
@@ -76,7 +97,7 @@ export async function POST(request: NextRequest, { params }: { params: { token: 
     })
 
     await prisma.groupInvitation.update({
-      where: { token: params.token },
+      where: { token: token },
       data: { status: "ACCEPTED", acceptedAt: new Date() },
     })
 

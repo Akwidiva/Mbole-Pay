@@ -10,6 +10,7 @@ import { UpcomingPayments } from "@/components/dashboard/upcoming-payments"
 import { DisputeResolution } from "@/components/dashboard/dispute-resolution"
 import { QuickActions } from "@/components/dashboard/quick-actions"
 import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton"
+import { RecipientAlert } from "@/components/dashboard/recipient-alert"
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -24,6 +25,7 @@ export default async function DashboardPage() {
     <DashboardShell>
       <DashboardHeader heading="Dashboard" text="Manage your savings groups and track your contributions." />
       <Suspense fallback={<DashboardSkeleton />}>
+        <RecipientAlert />
         <DashboardOverview />
         <div className="grid gap-8 md:grid-cols-3 mt-8">
           <div className="md:col-span-2">

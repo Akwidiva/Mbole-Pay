@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
-import { CheckCircle2, Clock, Phone, Smartphone, AlertCircle, Play, RefreshCw } from "lucide-react"
+import { CheckCircle2, Clock, Phone, Smartphone, AlertCircle, Play, RefreshCw, Gift } from "lucide-react"
 
 interface Contribution {
   id: string
@@ -38,6 +38,7 @@ interface CycleData {
   payoutTriggered: boolean
   payoutStatus: string | null
   isAdmin: boolean
+  isRecipient: boolean
   myPhone: string | null
 }
 
@@ -199,11 +200,13 @@ export function CycleCard({ groupId }: CycleCardProps) {
         {data.cycleStarted && !data.payoutTriggered && (
           <div className="space-y-2">
             {myPaid ? (
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <div className={`flex items-center gap-2 p-3 rounded-xl border ${data.isRecipient ? "bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800" : "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800"}`}>
+                {data.isRecipient ? <Gift className="h-5 w-5 text-purple-600 shrink-0" /> : <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />}
                 <div>
-                  <p className="font-semibold text-green-700 dark:text-green-400">Your contribution is confirmed</p>
-                  <p className="text-xs text-muted-foreground">{fmt(data.myContribution!.amount)} paid</p>
+                  <p className={`font-semibold ${data.isRecipient ? "text-purple-700 dark:text-purple-400" : "text-green-700 dark:text-green-400"}`}>
+                    {data.isRecipient ? "You're this cycle's recipient — contribution auto-confirmed" : "Your contribution is confirmed"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{fmt(data.myContribution!.amount)} {data.isRecipient ? "offset against your payout" : "paid"}</p>
                 </div>
               </div>
             ) : data.myContribution ? (
@@ -212,6 +215,7 @@ export function CycleCard({ groupId }: CycleCardProps) {
                   <AlertCircle className="h-4 w-4" />
                   <span>Your contribution of <strong>{fmt(data.myContribution.amount)}</strong> is pending</span>
                 </div>
+
                 <Button
                   type="button"
                   className="w-full h-14 text-base font-semibold gap-3 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700"
@@ -293,8 +297,9 @@ export function CycleCard({ groupId }: CycleCardProps) {
           </div>
         )}
 
-        {/* Admin: start cycle */}
-        {data.isAdmin && !data.cycleStarted && (
+        {/* Admin: start cycle button only for the very first cycle.
+            After cycle 1 completes, all subsequent cycles auto-start after payout. */}
+        {data.isAdmin && !data.cycleStarted && data.currentCycle === 1 && (
           <Button
             type="button"
             variant="outline"
@@ -305,6 +310,15 @@ export function CycleCard({ groupId }: CycleCardProps) {
             {starting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
             {starting ? "Starting cycle..." : `Start Cycle ${data.currentCycle}`}
           </Button>
+        )}
+
+        {/* Subsequent cycles auto-start after payout — show a waiting state if
+            the cycle number advanced but contributions haven't appeared yet */}
+        {!data.cycleStarted && data.currentCycle > 1 && (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/40 border text-sm text-muted-foreground">
+            <Clock className="h-4 w-4 shrink-0" />
+            <span>Next cycle starting automatically after payout settles…</span>
+          </div>
         )}
 
       </CardContent>
