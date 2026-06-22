@@ -1,0 +1,26 @@
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#EEEDFE", "primaryBorderColor": "#534AB7", "primaryTextColor": "#3C3489", "lineColor": "#555", "fontSize": "13px"}}}%%
+flowchart TD
+  A([Member notices an issue]) --> B[Navigate to /disputes\nClick File Dispute]
+  B --> C[Fill form: category\ndescription + evidence file]
+  C --> D{File attached?}
+  D -->|Yes| E[Upload to Pinata IPFS\nCID returned and stored]
+  D -->|No| F[Dispute without evidence]
+  E --> G
+  F --> G[POST /api/disputes\nStatus: OPEN\nvotingDeadline = now + 72h]
+  G --> H[Notifications sent\nto all group members]
+  H --> I{Members vote\nwithin 72h}
+  I -->|Member votes| J{Already voted?}
+  J -->|Yes| K([Rejected — one vote per member])
+  J -->|No| L[DisputeVote recorded]
+  L --> I
+  I -->|Deadline reached| M{Admin force-resolve?}
+  M -->|Yes| N[POST /api/admin/disputes/id/resolve]
+  M -->|No — auto| O{Quorum met?\nMajority UPHELD?}
+  O -->|UPHELD majority| P[Dispute → UPHELD]
+  O -->|REJECTED majority| Q[Dispute → REJECTED]
+  O -->|No quorum| R[Auto-resolved: REJECTED]
+  N --> S[Dispute closed\nAll parties notified]
+  P --> S
+  Q --> S
+  R --> S
+  S --> T([Dispute closed])

@@ -1,0 +1,147 @@
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#E1F5EE", "primaryBorderColor": "#0F6E56", "primaryTextColor": "#085041", "lineColor": "#555", "fontSize": "12px"}}}%%
+classDiagram
+
+  class User {
+    +String id
+    +String name
+    +String email
+    +String? password
+    +String role
+    +String kycStatus
+    +String? kycDocumentCid
+    +String? phone
+    +String? image
+    +String? mfaOtp
+    +DateTime? mfaOtpExpiry
+    +DateTime createdAt
+  }
+
+  class Group {
+    +String id
+    +String name
+    +Decimal contributionAmount
+    +String frequency
+    +String cycleType
+    +String payoutOrder
+    +Int currentCycle
+    +Int currentRecipientIndex
+    +Boolean isActive
+    +String? contractTxHash
+    +DateTime createdAt
+  }
+
+  class Membership {
+    +String id
+    +String role
+    +Boolean isDelinquent
+    +DateTime? delinquentAt
+    +DateTime? exitRequestedAt
+    +DateTime createdAt
+    <<ADMIN or MEMBER>>
+  }
+
+  class Contribution {
+    +String id
+    +Decimal amount
+    +String status
+    +DateTime dueDate
+    +DateTime? paidAt
+    +DateTime createdAt
+    <<PENDING or PAID or OVERDUE>>
+  }
+
+  class Payment {
+    +String id
+    +Decimal amount
+    +String provider
+    +String status
+    +String? providerRef
+    +Int retryCount
+    +String? errorMessage
+    +DateTime createdAt
+    <<PENDING PROCESSING COMPLETED FAILED>>
+  }
+
+  class Payout {
+    +String id
+    +Decimal amount
+    +String status
+    +String? cycleTxHash
+    +Int retryCount
+    +String? escrowReason
+    +DateTime createdAt
+    <<PENDING SCHEDULED PROCESSING COMPLETED HELD>>
+  }
+
+  class Dispute {
+    +String id
+    +String category
+    +String description
+    +String? evidenceCid
+    +String status
+    +String? resolution
+    +DateTime votingDeadline
+    +DateTime createdAt
+    <<OPEN or RESOLVED>>
+  }
+
+  class DisputeVote {
+    +String id
+    +String vote
+    +DateTime createdAt
+    <<UPHELD or REJECTED>>
+  }
+
+  class WithdrawalRequest {
+    +String id
+    +Decimal amount
+    +String provider
+    +String status
+    +String? ussdCode
+    +DateTime createdAt
+  }
+
+  class GroupInvitation {
+    +String id
+    +String email
+    +String token
+    +String status
+    +DateTime expiresAt
+    +DateTime createdAt
+    <<PENDING ACCEPTED DECLINED EXPIRED>>
+  }
+
+  class Notification {
+    +String id
+    +String type
+    +String title
+    +String body
+    +Boolean read
+    +DateTime createdAt
+  }
+
+  class NotificationPreference {
+    +String id
+    +Boolean emailEnabled
+    +Boolean smsEnabled
+    +Int quietHoursStart
+    +Int quietHoursEnd
+  }
+
+  User "1" --> "0..*" Membership         : has
+  User "1" --> "0..*" Contribution       : makes
+  User "1" --> "0..*" Payout             : receives
+  User "1" --> "0..*" Dispute            : files
+  User "1" --> "0..*" DisputeVote        : casts
+  User "1" --> "0..*" WithdrawalRequest  : submits
+  User "1" --> "0..*" Notification       : receives
+  User "1" --> "0..1" NotificationPreference : configures
+
+  Group "1" --> "1..*" Membership        : has
+  Group "1" --> "0..*" Contribution      : tracks
+  Group "1" --> "0..*" Payout            : distributes
+  Group "1" --> "0..*" Dispute           : contains
+  Group "1" --> "0..*" GroupInvitation   : issues
+
+  Contribution "1" --> "0..1" Payment    : paid via
+  Dispute "1" --> "0..*" DisputeVote     : receives

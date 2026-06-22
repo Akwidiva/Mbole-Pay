@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mbole Pay – Sequence Diagrams</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F5F3EE; color: #1a1a18; padding: 32px 24px; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { font-size: 22px; font-weight: 700; }
+    .page-header p  { font-size: 13px; color: #666; margin-top: 4px; }
+
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 2px solid #E0DDD6; padding-bottom: 0; }
+    .tab-btn { padding: 8px 20px; font-size: 13px; font-weight: 500; border: none; background: none; color: #666; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; border-radius: 6px 6px 0 0; transition: color .15s, border-color .15s; }
+    .tab-btn:hover { color: #0F6E56; }
+    .tab-btn.active { color: #0F6E56; border-bottom-color: #0F6E56; background: #F0FBF7; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .card { background: #fff; border: 1px solid #E0DDD6; border-radius: 14px; padding: 28px; margin-bottom: 20px; }
+    .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .card .desc { font-size: 12px; color: #666; margin-bottom: 20px; line-height: 1.5; padding: 10px 14px; background: #F9F7F2; border-radius: 8px; border-left: 3px solid #0F6E56; }
+    .mermaid { overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>Mbole Pay — Sequence Diagrams</h1>
+    <p>Two essential event flows showing actor ↔ system ↔ external service interactions &nbsp;·&nbsp; June 2026</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('payment')">💳 Sequence 1 — Payment &amp; Payout</button>
+    <button class="tab-btn" onclick="showTab('dispute')">⚖️ Sequence 2 — Dispute Resolution</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SEQUENCE 1 — PAYMENT CONTRIBUTION + PAYOUT
+  ════════════════════════════════════════════════════════ -->
+  <div id="tab-payment" class="tab-panel active">
+    <div class="card">
+      <h2>Sequence 1 — Contribution Payment &amp; Automatic Payout</h2>
+      <p class="desc">
+        A member initiates a contribution payment. The system creates a Payment record, calls Fapshi to push
+        a USSD request to the member's phone, then processes either the webhook confirmation or falls back to
+        polling. Once all members in the cycle have paid, the payout is automatically triggered to the
+        current rotation recipient via Fapshi transfer. Failed payouts are held in escrow.
+      </p>
+      <div class="mermaid">
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor":       "#E1F5EE",
+    "primaryBorderColor": "#0F6E56",
+    "primaryTextColor":   "#085041",
+    "noteBkgColor":       "#FAEEDA",
+    "noteTextColor":      "#633806",
+    "activationBkgColor": "#E1F5EE",
+    "lineColor":          "#555",
+    "fontSize":           "13px"
+  }
+}}%%
+sequenceDiagram
+  autonumber
+
+  actor Member
+  participant Browser
+  participant NextJS as Next.js API
+  participant DB as PostgreSQL
+  participant Queue as BullMQ / Redis
+  participant Fapshi as Fapshi API
+  participant MoMo as MTN MoMo / Orange Money
+  participant Blockchain as Polygon Smart Contract
+
+  Note over Member,Blockchain: ── Payment Contribution Flow ──
+
+  Member->>Browser: Click "Pay Now" for contribution
+  Browser->>NextJS: POST /api/payments/initialize
+  NextJS->>DB: Create Payment (status: PENDING)
+  NextJS->>DB: Create Contribution (status: PENDING)
+  NextJS->>Queue: Enqueue payment-retry job (120 s delay)
+  NextJS->>Fapshi: POST /initiate-pay (phone, amount)
+  Fapshi-->>NextJS: 200 OK { transId, status: CREATED }
+  NextJS->>DB: Store providerRef = transId
+  NextJS-->>Browser: 200 OK { paymentId }
+  Browser-->>Member: "Check your phone for USSD prompt"
+
+  Fapshi->>MoMo: Push USSD prompt to member's phone
+  MoMo-->>Member: USSD menu appears
+
+  alt Member approves on phone
+    Member->>MoMo: Approve payment
+    MoMo-->>Fapshi: Transaction SUCCESSFUL
+    Fapshi->>NextJS: POST /api/payments/webhook\n{ transId, status: SUCCESSFUL }
+    NextJS->>DB: Payment → COMPLETED
+    NextJS->>DB: Contribution → PAID
+    NextJS->>Queue: Enqueue notification (payment received)
+  else Member ignores / BullMQ polls after 120s
+    Queue->>NextJS: Fire payment-retry job
+    NextJS->>Fapshi: GET /payment-status/{transId}
+    Fapshi-->>NextJS: { status: FAILED }
+    alt retryCount < 3
+      NextJS->>Queue: Re-enqueue with backoff
+    else retryCount = 3
+      NextJS->>DB: Payment → FAILED
+      NextJS->>DB: Membership.isDelinquent = true
+      NextJS->>Queue: Enqueue notification (delinquency alert)
+    end
+  end
+
+  Note over Member,Blockchain: ── Payout Trigger (all contributions paid) ──
+
+  NextJS->>DB: Check: all Contributions PAID for this cycle?
+  DB-->>NextJS: Yes — all paid
+
+  NextJS->>DB: Get current recipient (rotation order)
+  NextJS->>DB: Create Payout (status: PENDING)
+  NextJS->>Fapshi: POST /transfer\n{ phone: recipient, amount: pool total }
+
+  alt Transfer succeeds
+    Fapshi-->>NextJS: 200 OK { status: SUCCESSFUL }
+    NextJS->>DB: Payout → COMPLETED
+    NextJS->>DB: Increment currentRecipientIndex & currentCycle
+    NextJS->>Blockchain: recordCycleComplete(groupId, recipient, amount)
+    Blockchain-->>NextJS: Transaction hash
+    NextJS->>DB: Payout.cycleTxHash = txHash
+    NextJS->>Queue: Enqueue notification (payout received)
+    Queue-->>Member: In-app + email notification
+  else Transfer fails (up to 3 retries)
+    Fapshi-->>NextJS: Error / timeout
+    NextJS->>Queue: Enqueue payout-retry job
+    Queue->>NextJS: Retry (max 3 attempts)
+    NextJS->>DB: Payout → HELD (escrow)
+    NextJS->>Queue: Notify admin & recipient
+  end
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SEQUENCE 2 — DISPUTE FILING & RESOLUTION
+  ════════════════════════════════════════════════════════ -->
+  <div id="tab-dispute" class="tab-panel">
+    <div class="card">
+      <h2>Sequence 2 — Dispute Filing &amp; Resolution</h2>
+      <p class="desc">
+        A group member files a dispute, optionally uploading evidence to IPFS via Pinata.
+        The system opens a 72-hour peer voting window and notifies all group members.
+        The scheduler auto-resolves based on vote majority at deadline.
+        An admin can force-resolve at any point.
+      </p>
+      <div class="mermaid">
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor":       "#EEEDFE",
+    "primaryBorderColor": "#534AB7",
+    "primaryTextColor":   "#3C3489",
+    "noteBkgColor":       "#FAEEDA",
+    "noteTextColor":      "#633806",
+    "activationBkgColor": "#EEEDFE",
+    "lineColor":          "#555",
+    "fontSize":           "13px"
+  }
+}}%%
+sequenceDiagram
+  autonumber
+
+  actor Filer as Filing Member
+  actor Voter as Voting Member
+  actor AdminUser as Group Admin
+  participant Browser
+  participant NextJS as Next.js API
+  participant DB as PostgreSQL
+  participant Pinata as Pinata IPFS
+  participant Queue as BullMQ / Redis
+  participant Email as SMTP Server
+  participant Sched as Scheduler (Cron)
+
+  Note over Filer,Sched: ── Dispute Filing ──
+
+  Filer->>Browser: Navigate to /disputes → "File Dispute"
+  Browser-->>Filer: Dispute form (category, description, evidence)
+  Filer->>Browser: Fill form + attach evidence file
+  Browser->>NextJS: POST /api/disputes { category, description, file }
+
+  opt Evidence file attached
+    NextJS->>Pinata: Upload file (Pinata JWT auth)
+    Pinata-->>NextJS: { IpfsHash: "Qm..." }
+    NextJS->>DB: Store evidenceCid = IpfsHash
+  end
+
+  NextJS->>DB: Create Dispute\n{ status: OPEN, votingDeadline: now + 72h }
+  NextJS->>Queue: Enqueue notification for all group members
+  Queue->>NextJS: Process notification job
+  NextJS->>DB: Create Notification records (in-app)
+  NextJS->>Email: sendDisputeNotificationEmail() to each member
+  Email-->>Voter: Email "New dispute filed — vote now"
+  NextJS-->>Browser: 201 Created { disputeId }
+  Browser-->>Filer: "Dispute filed. Voting open for 72 hours."
+
+  Note over Filer,Sched: ── Peer Voting (72-hour window) ──
+
+  Voter->>Browser: Navigate to /disputes
+  Browser->>NextJS: GET /api/disputes
+  NextJS->>DB: Fetch open disputes for member's groups
+  DB-->>NextJS: Dispute list
+  NextJS-->>Browser: Dispute list
+  Browser-->>Voter: Shows dispute with vote buttons
+
+  Voter->>Browser: Cast vote (UPHELD or REJECTED)
+  Browser->>NextJS: POST /api/disputes/{id}/vote { vote: "UPHELD" }
+  NextJS->>DB: Check: member already voted?
+
+  alt Already voted
+    NextJS-->>Browser: 409 Conflict "Already voted"
+  else First vote
+    NextJS->>DB: Create DisputeVote { vote: "UPHELD" }
+    NextJS-->>Browser: 200 OK "Vote recorded"
+  end
+
+  Note over Filer,Sched: ── Auto-Resolution at Deadline ──
+
+  Sched->>NextJS: POST /api/cron/reminders (hourly tick)
+  NextJS->>DB: Query disputes where votingDeadline ≤ now AND status = OPEN
+
+  alt Dispute deadline reached
+    NextJS->>DB: Count UPHELD vs REJECTED votes
+    alt UPHELD majority
+      NextJS->>DB: Dispute → RESOLVED, resolution: UPHELD
+    else REJECTED majority or no quorum
+      NextJS->>DB: Dispute → RESOLVED, resolution: REJECTED
+    end
+    NextJS->>Queue: Enqueue resolution notifications
+    Queue-->>Filer: "Your dispute has been resolved: UPHELD/REJECTED"
+    Queue-->>Voter: "Dispute resolved"
+  end
+
+  Note over Filer,Sched: ── Admin Force-Resolve (any time) ──
+
+  AdminUser->>Browser: Navigate to /admin/disputes
+  Browser->>NextJS: GET /api/admin/disputes
+  NextJS->>DB: Fetch disputes (all groups)
+  DB-->>NextJS: Dispute list
+  Browser-->>AdminUser: Dispute dashboard
+
+  AdminUser->>Browser: Click "Force Resolve" → choose outcome
+  Browser->>NextJS: POST /api/admin/disputes/{id}/resolve\n{ resolution: "UPHELD" }
+  NextJS->>DB: Dispute → RESOLVED, resolution: UPHELD
+  NextJS->>Queue: Enqueue notifications (all parties)
+  Queue-->>Filer: "Dispute resolved by admin"
+  NextJS-->>Browser: 200 OK
+      </div>
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });
+
+    function showTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('tab-' + name).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+  </script>
+</body>
+</html>

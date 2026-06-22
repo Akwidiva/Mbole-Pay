@@ -12,11 +12,21 @@ import { IPaymentProvider } from "./payment-factory";
  */
 export class FapshiService implements IPaymentProvider {
   private baseUrl = process.env.FAPSHI_BASE_URL || "https://sandbox.fapshi.com";
+
+  // Collection credentials (initiate-pay / payment-status)
   private apiUser = process.env.FAPSHI_API_USER || "";
   private apiKey = process.env.FAPSHI_API_KEY || "";
 
+  // Payout credentials — Fapshi issues a separate API user/key for disbursement
+  private payoutApiUser = process.env.FAPSHI_PAYOUT_API_USER || "";
+  private payoutApiKey = process.env.FAPSHI_PAYOUT_API_KEY || "";
+
   private hasCredentials() {
     return Boolean(this.apiUser && this.apiKey);
+  }
+
+  private hasPayoutCredentials() {
+    return Boolean(this.payoutApiUser && this.payoutApiKey);
   }
 
   // Fapshi expects 9-digit local format (e.g. "682019181"), not "+237682019181"
@@ -28,6 +38,14 @@ export class FapshiService implements IPaymentProvider {
     return {
       apiuser: this.apiUser,
       apikey: this.apiKey,
+      "Content-Type": "application/json",
+    };
+  }
+
+  private payoutAuthHeaders() {
+    return {
+      apiuser: this.payoutApiUser,
+      apikey: this.payoutApiKey,
       "Content-Type": "application/json",
     };
   }
@@ -58,7 +76,7 @@ export class FapshiService implements IPaymentProvider {
       return {
         referenceId,
         transactionId: res.data?.transId || res.data?.transactionId || res.data?.id,
-        checkoutLink: res.data?.link || null,
+        checkoutLink: null, // Direct Pay pushes USSD to phone — no web redirect
         status: res.data?.status || "INITIATED",
         message: res.data?.message || "Payment request sent",
         data: res.data,
@@ -100,7 +118,12 @@ export class FapshiService implements IPaymentProvider {
     const referenceId = uuidv4();
 
     try {
-      if (!this.hasCredentials()) throw new Error("Missing Fapshi credentials (FAPSHI_API_USER / FAPSHI_API_KEY)");
+      if (!this.hasPayoutCredentials()) {
+        throw new Error(
+          "Missing Fapshi payout credentials (FAPSHI_PAYOUT_API_USER / FAPSHI_PAYOUT_API_KEY). " +
+          "Fapshi issues separate credentials for disbursement — add them to your environment."
+        );
+      }
 
       const payload = {
         amount: data.amount,
@@ -110,7 +133,7 @@ export class FapshiService implements IPaymentProvider {
       };
 
       const res = await axios.post(`${this.baseUrl}/payout`, payload, {
-        headers: this.authHeaders(),
+        headers: this.payoutAuthHeaders(),
         timeout: 10000,
       });
 
@@ -127,20 +150,15 @@ export class FapshiService implements IPaymentProvider {
   }
 
   async validateCredentials(): Promise<boolean> {
-    try {
-      if (!this.hasCredentials()) return false;
+    // Just verify collection env vars are present — don't ping the live API on startup.
+    // Payout credentials (FAPSHI_PAYOUT_API_USER / FAPSHI_PAYOUT_API_KEY) are checked
+    // separately inside transfer() so a missing payout key doesn't block collection.
+    return this.hasCredentials();
+  }
 
-      // Ping base URL with auth headers to validate credentials
-      await axios.get(`${this.baseUrl}/`, {
-        headers: this.authHeaders(),
-        timeout: 5000,
-      });
-
-      return true;
-    } catch (error) {
-      console.error("Fapshi credentials validation failed:", error?.response?.data || error?.message || error);
-      return false;
-    }
+  /** Returns true if payout credentials are configured. */
+  hasPayoutConfigured(): boolean {
+    return this.hasPayoutCredentials();
   }
 }
 

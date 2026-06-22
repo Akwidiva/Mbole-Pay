@@ -16,8 +16,7 @@ export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect("/signin")
   
-  // Redirect super admins to admin dashboard
-  if (session.user.role === "SUPER_ADMIN") {
+  if (session.user.role === "ADMIN") {
     redirect("/admin")
   }
   

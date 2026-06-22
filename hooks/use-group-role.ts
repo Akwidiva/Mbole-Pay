@@ -81,10 +81,3 @@ export function useIsGroupAdmin(groupId: string | null) {
   return role === GroupRole.ADMIN
 }
 
-/**
- * Hook to check if user is admin or treasurer in a specific group
- */
-export function useIsGroupTreasurerOrAbove(groupId: string | null) {
-  const { role } = useUserGroupRole(groupId)
-  return role === GroupRole.ADMIN || role === GroupRole.TREASURER
-}

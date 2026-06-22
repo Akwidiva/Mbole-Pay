@@ -60,9 +60,13 @@ export async function GET(request: NextRequest) {
         id: dispute.id,
         title: dispute.title,
         description: dispute.description,
+        category: dispute.category,
+        evidenceCid: dispute.evidenceCid,
         status: dispute.status,
+        resolution: dispute.resolution,
         groupId: dispute.groupId,
         createdBy: dispute.createdBy,
+        votingDeadline: dispute.votingDeadline,
         createdAt: dispute.createdAt,
         updatedAt: dispute.updatedAt,
         votes: {
@@ -97,7 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { groupId, title, description } = body;
+    const { groupId, title, description, category, evidenceCid } = body;
 
     if (!groupId || !title) {
       return NextResponse.json(
@@ -105,6 +109,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const validCategories = ["PAYMENT", "PAYOUT", "MEMBER_CONDUCT", "RULE_VIOLATION", "OTHER"]
+    const resolvedCategory = validCategories.includes(category) ? category : "OTHER"
 
     // Verify user is member of group
     const membership = await prisma.membership.findUnique({
@@ -125,14 +132,18 @@ export async function POST(request: NextRequest) {
 
     const totalMembers = await prisma.membership.count({ where: { groupId } });
 
-    // Create dispute
+    // Create dispute with 72h voting window
+    const votingDeadline = new Date(Date.now() + 72 * 60 * 60 * 1000)
     const dispute = await prisma.dispute.create({
       data: {
         groupId,
         title,
         description: description || null,
+        category: resolvedCategory,
+        evidenceCid: evidenceCid || null,
         createdBy: session.user.id,
         status: "OPEN",
+        votingDeadline,
       },
       include: {
         votes: {

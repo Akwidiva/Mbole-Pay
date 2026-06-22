@@ -13,7 +13,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const actor = await prisma.user.findUnique({ where: { email: session.user.email }, select: { id: true, role: true } })
     if (!actor) return NextResponse.json({ success: false, error: { code: "USER_NOT_FOUND", message: "User not found" } }, { status: 404 })
 
-    if (!(actor.role === "SUPER_ADMIN" || actor.role === "ADMIN")) {
+    if (actor.role !== "ADMIN") {
       return NextResponse.json({ success: false, error: { code: "FORBIDDEN", message: "Requires administrative privileges" } }, { status: 403 })
     }
 

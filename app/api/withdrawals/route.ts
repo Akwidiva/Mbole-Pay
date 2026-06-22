@@ -179,8 +179,7 @@ export async function GET(request: NextRequest) {
     const take = Number(q.get("take") || 50)
     const skip = Number(q.get("skip") || 0)
 
-    // Admins (SUPER_ADMIN, ADMIN) can view all records. Others only their own.
-    const isAdmin = user.role === "SUPER_ADMIN" || user.role === "ADMIN"
+    const isAdmin = user.role === "ADMIN"
 
     let targetUserId: string | null = null
     if (emailFilter) {

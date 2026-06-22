@@ -4,11 +4,10 @@ import prisma from '@/lib/db';
 
 /**
  * GET /api/groups/[groupId]/reports
- * ADMIN+ or TREASURER - View group reports
+ * ADMIN only - View group reports
  */
 export async function GET(request, { params }) {
-  // Check if user is at least TREASURER in this group
-  const roleCheck = await checkGroupRole(params.groupId, 'TREASURER');
+  const roleCheck = await checkGroupRole(params.groupId, 'ADMIN');
 
   if (!roleCheck.authorized) {
     return roleErrorResponse(roleCheck.error, 403);

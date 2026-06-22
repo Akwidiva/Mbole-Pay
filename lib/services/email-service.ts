@@ -481,7 +481,6 @@ export const emailService = {
         <h2>Role Update 🎖️</h2>
         <p>Hi ${data.userName},</p>
         <p><strong>${data.assignedBy}</strong> has appointed you as <strong>${data.role}</strong> in the group <strong>"${data.groupName}"</strong>.</p>
-        ${data.role === "TREASURER" ? "<p>As Treasurer you will manage financial flows and will be required to verify your identity with a one-time code at each sign-in.</p>" : ""}
         <hr style="margin:30px 0;border:none;border-top:1px solid #ddd">
         <p style="color:#999;font-size:12px">© 2026 Mbole Pay</p>
       </div>`,

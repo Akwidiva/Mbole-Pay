@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
-import { Copy, Check, Loader2, Settings, ShieldCheck, ShieldX, Trash2 } from "lucide-react"
+import { Copy, Check, Loader2, Settings, ShieldCheck, ShieldX, Trash2, PowerOff } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 
@@ -42,6 +42,7 @@ export function GroupSettingsPage({ groupId, onGroupUpdated }: GroupSettingsPage
   const [saving, setSaving] = useState(false)
   const [inviting, setInviting] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [dissolving, setDissolving] = useState(false)
   const [copied, setCopied] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
   const [locking, setLocking] = useState(false)
@@ -67,6 +68,22 @@ export function GroupSettingsPage({ groupId, onGroupUpdated }: GroupSettingsPage
       toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to delete group", variant: "destructive" })
     } finally {
       setDeleting(false)
+    }
+  }
+
+  const dissolveGroup = async () => {
+    if (!confirm(`Dissolve "${group?.name}"? The group will stop accepting contributions and all members will be notified. This cannot be undone.`)) return
+    setDissolving(true)
+    try {
+      const res = await fetch(`/api/groups/${groupId}/dissolve`, { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to dissolve group")
+      toast({ title: "Group dissolved", description: data.data?.message })
+      router.push("/groups")
+    } catch (err) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to dissolve group", variant: "destructive" })
+    } finally {
+      setDissolving(false)
     }
   }
 
@@ -483,15 +500,35 @@ export function GroupSettingsPage({ groupId, onGroupUpdated }: GroupSettingsPage
             <CardTitle className="text-destructive">Danger Zone</CardTitle>
             <CardDescription>Actions that cannot be undone</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Deleting a group will permanently remove it for all members along with all contribution history. This cannot be undone.
-            </p>
-            <Button variant="destructive" onClick={deleteGroup} disabled={deleting} className="gap-2">
-              {deleting
-                ? <><Loader2 className="h-4 w-4 animate-spin" /> Deleting…</>
-                : <><Trash2 className="h-4 w-4" /> Delete Group</>}
-            </Button>
+          <CardContent className="space-y-6">
+            {/* Dissolve */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Dissolve Group</p>
+              <p className="text-sm text-muted-foreground">
+                Stops all future contributions and marks the group INACTIVE. Pending payouts are triggered immediately.
+                Members keep their history. Use this for a graceful shutdown.
+              </p>
+              <Button variant="outline" onClick={dissolveGroup} disabled={dissolving || group.status === "INACTIVE"} className="gap-2 border-destructive/50 text-destructive hover:bg-destructive/10">
+                {dissolving
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Dissolving…</>
+                  : <><PowerOff className="h-4 w-4" /> Dissolve Group</>}
+              </Button>
+            </div>
+
+            <div className="border-t border-destructive/20" />
+
+            {/* Delete */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Delete Group</p>
+              <p className="text-sm text-muted-foreground">
+                Permanently deletes the group and all contribution history for every member.
+              </p>
+              <Button variant="destructive" onClick={deleteGroup} disabled={deleting} className="gap-2">
+                {deleting
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Deleting…</>
+                  : <><Trash2 className="h-4 w-4" /> Delete Group</>}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

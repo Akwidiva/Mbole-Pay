@@ -7,7 +7,6 @@
  */
 export enum GroupRole {
   ADMIN = "ADMIN",
-  TREASURER = "TREASURER",
   MEMBER = "MEMBER",
 }
 
@@ -68,23 +67,6 @@ export const RolePermissions: Record<GroupRole, Permission[]> = {
     "disputes:create",
     "disputes:resolve",
   ],
-  [GroupRole.TREASURER]: [
-    "group:view",
-    "members:view",
-    "contributions:view",
-    "contributions:edit",
-    "payments:view",
-    "payments:create",
-    "payments:approve",
-    "payments:retry",
-    "payouts:view",
-    "payouts:create",
-    "payouts:approve",
-    "reports:generate",
-    "reports:view",
-    "reports:export",
-    "disputes:view",
-  ],
   [GroupRole.MEMBER]: [
     "group:view",
     "contributions:view",
@@ -128,7 +110,6 @@ export function hasAllPermissions(
  */
 export const RoleDescriptions: Record<GroupRole, string> = {
   [GroupRole.ADMIN]: "Full access to manage group, members, and all operations",
-  [GroupRole.TREASURER]: "Manage payments, approvals, and financial reporting",
   [GroupRole.MEMBER]: "View group info, make contributions, and request reports",
 };
 
@@ -137,8 +118,7 @@ export const RoleDescriptions: Record<GroupRole, string> = {
  */
 export const RoleHierarchy: Record<GroupRole, number> = {
   [GroupRole.MEMBER]: 1,
-  [GroupRole.TREASURER]: 2,
-  [GroupRole.ADMIN]: 3,
+  [GroupRole.ADMIN]: 2,
 };
 
 /**

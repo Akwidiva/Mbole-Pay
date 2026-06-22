@@ -9,7 +9,7 @@ import { MboleLogo } from "@/components/mbole-logo"
 
 const steps = [
   { title: "Name your Njangi", description: "Spin up a group with cycle frequency, amount, and invite code in seconds." },
-  { title: "Invite trusted members", description: "Share the unique code and assign roles for admin, treasurer, and members." },
+  { title: "Invite trusted members", description: "Share the unique code and assign admin or member roles." },
   { title: "Automate contributions", description: "Track payments, payouts, and disputes from a single transparent ledger." },
 ]
 

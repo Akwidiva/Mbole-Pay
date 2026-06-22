@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { motion } from "framer-motion"
 import { itemVariants } from "@/lib/animations"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, Trash2, UserCog } from "lucide-react"
+import { Loader2, Trash2, UserCog, LogOut } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -34,22 +34,25 @@ interface Member {
     name: string
     email: string
   }
-  role: "ADMIN" | "TREASURER" | "MEMBER"
+  role: "ADMIN" | "MEMBER"
   joinedAt?: string
 }
 
 interface MemberManagementProps {
   groupId: string
-  currentUserRole: "ADMIN" | "TREASURER" | "MEMBER"
+  currentUserRole: "ADMIN" | "MEMBER"
+  currentUserId?: string
 }
 
-export function MemberManagement({ groupId, currentUserRole }: MemberManagementProps) {
+export function MemberManagement({ groupId, currentUserRole, currentUserId }: MemberManagementProps) {
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [updatingMember, setUpdatingMember] = useState<string | null>(null)
   const [removingMember, setRemovingMember] = useState<string | null>(null)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
+  const [showExitConfirm, setShowExitConfirm] = useState(false)
+  const [leaving, setLeaving] = useState(false)
   const { toast } = useToast()
 
   const canManageMembers = currentUserRole === "ADMIN"
@@ -80,7 +83,7 @@ export function MemberManagement({ groupId, currentUserRole }: MemberManagementP
     }
   }
 
-  const handleUpdateRole = async (userId: string, newRole: "ADMIN" | "TREASURER" | "MEMBER") => {
+  const handleUpdateRole = async (userId: string, newRole: "ADMIN" | "MEMBER") => {
     try {
       setUpdatingMember(userId)
       const response = await fetch(`/api/groups/${groupId}/members`, {
@@ -150,12 +153,25 @@ export function MemberManagement({ groupId, currentUserRole }: MemberManagementP
     }
   }
 
+  const handleLeaveGroup = async () => {
+    setLeaving(true)
+    try {
+      const res = await fetch(`/api/groups/${groupId}/members/exit`, { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to submit exit request")
+      toast({ title: "Exit notice submitted", description: data.data?.message })
+      setShowExitConfirm(false)
+    } catch (err) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to leave group", variant: "destructive" })
+    } finally {
+      setLeaving(false)
+    }
+  }
+
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case "ADMIN":
         return "destructive"
-      case "TREASURER":
-        return "secondary"
       default:
         return "outline"
     }
@@ -224,7 +240,7 @@ export function MemberManagement({ groupId, currentUserRole }: MemberManagementP
                           <Select
                             value={member.role}
                             onValueChange={(value) =>
-                              handleUpdateRole(member.userId, value as "ADMIN" | "TREASURER" | "MEMBER")
+                              handleUpdateRole(member.userId, value as "ADMIN" | "MEMBER")
                             }
                             disabled={updatingMember === member.userId}
                           >
@@ -233,7 +249,6 @@ export function MemberManagement({ groupId, currentUserRole }: MemberManagementP
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="MEMBER">Member</SelectItem>
-                              <SelectItem value="TREASURER">Treasurer</SelectItem>
                               <SelectItem value="ADMIN">Admin</SelectItem>
                             </SelectContent>
                           </Select>
@@ -255,9 +270,21 @@ export function MemberManagement({ groupId, currentUserRole }: MemberManagementP
                           </Button>
                         </>
                       ) : (
-                        <Badge variant={getRoleBadgeVariant(member.role)}>
-                          {member.role}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={getRoleBadgeVariant(member.role)}>
+                            {member.role}
+                          </Badge>
+                          {currentUserId && member.userId === currentUserId && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowExitConfirm(true)}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <LogOut className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -267,6 +294,29 @@ export function MemberManagement({ groupId, currentUserRole }: MemberManagementP
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave this group?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A 7-day notice period will begin. You can still participate during this window.
+              The group admin will be notified. This cannot be cancelled without admin intervention.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex justify-end space-x-2">
+            <AlertDialogCancel disabled={leaving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLeaveGroup}
+              disabled={leaving}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {leaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Submit Exit Notice
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
         <AlertDialogContent>

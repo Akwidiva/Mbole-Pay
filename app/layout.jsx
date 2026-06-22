@@ -18,7 +18,7 @@ export const metadata = {
 export default async function RootLayout({ children }) {
   const session = await getServerSession(authOptions)
   const isAuthenticated = Boolean(session?.user)
-  const isAdmin = session?.user?.role === "SUPER_ADMIN"
+  const isAdmin = session?.user?.role === "ADMIN"
 
   return (
     <html lang="en" suppressHydrationWarning>

@@ -15,7 +15,7 @@ model User {
   username  String?  @unique
   password  String?  // Hashed password (optional for Google OAuth users)
   phone     String?
-  role      String   @default("USER") // "SUPER_ADMIN" | "ADMIN" | "USER"
+  role      String   @default("USER") // "ADMIN" | "USER"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   memberships   Membership[]
@@ -88,11 +88,14 @@ model GroupInvitation {
 }
 
 model Membership {
-  id        String @id @default(cuid())
-  role      String // "ADMIN" | "TREASURER" | "MEMBER"
-  userId    String
-  groupId   String
-  createdAt DateTime @default(now())
+  id            String    @id @default(cuid())
+  role          String    // "ADMIN" | "MEMBER"
+  userId        String
+  groupId       String
+  createdAt     DateTime  @default(now())
+  isDelinquent      Boolean   @default(false)
+  delinquentAt      DateTime?
+  exitRequestedAt   DateTime? // set when member requests to leave; exit completes after 7 days
 
   user  User  @relation(fields: [userId], references: [id])
   group Group @relation(fields: [groupId], references: [id])
@@ -186,20 +189,25 @@ model Payout {
   retryCount      Int      @default(0)
   lastRetry       DateTime?
   errorMessage    String?
-  
+  escrowReason    String?  // set when status = "HELD" — funds held pending manual resolution
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 
 model Dispute {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  status      String   @default("OPEN") // "OPEN" | "RESOLVED"
-  groupId     String
-  createdBy   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  category        String    @default("OTHER") // "PAYMENT" | "PAYOUT" | "MEMBER_CONDUCT" | "RULE_VIOLATION" | "OTHER"
+  evidenceCid     String?   // IPFS CID of attached evidence file
+  status          String    @default("OPEN") // "OPEN" | "RESOLVED" | "EXPIRED"
+  resolution      String?   // "UPHELD" | "REJECTED" — set on auto-resolve
+  groupId         String
+  createdBy       String
+  votingDeadline  DateTime  // 72h after creation
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   votes DisputeVote[]
@@ -209,9 +217,12 @@ model DisputeVote {
   id        String   @id @default(cuid())
   vote      String   // "UPHOLD" | "REJECT"
   disputeId String
+  voterId   String   // user ID — one vote per member per dispute
   createdAt DateTime @default(now())
 
   dispute Dispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@unique([disputeId, voterId])
 }
 
 model Notification {

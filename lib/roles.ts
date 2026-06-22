@@ -1,12 +1,10 @@
 /**
  * System-level role hierarchy levels
  * Based on use case diagram:
- * - SUPER_ADMIN: Approve/Reject Members, Resolve Disputes, Full system access
- * - ADMIN: Manage Groups, View Reports
+ * - ADMIN: Manage users, groups, disputes, full system access
  * - USER/MEMBER: Contribute, Vote in Disputes, Receive Payouts
  */
 export const ROLE_HIERARCHY = {
-  SUPER_ADMIN: 3,
   ADMIN: 2,
   USER: 1,
 };
@@ -14,12 +12,11 @@ export const ROLE_HIERARCHY = {
 /**
  * Group-level role hierarchy
  * - ADMIN: Manage group, assign roles, manage members
- * - TREASURER: Record payments, generate reports
+ * - MEMBER: Contribute, vote, receive payouts
  * - MEMBER: Contribute, vote, receive payouts
  */
 export const GROUP_ROLE_HIERARCHY = {
-  ADMIN: 3,
-  TREASURER: 2,
+  ADMIN: 2,
   MEMBER: 1,
 };
 
@@ -27,12 +24,8 @@ export const GROUP_ROLE_HIERARCHY = {
  * Role capabilities mapping based on use case diagram
  */
 export const ROLE_CAPABILITIES = {
-  SUPER_ADMIN: {
-    system: ['manage_users', 'approve_members', 'reject_members', 'resolve_disputes', 'manage_all_groups', 'view_all_reports'],
-    group: ['manage_group', 'view_reports', 'manage_members', 'record_payments'],
-  },
   ADMIN: {
-    system: ['manage_groups', 'view_reports'],
+    system: ['manage_users', 'approve_members', 'reject_members', 'resolve_disputes', 'manage_all_groups', 'view_all_reports'],
     group: ['manage_group', 'view_reports', 'manage_members', 'record_payments'],
   },
   USER: {
@@ -64,7 +57,6 @@ export function hasGroupRole(memberRole, requiredRole) {
  */
 export function getRoleName(role) {
   const roleNames = {
-    SUPER_ADMIN: 'Super Administrator',
     ADMIN: 'Administrator',
     USER: 'Member',
   };
@@ -77,7 +69,6 @@ export function getRoleName(role) {
 export function getGroupRoleName(role) {
   const roleNames = {
     ADMIN: 'Group Admin',
-    TREASURER: 'Treasurer',
     MEMBER: 'Member',
   };
   return roleNames[role] || 'Unknown';

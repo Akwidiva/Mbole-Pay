@@ -215,6 +215,153 @@ export async function notifyDisputeFiled({
   )
 }
 
+// FR-08: member has been marked delinquent after 3 failed payment retries
+export async function notifyMemberDelinquent({
+  userId,
+  userEmail,
+  userName,
+  groupId,
+  groupName,
+  failedAmount,
+}: {
+  userId: string
+  userEmail: string
+  userName?: string
+  groupId: string
+  groupName: string
+  failedAmount: number
+}) {
+  const title = `Payment overdue — ${groupName}`
+  const body = `Your XAF ${failedAmount.toLocaleString()} contribution to "${groupName}" failed 3 times and has been marked overdue. Please contact your group admin to resolve this.`
+
+  // Notify the delinquent member
+  await Promise.allSettled([
+    createNotification({ userId, type: "PAYMENT_RECEIVED" as any, title, body, groupId }),
+    emailService.sendPaymentConfirmed(userEmail, {
+      userName: userName || "Member",
+      amount: failedAmount,
+      groupName,
+    }),
+  ])
+
+  // Notify all admins in the group
+  const admins = await prisma.membership.findMany({
+    where: { groupId, role: "ADMIN" },
+    include: { user: { select: { id: true, email: true, name: true } } },
+  })
+
+  const adminTitle = `Member delinquent — ${groupName}`
+  const adminBody = `${userName || userEmail} has been marked delinquent in "${groupName}" after 3 failed payment attempts of XAF ${failedAmount.toLocaleString()}.`
+
+  await Promise.allSettled(
+    admins.map((a) =>
+      Promise.allSettled([
+        createNotification({ userId: a.user.id, type: "ADMIN_MESSAGE" as any, title: adminTitle, body: adminBody, groupId }),
+        emailService.sendPaymentConfirmed(a.user.email, {
+          userName: a.user.name || "Admin",
+          amount: failedAmount,
+          groupName,
+        }),
+      ])
+    )
+  )
+}
+
+// FR-08: payout moved to HELD status after all retries exhausted — alert admin + recipient
+export async function notifyPayoutHeld({
+  recipientId,
+  recipientEmail,
+  recipientName,
+  groupId,
+  groupName,
+  amount,
+  payoutId,
+}: {
+  recipientId: string
+  recipientEmail: string
+  recipientName?: string
+  groupId: string
+  groupName: string
+  amount: number
+  payoutId: string
+}) {
+  const dashboardUrl = `${APP_URL}/dashboard`
+
+  // Notify recipient
+  const recipientTitle = `Payout delayed — ${groupName}`
+  const recipientBody = `Your XAF ${amount.toLocaleString()} payout from "${groupName}" could not be processed automatically and is being held. Your admin has been notified to release it manually.`
+
+  await Promise.allSettled([
+    createNotification({ userId: recipientId, type: "PAYMENT_RECEIVED" as any, title: recipientTitle, body: recipientBody, groupId }),
+    emailService.sendPayoutNotification(recipientEmail, {
+      amount,
+      currency: "XAF",
+      groupName,
+      scheduledDate: new Date(),
+      payoutUrl: dashboardUrl,
+    }),
+  ])
+
+  // Notify all admins
+  const admins = await prisma.membership.findMany({
+    where: { groupId, role: "ADMIN" },
+    include: { user: { select: { id: true, email: true, name: true } } },
+  })
+
+  const adminTitle = `Action required: payout held — ${groupName}`
+  const adminBody = `The XAF ${amount.toLocaleString()} payout to ${recipientName || recipientEmail} in "${groupName}" failed all retry attempts and is now HELD. Log in to the admin dashboard to release it manually. Payout ID: ${payoutId}`
+
+  await Promise.allSettled(
+    admins.map((a) =>
+      Promise.allSettled([
+        createNotification({ userId: a.user.id, type: "ADMIN_MESSAGE" as any, title: adminTitle, body: adminBody, groupId }),
+        emailService.sendPayoutNotification(a.user.email, {
+          amount,
+          currency: "XAF",
+          groupName,
+          scheduledDate: new Date(),
+          payoutUrl: `${APP_URL}/admin/deferred-payouts`,
+        }),
+      ])
+    )
+  )
+}
+
+export async function notifyContributorsPayoutComplete({
+  groupId,
+  groupName,
+  cycle,
+  totalPool,
+  recipientName,
+}: {
+  groupId: string
+  groupName: string
+  cycle: number
+  totalPool: number
+  recipientName?: string
+}) {
+  const contributions = await prisma.contribution.findMany({
+    where: { groupId, cycle, status: "PAID" },
+    include: { user: { select: { id: true, email: true, name: true } } },
+  })
+
+  const title = `Payout confirmed — ${groupName}`
+
+  await Promise.allSettled(
+    contributions.map((c) => {
+      const body = `Your XAF ${c.amount.toLocaleString()} contribution to "${groupName}" (cycle ${cycle}) is confirmed. The full pool of XAF ${totalPool.toLocaleString()} was sent to ${recipientName || "the recipient"}.`
+      return Promise.allSettled([
+        createNotification({ userId: c.user.id, type: "PAYMENT_RECEIVED", title, body, groupId }),
+        emailService.sendPaymentConfirmed(c.user.email, {
+          userName: c.user.name || "Member",
+          amount: c.amount,
+          groupName,
+        }),
+      ])
+    })
+  )
+}
+
 export async function notifyPayoutCompleted({
   userId,
   userEmail,

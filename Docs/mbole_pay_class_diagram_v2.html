@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mbole Pay – Class Diagram</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F5F3EE; color: #1a1a18; padding: 32px 24px; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { font-size: 22px; font-weight: 700; }
+    .page-header p  { font-size: 13px; color: #666; margin-top: 4px; }
+    .card { background: #fff; border: 1px solid #E0DDD6; border-radius: 14px; padding: 28px; margin-bottom: 20px; }
+    .mermaid { overflow-x: auto; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #E0DDD6; }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #555; }
+    .swatch { width: 22px; height: 12px; border-radius: 3px; }
+    .note { font-size: 12px; color: #666; margin-bottom: 16px; line-height: 1.5; padding: 10px 14px; background: #F9F7F2; border-radius: 8px; border-left: 3px solid #0F6E56; }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>Mbole Pay — Class Diagram</h1>
+    <p>Core domain model (Prisma schema) with key relationships &nbsp;·&nbsp; June 2026</p>
+  </div>
+
+  <div class="card">
+    <p class="note">Roles: Group-level Membership.role is <strong>ADMIN | MEMBER</strong>. System-level User.role is <strong>ADMIN | USER</strong>. TREASURER and SUPER_ADMIN have been removed.</p>
+    <div class="mermaid">
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor":       "#E1F5EE",
+    "primaryBorderColor": "#0F6E56",
+    "primaryTextColor":   "#085041",
+    "lineColor":          "#555",
+    "fontSize":           "12px"
+  }
+}}%%
+classDiagram
+
+  %% ── Core domain models ────────────────────────────────────────────────────
+
+  class User {
+    +String id
+    +String name
+    +String email
+    +String? password
+    +String role
+    +String kycStatus
+    +String? kycDocumentCid
+    +String? phone
+    +String? image
+    +String? mfaOtp
+    +DateTime? mfaOtpExpiry
+    +DateTime createdAt
+    +DateTime updatedAt
+  }
+
+  class Group {
+    +String id
+    +String name
+    +String description
+    +Decimal contributionAmount
+    +String frequency
+    +String cycleType
+    +String payoutOrder
+    +Int currentCycle
+    +Int currentRecipientIndex
+    +Boolean isActive
+    +String? contractTxHash
+    +String? contractGroupId
+    +DateTime createdAt
+  }
+
+  class Membership {
+    +String id
+    +String role
+    +Boolean isDelinquent
+    +DateTime? delinquentAt
+    +DateTime? exitRequestedAt
+    +DateTime createdAt
+    <<role: ADMIN or MEMBER>>
+  }
+
+  class Contribution {
+    +String id
+    +Decimal amount
+    +String status
+    +DateTime dueDate
+    +DateTime? paidAt
+    +DateTime createdAt
+    <<status: PENDING | PAID | OVERDUE>>
+  }
+
+  class Payment {
+    +String id
+    +Decimal amount
+    +String provider
+    +String status
+    +String? providerRef
+    +Int retryCount
+    +DateTime? lastRetry
+    +String? errorMessage
+    +DateTime createdAt
+    <<status: PENDING | PROCESSING | COMPLETED | FAILED>>
+  }
+
+  class Payout {
+    +String id
+    +Decimal amount
+    +String status
+    +String? cycleTxHash
+    +Int retryCount
+    +String? errorMessage
+    +String? escrowReason
+    +DateTime createdAt
+    <<status: PENDING | SCHEDULED | PROCESSING | COMPLETED | HELD>>
+  }
+
+  class Dispute {
+    +String id
+    +String category
+    +String description
+    +String? evidenceCid
+    +String status
+    +String? resolution
+    +DateTime votingDeadline
+    +DateTime createdAt
+    <<category: PAYMENT | PAYOUT | MEMBER_CONDUCT | RULE_VIOLATION | OTHER>>
+    <<status: OPEN | RESOLVED>>
+    <<resolution: UPHELD | REJECTED>>
+  }
+
+  class DisputeVote {
+    +String id
+    +String vote
+    +DateTime createdAt
+    <<vote: UPHELD | REJECTED>>
+  }
+
+  class WithdrawalRequest {
+    +String id
+    +Decimal amount
+    +String provider
+    +String status
+    +String? ussdCode
+    +DateTime createdAt
+  }
+
+  class GroupInvitation {
+    +String id
+    +String email
+    +String token
+    +String status
+    +DateTime expiresAt
+    +DateTime createdAt
+    <<status: PENDING | ACCEPTED | DECLINED | EXPIRED>>
+  }
+
+  class Notification {
+    +String id
+    +String type
+    +String title
+    +String body
+    +Boolean read
+    +DateTime createdAt
+  }
+
+  class NotificationPreference {
+    +String id
+    +Boolean emailEnabled
+    +Boolean smsEnabled
+    +Int quietHoursStart
+    +Int quietHoursEnd
+    +DateTime updatedAt
+  }
+
+  %% ── Relationships ─────────────────────────────────────────────────────────
+
+  User "1" --> "0..*" Membership        : has
+  User "1" --> "0..*" Contribution      : makes
+  User "1" --> "0..*" Payout            : receives
+  User "1" --> "0..*" Dispute           : files
+  User "1" --> "0..*" DisputeVote       : casts
+  User "1" --> "0..*" WithdrawalRequest : submits
+  User "1" --> "0..*" Notification      : receives
+  User "1" --> "0..1" NotificationPreference : configures
+
+  Group "1" --> "1..*" Membership        : has
+  Group "1" --> "0..*" Contribution      : tracks
+  Group "1" --> "0..*" Payout            : distributes
+  Group "1" --> "0..*" Dispute           : contains
+  Group "1" --> "0..*" GroupInvitation   : issues
+
+  Contribution "1" --> "0..1" Payment    : paid via
+
+  Dispute "1" --> "0..*" DisputeVote     : receives
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="swatch" style="background:#E1F5EE;border:1px solid #0F6E56"></span>Core entity</div>
+      <div class="legend-item"><span class="swatch" style="background:#E6F1FB;border:1px solid #185FA5"></span>"0..*" = zero to many</div>
+      <div class="legend-item"><span class="swatch" style="background:#FAEEDA;border:1px solid #854F0B"></span>"1" = exactly one (FK)</div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:20px 28px">
+    <table style="width:100%;font-size:13px;border-collapse:collapse">
+      <thead>
+        <tr style="background:#F5F3EE">
+          <th style="text-align:left;padding:7px 10px;border-bottom:1px solid #E0DDD6">Model</th>
+          <th style="text-align:left;padding:7px 10px;border-bottom:1px solid #E0DDD6">Status / Enum values</th>
+          <th style="text-align:left;padding:7px 10px;border-bottom:1px solid #E0DDD6">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6"><strong>User.role</strong></td><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">USER · ADMIN</td><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6;font-size:12px;color:#555">System-level role. ADMIN has full platform access.</td></tr>
+        <tr><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6"><strong>User.kycStatus</strong></td><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">NONE · PENDING · APPROVED · REJECTED</td><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6;font-size:12px;color:#555">KYC required to create groups</td></tr>
+        <tr><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6"><strong>Membership.role</strong></td><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">ADMIN · MEMBER</td><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6;font-size:12px;color:#555">Group-level role. MFA required for ADMIN.</td></tr>
+        <tr><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6"><strong>Group.frequency</strong></td><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">WEEKLY · BIWEEKLY · MONTHLY · QUARTERLY</td><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6;font-size:12px;color:#555">Contribution cycle frequency</td></tr>
+        <tr><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6"><strong>Group.payoutOrder</strong></td><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">SEQUENTIAL · LOTTERY</td><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6;font-size:12px;color:#555">How payout recipient is selected</td></tr>
+        <tr><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6"><strong>Payment.provider</strong></td><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">FAPSHI (MTN MoMo / Orange Money)</td><td style="padding:6px 10px;border-bottom:1px solid #F0EDE6;font-size:12px;color:#555">Primary aggregator</td></tr>
+        <tr><td style="padding:6px 10px"><strong>Payout.status: HELD</strong></td><td style="padding:6px 10px;font-family:monospace;font-size:11px">Escrow after 3 failed retries</td><td style="padding:6px 10px;font-size:12px;color:#555">Admin reviews and manually releases</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });
+  </script>
+</body>
+</html>

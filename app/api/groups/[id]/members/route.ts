@@ -51,7 +51,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   const { userId, role } = await req.json()
-  if (!userId || !["ADMIN", "TREASURER", "MEMBER"].includes(role)) {
+  if (!userId || !["ADMIN", "MEMBER"].includes(role)) {
     return NextResponse.json({ error: "Invalid userId or role" }, { status: 400 })
   }
 
@@ -73,19 +73,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const actorName = actor.name || "An admin"
   const groupName = group?.name ?? "the group"
 
-  if (role === "TREASURER" && oldRole !== "TREASURER") {
-    await Promise.allSettled([
-      createNotification({ userId, type: "ROLE_ASSIGNED", title: "You've been made Treasurer", body: `${actorName} made you Treasurer in "${groupName}". You now have financial management access and will need to verify with a code at each sign-in.`, groupId }),
-      createNotificationsForGroup({ groupId, excludeUserId: userId, type: "ROLE_ASSIGNED", title: `New Treasurer in ${groupName}`, body: `${targetName} has been appointed Treasurer by ${actorName}.` }),
-      emailService.sendRoleAssigned(target.user.email, { userName: targetName, role: "Treasurer", groupName, assignedBy: actorName }),
-    ])
-  } else if (oldRole === "TREASURER" && role !== "TREASURER") {
-    await Promise.allSettled([
-      createNotification({ userId, type: "ROLE_REMOVED", title: "Treasurer role removed", body: `Your Treasurer role in "${groupName}" has been changed to ${role} by ${actorName}.`, groupId }),
-      createNotificationsForGroup({ groupId, excludeUserId: userId, type: "ROLE_REMOVED", title: `Treasurer changed in ${groupName}`, body: `${targetName} is no longer Treasurer. Their role has been changed to ${role} by ${actorName}.` }),
-      emailService.sendRoleRemoved(target.user.email, { userName: targetName, oldRole: "Treasurer", newRole: role, groupName, changedBy: actorName }),
-    ])
-  } else if (role === "ADMIN" && oldRole !== "ADMIN") {
+  if (role === "ADMIN" && oldRole !== "ADMIN") {
     await Promise.allSettled([
       createNotification({ userId, type: "ROLE_ASSIGNED", title: "You've been made Admin", body: `${actorName} promoted you to Admin in "${groupName}".`, groupId }),
       createNotificationsForGroup({ groupId, excludeUserId: userId, type: "ROLE_ASSIGNED", title: `New Admin in ${groupName}`, body: `${targetName} has been promoted to Admin by ${actorName}.` }),

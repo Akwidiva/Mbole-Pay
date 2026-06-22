@@ -57,17 +57,6 @@ export async function isGroupAdmin(userId: string, groupId: string): Promise<boo
 }
 
 /**
- * Check if user is group treasurer or above
- */
-export async function isGroupTreasurerOrAbove(
-  userId: string,
-  groupId: string
-): Promise<boolean> {
-  const role = await getUserGroupRole(userId, groupId);
-  return role === GroupRole.ADMIN || role === GroupRole.TREASURER;
-}
-
-/**
  * Get all groups where user has a specific role
  */
 export async function getUserGroupsByRole(userId: string, role: GroupRole) {
@@ -108,8 +97,7 @@ export async function getUserGroupsByMinimumRole(
 
     const roleHierarchy: Record<GroupRole, number> = {
       MEMBER: 1,
-      TREASURER: 2,
-      ADMIN: 3,
+      ADMIN: 2,
     };
 
     return memberships
@@ -190,14 +178,3 @@ export async function requireGroupAdmin(userId: string, groupId: string) {
   return true;
 }
 
-/**
- * Validate user is group treasurer or above
- * Throws error if not treasurer+
- */
-export async function requireGroupTreasurerOrAbove(userId: string, groupId: string) {
-  const isTreasurerOrAbove = await isGroupTreasurerOrAbove(userId, groupId);
-  if (!isTreasurerOrAbove) {
-    throw new Error(`User is not treasurer+ of group ${groupId}`);
-  }
-  return true;
-}

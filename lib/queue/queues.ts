@@ -5,6 +5,7 @@ import type { QueueJobPayloadMap } from "@/lib/queue/jobs";
 export const QUEUE_NAMES = {
   notifications: "notifications",
   paymentRetries: "payment-retries",
+  payoutRetries: "payout-retries",
   reports: "reports",
   scheduler: "scheduler",
 } as const;
@@ -16,6 +17,11 @@ export const notificationsQueue = new Queue<QueueJobPayloadMap["notification.pro
 
 export const paymentRetryQueue = new Queue<QueueJobPayloadMap["payment.retry"]>(
   QUEUE_NAMES.paymentRetries,
+  { connection: redisConnection }
+);
+
+export const payoutRetryQueue = new Queue<QueueJobPayloadMap["payout.retry"]>(
+  QUEUE_NAMES.payoutRetries,
   { connection: redisConnection }
 );
 
@@ -32,6 +38,7 @@ export const schedulerQueue = new Queue<QueueJobPayloadMap["scheduler.tick"]>(
 export const queueEvents = {
   notifications: new QueueEvents(QUEUE_NAMES.notifications, { connection: redisConnection }),
   paymentRetries: new QueueEvents(QUEUE_NAMES.paymentRetries, { connection: redisConnection }),
+  payoutRetries: new QueueEvents(QUEUE_NAMES.payoutRetries, { connection: redisConnection }),
   reports: new QueueEvents(QUEUE_NAMES.reports, { connection: redisConnection }),
   scheduler: new QueueEvents(QUEUE_NAMES.scheduler, { connection: redisConnection }),
 };

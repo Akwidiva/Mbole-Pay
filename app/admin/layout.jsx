@@ -12,8 +12,7 @@ export default async function AdminLayout({ children }) {
     redirect("/signin")
   }
   
-  // Only allow super admins
-  if (session.user.role !== "SUPER_ADMIN") {
+  if (session.user.role !== "ADMIN") {
     redirect("/dashboard")
   }
 

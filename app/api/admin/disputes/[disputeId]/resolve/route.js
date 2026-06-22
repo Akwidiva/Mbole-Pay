@@ -4,10 +4,10 @@ import prisma from '@/lib/db';
 
 /**
  * POST /api/admin/disputes/[disputeId]/resolve
- * SUPER_ADMIN - Resolve a dispute
+ * ADMIN - Resolve a dispute
  */
 export async function POST(request, { params }) {
-  const roleCheck = await checkUserRole('SUPER_ADMIN');
+  const roleCheck = await checkUserRole('ADMIN');
 
   if (!roleCheck.authorized) {
     return roleErrorResponse(roleCheck.error, 403);

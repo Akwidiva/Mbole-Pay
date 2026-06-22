@@ -1,0 +1,77 @@
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#EEEDFE", "primaryBorderColor": "#534AB7", "primaryTextColor": "#3C3489", "noteBkgColor": "#FAEEDA", "noteTextColor": "#633806", "activationBkgColor": "#EEEDFE", "lineColor": "#555", "fontSize": "13px"}}}%%
+sequenceDiagram
+  autonumber
+
+  actor Filer as Filing Member
+  actor Voter as Voting Member
+  actor AdminUser as Group Admin
+  participant Browser
+  participant NextJS as Next.js API
+  participant DB as PostgreSQL
+  participant Pinata as Pinata IPFS
+  participant Queue as BullMQ / Redis
+  participant Email as SMTP Server
+  participant Sched as Scheduler (Cron)
+
+  Note over Filer,Sched: Dispute Filing
+
+  Filer->>Browser: Navigate to /disputes → "File Dispute"
+  Browser-->>Filer: Dispute form
+  Filer->>Browser: Fill form + attach evidence file
+  Browser->>NextJS: POST /api/disputes
+
+  opt Evidence file attached
+    NextJS->>Pinata: Upload file
+    Pinata-->>NextJS: { IpfsHash }
+    NextJS->>DB: Store evidenceCid
+  end
+
+  NextJS->>DB: Create Dispute (OPEN, votingDeadline = now + 72h)
+  NextJS->>Queue: Enqueue notifications for all members
+  Queue->>NextJS: Process notification job
+  NextJS->>DB: Create in-app Notifications
+  NextJS->>Email: sendDisputeEmail() to each member
+  Email-->>Voter: "New dispute — vote now"
+  NextJS-->>Browser: 201 Created { disputeId }
+
+  Note over Filer,Sched: Peer Voting (72-hour window)
+
+  Voter->>Browser: Navigate to /disputes
+  Browser->>NextJS: GET /api/disputes
+  NextJS->>DB: Fetch open disputes
+  DB-->>NextJS: Dispute list
+  NextJS-->>Browser: Dispute list
+
+  Voter->>Browser: Cast vote (UPHELD / REJECTED)
+  Browser->>NextJS: POST /api/disputes/{id}/vote
+  NextJS->>DB: Already voted?
+
+  alt Already voted
+    NextJS-->>Browser: 409 Conflict
+  else First vote
+    NextJS->>DB: Create DisputeVote
+    NextJS-->>Browser: 200 OK
+  end
+
+  Note over Filer,Sched: Auto-Resolution at Deadline
+
+  Sched->>NextJS: POST /api/cron/reminders (hourly)
+  NextJS->>DB: Disputes where deadline <= now AND status = OPEN
+  NextJS->>DB: Count UPHELD vs REJECTED votes
+
+  alt UPHELD majority
+    NextJS->>DB: Dispute → RESOLVED: UPHELD
+  else REJECTED or no quorum
+    NextJS->>DB: Dispute → RESOLVED: REJECTED
+  end
+
+  NextJS->>Queue: Notify all parties
+  Queue-->>Filer: "Dispute resolved"
+
+  Note over Filer,Sched: Admin Force-Resolve
+
+  AdminUser->>Browser: /admin/disputes → "Force Resolve"
+  Browser->>NextJS: POST /api/admin/disputes/{id}/resolve
+  NextJS->>DB: Dispute → RESOLVED (admin override)
+  NextJS->>Queue: Notify all parties
+  NextJS-->>Browser: 200 OK

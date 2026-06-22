@@ -1,6 +1,8 @@
 import prisma from "@/lib/db"
 import { PaymentFactory } from "@/lib/payments/payment-factory"
 import { recordCycleOnChain, recordContributionOnChain } from "@/lib/blockchain/factory"
+import { enqueuePayoutRetry } from "@/lib/queue/enqueue"
+import { notifyPayoutCompleted, notifyContributorsPayoutComplete } from "@/lib/services/reminder-service"
 
 /**
  * Returns memberships in payout rotation order: non-admin members first (by
@@ -22,7 +24,7 @@ export async function triggerPayoutIfComplete(groupId: string, cycle: number) {
     where: { id: groupId },
     include: {
       memberships: {
-        include: { user: { select: { id: true, name: true, phone: true } } },
+        include: { user: { select: { id: true, name: true, email: true, phone: true } } },
         orderBy: { createdAt: "asc" },
       },
     },
@@ -103,6 +105,37 @@ export async function triggerPayoutIfComplete(groupId: string, cycle: number) {
 
     console.log(`[payout] cycle ${cycle} complete — paid ${totalPool} XAF to ${recipientPhone}`)
 
+    // Notify recipient that money was sent
+    notifyPayoutCompleted({
+      userId: recipientMembership.userId,
+      userEmail: recipientMembership.user.email,
+      amount: totalPool,
+      groupId,
+      groupName: group.name,
+    }).catch(() => {})
+
+    // Notify every contributor that their payment is confirmed + payout went out
+    notifyContributorsPayoutComplete({
+      groupId,
+      groupName: group.name,
+      cycle,
+      totalPool,
+      recipientName: recipientMembership.user.name ?? undefined,
+    }).catch(() => {})
+
+    // Record all contributions on-chain now that payout is confirmed
+    const contributions = await prisma.contribution.findMany({ where: { groupId, cycle, status: "PAID" } })
+    for (const c of contributions) {
+      recordContributionOnChain({
+        dbGroupId: groupId,
+        cycle,
+        dbMemberId: c.userId,
+        amount: c.amount,
+        isRecipientOffset: false,
+      }).catch((err) => console.warn("[blockchain] contribution record failed (non-fatal):", err.message))
+    }
+
+    // Record the completed cycle on-chain
     recordCycleOnChain({
       dbGroupId: groupId,
       cycle,
@@ -121,7 +154,15 @@ export async function triggerPayoutIfComplete(groupId: string, cycle: number) {
       where: { id: payout.id },
       data: { status: "FAILED", errorMessage: err.message },
     })
-    console.error("[payout] Fapshi transfer failed:", err.message)
+    console.error("[payout] Fapshi transfer failed — scheduling retry:", err.message)
+
+    // FR-07/FR-08: enqueue retry with 1h→4h→24h backoff; worker handles HELD + alerts on exhaustion
+    enqueuePayoutRetry({
+      payoutId: payout.id,
+      groupId,
+      cycle,
+      requestedAt: new Date().toISOString(),
+    }).catch((qErr) => console.error("[payout] failed to enqueue retry:", qErr.message))
   }
 }
 

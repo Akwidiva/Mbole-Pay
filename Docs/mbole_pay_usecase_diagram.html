@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mbole Pay – Use Case Diagram</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F5F3EE; color: #1a1a18; padding: 32px 24px; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { font-size: 22px; font-weight: 700; }
+    .page-header p  { font-size: 13px; color: #666; margin-top: 4px; }
+    .card { background: #fff; border: 1px solid #E0DDD6; border-radius: 14px; padding: 28px; margin-bottom: 20px; }
+    .card h2 { font-size: 14px; font-weight: 600; color: #555; margin-bottom: 16px; text-transform: uppercase; letter-spacing: .04em; }
+    .mermaid { overflow-x: auto; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #E0DDD6; }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #555; }
+    .swatch { width: 14px; height: 14px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>Mbole Pay — Use Case Diagram</h1>
+    <p>Actors and their interactions with the system &nbsp;·&nbsp; June 2026</p>
+  </div>
+
+  <div class="card">
+    <h2>System Use Cases</h2>
+    <div class="mermaid">
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor":       "#E1F5EE",
+    "primaryBorderColor": "#0F6E56",
+    "primaryTextColor":   "#085041",
+    "secondaryColor":     "#E6F1FB",
+    "tertiaryColor":      "#FAEEDA",
+    "lineColor":          "#555",
+    "fontSize":           "13px"
+  }
+}}%%
+flowchart LR
+
+  %% ── Actors ──────────────────────────────────────────
+  Guest(["👤 Guest\n(Unauthenticated)"])
+  Member(["👤 Member\n(KYC Approved)"])
+  Admin(["👤 Group Admin"])
+  %% SuperAdmin removed — Admin now has full access
+  FapshiAPI(["🏦 Fapshi API\n(External)"])
+  Blockchain(["⛓️ Blockchain\n(External)"])
+
+  %% ── System boundary ─────────────────────────────────
+  subgraph System["  Mbole Pay Platform  "]
+    direction TB
+
+    subgraph AuthUseCases["Authentication"]
+      UC_Register["Register Account"]
+      UC_Login["Log In\n(Email / Google OAuth)"]
+      UC_VerifyEmail["Verify Email"]
+      UC_MFA["MFA via OTP\n(Admin users)"]
+      UC_ResetPwd["Reset Password"]
+    end
+
+    subgraph KycUseCases["KYC & Onboarding"]
+      UC_SubmitKYC["Submit KYC Documents\n(ID + selfie → IPFS)"]
+      UC_ReviewKYC["Review & Approve KYC"]
+    end
+
+    subgraph GroupUseCases["Group Management"]
+      UC_CreateGroup["Create Njangi Group"]
+      UC_InviteMember["Invite Members"]
+      UC_JoinGroup["Join Group via Invite"]
+      UC_ManageRoles["Assign Member Roles\n(Admin / Member)"]
+      UC_BroadcastMsg["Broadcast Message"]
+      UC_LockChain["Lock Rules on Blockchain"]
+      UC_ExitGroup["Request to Exit Group\n(7-day grace)"]
+      UC_DissolveGroup["Dissolve Group"]
+    end
+
+    subgraph ContribUseCases["Contributions & Payments"]
+      UC_MakePayment["Make Contribution\n(Fapshi USSD push)"]
+      UC_RetryPayment["Retry Failed Payment"]
+      UC_ViewHistory["View Transaction History"]
+      UC_ViewDashboard["View Dashboard"]
+    end
+
+    subgraph PayoutUseCases["Payouts & Withdrawals"]
+      UC_ReceivePayout["Receive Payout\n(Auto-transfer via Fapshi)"]
+      UC_Withdraw["Request Withdrawal"]
+      UC_ViewDeferredPayouts["Manage Deferred Payouts\n(Escrow)"]
+    end
+
+    subgraph DisputeUseCases["Disputes & Voting"]
+      UC_FileDispute["File Dispute\n(with IPFS evidence)"]
+      UC_VoteDispute["Vote on Dispute\n(72h window)"]
+      UC_ResolveDispute["Force-Resolve Dispute"]
+    end
+
+    subgraph ReportUseCases["Reports"]
+      UC_MyStatement["Download Personal Statement\n(CSV / PDF)"]
+      UC_GroupReport["Download Group Report\n(CSV / PDF)"]
+    end
+
+    subgraph AdminUseCases["Platform Administration"]
+      UC_ManageUsers["Manage Users\n(ban, promote)"]
+      UC_AdminGroups["Administer All Groups"]
+      UC_AdminDisputes["Administer Disputes"]
+    end
+  end
+
+  %% ── Guest associations ──────────────────────────────
+  Guest --- UC_Register
+  Guest --- UC_Login
+  Guest --- UC_VerifyEmail
+  Guest --- UC_ResetPwd
+
+  %% ── Member associations ─────────────────────────────
+  Member --- UC_Login
+  Member --- UC_MFA
+  Member --- UC_SubmitKYC
+  Member --- UC_CreateGroup
+  Member --- UC_JoinGroup
+  Member --- UC_MakePayment
+  Member --- UC_RetryPayment
+  Member --- UC_ViewHistory
+  Member --- UC_ViewDashboard
+  Member --- UC_ReceivePayout
+  Member --- UC_Withdraw
+  Member --- UC_FileDispute
+  Member --- UC_VoteDispute
+  Member --- UC_ExitGroup
+  Member --- UC_MyStatement
+
+  %% ── Admin associations (group-level + platform-level) ──
+  Admin --- UC_MFA
+  Admin --- UC_InviteMember
+  Admin --- UC_ManageRoles
+  Admin --- UC_BroadcastMsg
+  Admin --- UC_LockChain
+  Admin --- UC_DissolveGroup
+  Admin --- UC_GroupReport
+  Admin --- UC_ResolveDispute
+  Admin --- UC_ReviewKYC
+  Admin --- UC_ViewDeferredPayouts
+  Admin --- UC_ManageUsers
+  Admin --- UC_AdminGroups
+  Admin --- UC_AdminDisputes
+
+  %% ── External system associations ────────────────────
+  FapshiAPI -. "processes payment\n& sends webhook" .-> UC_MakePayment
+  FapshiAPI -. "executes payout\ntransfer" .-> UC_ReceivePayout
+  Blockchain -. "records group rules\n& cycle on-chain" .-> UC_LockChain
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="swatch" style="background:#E1F5EE;border:1px solid #0F6E56"></span>Member use cases</div>
+      <div class="legend-item"><span class="swatch" style="background:#FAEEDA;border:1px solid #854F0B"></span>Admin use cases</div>
+      <div class="legend-item"><span class="swatch" style="background:#E6F1FB;border:1px solid #185FA5"></span>External system interactions (dotted)</div>
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });
+  </script>
+</body>
+</html>

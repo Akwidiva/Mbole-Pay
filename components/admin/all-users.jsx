@@ -71,7 +71,7 @@ export function AllUsers() {
                   </div>
                 </Link>
                 <Badge
-                  variant={user.role === "SUPER_ADMIN" ? "default" : "secondary"}
+                  variant={user.role === "ADMIN" ? "default" : "secondary"}
                   className="rounded-full px-3 py-1"
                 >
                   {user.role}

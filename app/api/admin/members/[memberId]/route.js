@@ -4,10 +4,10 @@ import prisma from '@/lib/db';
 
 /**
  * POST /api/admin/members/[memberId]/approve
- * SUPER_ADMIN - Approve a member to join a group
+ * ADMIN - Approve a member to join a group
  */
 export async function POST(request, { params }) {
-  const roleCheck = await checkUserRole('SUPER_ADMIN');
+  const roleCheck = await checkUserRole('ADMIN');
 
   if (!roleCheck.authorized) {
     return roleErrorResponse(roleCheck.error, 403);
@@ -44,10 +44,10 @@ export async function POST(request, { params }) {
 
 /**
  * POST /api/admin/members/[memberId]/reject
- * SUPER_ADMIN - Reject a member from joining a group
+ * ADMIN - Reject a member from joining a group
  */
 export async function DELETE(request, { params }) {
-  const roleCheck = await checkUserRole('SUPER_ADMIN');
+  const roleCheck = await checkUserRole('ADMIN');
 
   if (!roleCheck.authorized) {
     return roleErrorResponse(roleCheck.error, 403);

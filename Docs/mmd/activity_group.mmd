@@ -1,0 +1,37 @@
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#E6F1FB", "primaryBorderColor": "#185FA5", "primaryTextColor": "#0C447C", "lineColor": "#555", "fontSize": "13px"}}}%%
+flowchart TD
+  A([User registers account]) --> B[POST /api/auth/signup\nEmail verification sent]
+  B --> C[User verifies email]
+  C --> D{KYC status?}
+  D -->|Not approved| E[Navigate to /kyc\nUpload ID + selfie]
+  E --> F[Files → Pinata IPFS\nKYC status: PENDING]
+  F --> G[Admin reviews KYC]
+  G --> H{Decision?}
+  H -->|Rejected| I([User notified — resubmit])
+  I --> E
+  H -->|Approved| J[KYC status: APPROVED\nEmail sent]
+  D -->|APPROVED| J
+  J --> K[POST /api/groups\nGroup created]
+  K --> L[lockGroupRulesOnChain\nRules stored on Polygon]
+  L --> M[Admin sends invitations\nEmail with invite token]
+  M --> N[Member accepts link\nMembership created]
+  N --> O{Minimum members\nreached?}
+  O -->|No| M
+  O -->|Yes| P[Cycle 1 begins\nContributions created]
+  P --> Q[Members pay contributions\nPayment flow runs]
+  Q --> R{All contributions paid?}
+  R -->|No| Q
+  R -->|Yes| S[Payout to current recipient\nPayout flow runs]
+  S --> T[Cycle advances\nNext recipient calculated]
+  T --> U{All members\nreceived payout?}
+  U -->|No| P
+  U -->|Yes| V{Dissolve or continue?}
+  V -->|Continue| P
+  V -->|Dissolve| W[POST /api/groups/id/dissolve\nGroup deactivated]
+  W --> X([Group closed])
+  Q --> Y{Member wants to exit?}
+  Y -->|Yes| Z[POST /members/exit\n7-day grace period]
+  Z --> AA{7 days elapsed?}
+  AA -->|No| AB([Member can cancel])
+  AA -->|Yes| AC[Membership deactivated]
+  AC --> Q

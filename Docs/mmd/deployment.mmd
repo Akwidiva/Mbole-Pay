@@ -1,0 +1,55 @@
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#E1F5EE", "primaryBorderColor": "#0F6E56", "primaryTextColor": "#085041", "secondaryColor": "#E6F1FB", "tertiaryColor": "#FAEEDA", "lineColor": "#555", "fontSize": "13px"}}}%%
+graph TB
+
+  Browser["🌐 Web Browser\nUser / Admin"]
+
+  subgraph AppTier["Application Tier — Vercel / Kubernetes"]
+    API["Next.js 15 App Server\nApp Router + API Routes + NextAuth.js"]
+    Workers["BullMQ Workers (embedded)\nnotifications · payment-retries\npayout-retries · reports · scheduler"]
+  end
+
+  subgraph DataTier["Data Tier"]
+    Postgres[("PostgreSQL\nPrisma ORM 6.18")]
+    Redis[("Redis\nioredis 5 — queue backend")]
+  end
+
+  subgraph PayTier["Payment Services"]
+    Fapshi["Fapshi API\nMTN + Orange aggregator"]
+    MTN["MTN MoMo"]
+    Orange["Orange Money"]
+  end
+
+  subgraph ExtTier["External Services"]
+    SMTP["SMTP Server\nNodemailer"]
+    GAuth["Google OAuth 2.0"]
+    Pinata["Pinata IPFS\nKYC docs + dispute evidence"]
+  end
+
+  subgraph ChainTier["Blockchain — EVM"]
+    EVMNode["Polygon Node\nAmoy testnet / Mainnet"]
+    Contract["Factory Smart Contract\nSolidity · Hardhat"]
+  end
+
+  subgraph ObsTier["Observability"]
+    Prom["Prometheus\nscrapes /api/metrics"]
+    Graf["Grafana Dashboards"]
+    Jaeger["Jaeger\nOTEL Traces"]
+  end
+
+  Browser     -->|"HTTPS"| API
+  API         -->|"Prisma SQL"| Postgres
+  API         -->|"enqueue jobs"| Redis
+  Workers     -->|"ioredis"| Redis
+  API         -->|"POST /initiate-pay\nPOST /transfer"| Fapshi
+  Fapshi      -->|"USSD"| MTN
+  Fapshi      -->|"USSD"| Orange
+  Fapshi      -->|"webhook POST /api/payments/webhook"| API
+  Workers     -->|"GET /payment-status poll"| Fapshi
+  API         -->|"Nodemailer SMTP"| SMTP
+  API         -->|"OAuth2"| GAuth
+  API         -->|"upload CID"| Pinata
+  API         -->|"ethers.js JSON-RPC"| EVMNode
+  EVMNode     <-->|"deploy / call"| Contract
+  Prom        -->|"scrape"| API
+  Prom        --> Graf
+  API         -->|"OTEL spans"| Jaeger

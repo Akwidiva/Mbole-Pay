@@ -65,27 +65,6 @@ export function AdminGate({ children, groupId, fallback = null }: AdminGateProps
   return isAdmin ? children : fallback
 }
 
-interface TreasurerGateProps {
-  children: ReactNode
-  groupId: string | null
-  fallback?: ReactNode
-}
-
-/**
- * Component that renders children only if user is treasurer or above in group
- */
-export function TreasurerGate({
-  children,
-  groupId,
-  fallback = null,
-}: TreasurerGateProps) {
-  const { role } = useUserGroupRole(groupId)
-  const isTreasurerOrAbove =
-    role === GroupRole.ADMIN || role === GroupRole.TREASURER
-
-  return isTreasurerOrAbove ? children : fallback
-}
-
 interface ConditionalRenderProps {
   children: ReactNode
   permission?: Permission

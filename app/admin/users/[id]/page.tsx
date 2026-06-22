@@ -16,7 +16,7 @@ export default async function AdminUserPage({ params }: { params: { id: string }
   }
 
   const adminUser = await prisma.user.findUnique({ where: { email: session.user.email } })
-  if (!adminUser || adminUser.role !== "SUPER_ADMIN") {
+  if (!adminUser || adminUser.role !== "ADMIN") {
     return (
       <div className="p-6">
         <p>Forbidden</p>

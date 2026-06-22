@@ -14,11 +14,11 @@ export default async function WithdrawalsPage() {
   }
 
   const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { role: true } })
-  const isAdmin = user?.role === "SUPER_ADMIN" || user?.role === "ADMIN"
+  const isAdmin = user?.role === "ADMIN"
 
   return (
     <DashboardShell>
-      <DashboardHeader heading="Withdrawal Requests" text="View withdrawal requests and manage payouts (admins/treasurers)." />
+      <DashboardHeader heading="Withdrawal Requests" text="View withdrawal requests and manage payouts (admins only)." />
       <div className="mt-4">
         <WithdrawalHistory admin={isAdmin} />
       </div>

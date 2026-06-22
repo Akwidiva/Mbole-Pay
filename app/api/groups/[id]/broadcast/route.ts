@@ -16,8 +16,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const membership = await prisma.membership.findUnique({
     where: { userId_groupId: { userId: actor.id, groupId } },
   })
-  if (!["ADMIN", "TREASURER"].includes(membership?.role ?? "")) {
-    return NextResponse.json({ error: "Only admins and treasurers can broadcast messages" }, { status: 403 })
+  if (membership?.role !== "ADMIN") {
+    return NextResponse.json({ error: "Only admins can broadcast messages" }, { status: 403 })
   }
 
   const { message } = await req.json()

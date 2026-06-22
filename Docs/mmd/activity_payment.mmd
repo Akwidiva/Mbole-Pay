@@ -1,0 +1,29 @@
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#E1F5EE", "primaryBorderColor": "#0F6E56", "primaryTextColor": "#085041", "lineColor": "#555", "fontSize": "13px"}}}%%
+flowchart TD
+  A([Member opens dashboard]) --> B[View pending contribution]
+  B --> C[Click Pay Now]
+  C --> D[POST /api/payments/initialize\nPayment: PENDING\nBullMQ job queued — 120s delay]
+  D --> E{Fapshi API\nreachable?}
+  E -->|No| F([Error shown — retry button])
+  E -->|Yes| G[Fapshi POST /initiate-pay\nUSSD sent to phone]
+  G --> H{Member acts\non phone}
+  H -->|Approves| I[Fapshi webhook POST\nstatus: SUCCESSFUL]
+  H -->|Ignores / declines| J[BullMQ polls after 120s\nGET /payment-status]
+  J --> K{Provider status?}
+  K -->|SUCCESSFUL| I
+  K -->|FAILED / EXPIRED| L{retryCount < 3?}
+  L -->|Yes| M[Re-enqueue with backoff]
+  M --> J
+  L -->|No| N[Payment → FAILED\nMember marked DELINQUENT\nAdmin notified]
+  I --> O[Payment → COMPLETED\nContribution → PAID\nIn-app notification sent]
+  O --> P{All contributions PAID\nthis cycle?}
+  P -->|No| Q([Await other members])
+  P -->|Yes| R[triggerPayoutIfComplete\nCalculate recipient]
+  R --> S[Create Payout PENDING\nFapshi POST /transfer]
+  S --> T{Transfer result?}
+  T -->|Success| U[Payout → COMPLETED\nRecord on blockchain\nAdvance cycle index]
+  T -->|Failed| V{retryCount < 3?}
+  V -->|Yes| W[Enqueue payout-retry]
+  W --> S
+  V -->|No| X[Payout → HELD\nEscrow — Admin notified]
+  U --> Y([Next cycle begins])

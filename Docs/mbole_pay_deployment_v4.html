@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mbole Pay – Deployment Diagram v4</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #F5F3EE;
+      color: #1a1a18;
+      padding: 32px 24px;
+      min-height: 100vh;
+    }
+    .page-header { margin-bottom: 28px; }
+    .page-header h1 { font-size: 22px; font-weight: 700; color: #111; }
+    .page-header p  { font-size: 13px; color: #666; margin-top: 4px; }
+    .card {
+      background: #fff;
+      border: 1px solid #E0DDD6;
+      border-radius: 14px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: #1a1a18; }
+    .mermaid { overflow-x: auto; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #E0DDD6;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: #555;
+    }
+    .swatch {
+      width: 12px; height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>Mbole Pay — Deployment Diagram</h1>
+    <p>System components and communication channels &nbsp;·&nbsp; as-built June 2026</p>
+  </div>
+
+  <div class="card">
+    <h2>Infrastructure &amp; Service Topology</h2>
+    <div class="mermaid">
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor":       "#E1F5EE",
+    "primaryBorderColor": "#0F6E56",
+    "primaryTextColor":   "#085041",
+    "secondaryColor":     "#E6F1FB",
+    "tertiaryColor":      "#FAEEDA",
+    "lineColor":          "#666",
+    "fontSize":           "13px"
+  }
+}}%%
+graph TB
+
+  Browser["🌐 Web Browser<br/><small>User / Admin (HTTPS)</small>"]
+
+  subgraph AppTier["⚙️  Application Tier — Vercel / Kubernetes Pod"]
+    API["<b>Next.js 15 — App Server</b><br/>App Router + API Routes<br/>NextAuth.js JWT · Google OAuth"]
+    Workers["<b>BullMQ Workers</b> (embedded)<br/>notifications · payment-retries<br/>payout-retries · reports · scheduler"]
+  end
+
+  subgraph DataTier["🗄️  Data Tier"]
+    Postgres[("PostgreSQL<br/><small>Prisma ORM 6.18</small>")]
+    Redis[("Redis<br/><small>ioredis 5 — queue backend</small>")]
+  end
+
+  subgraph PayTier["💳  Payment Services"]
+    Fapshi["Fapshi API<br/><small>MTN + Orange aggregator</small>"]
+    MTN["MTN MoMo<br/><small>USSD push</small>"]
+    Orange["Orange Money<br/><small>USSD push</small>"]
+  end
+
+  subgraph ExtTier["🔌  External Services"]
+    SMTP["SMTP Server<br/><small>Nodemailer</small>"]
+    GAuth["Google OAuth 2.0<br/><small>social login</small>"]
+    Pinata["Pinata IPFS<br/><small>KYC docs + dispute evidence</small>"]
+  end
+
+  subgraph ChainTier["⛓️  Blockchain — EVM"]
+    EVMNode["Polygon Node<br/><small>Amoy testnet / Mainnet</small>"]
+    Contract["Factory Smart Contract<br/><small>Solidity · Hardhat</small>"]
+  end
+
+  subgraph ObsTier["📊  Observability"]
+    Prom["Prometheus<br/><small>scrapes /api/metrics</small>"]
+    Graf["Grafana<br/><small>dashboards</small>"]
+    Jaeger["Jaeger<br/><small>OTEL distributed traces</small>"]
+  end
+
+  Browser     -->|"HTTPS"| API
+  API         -->|"Prisma SQL"| Postgres
+  API         -->|"enqueue jobs"| Redis
+  Workers     -->|"ioredis"| Redis
+  API         -->|"POST /initiate-pay<br/>POST /transfer"| Fapshi
+  Fapshi      -->|"USSD"| MTN
+  Fapshi      -->|"USSD"| Orange
+  Fapshi      -->|"webhook<br/>POST /api/payments/webhook"| API
+  Workers     -->|"GET /payment-status poll"| Fapshi
+  API         -->|"Nodemailer SMTP"| SMTP
+  API         -->|"OAuth2 redirect"| GAuth
+  API         -->|"upload CID<br/>(Pinata JWT)"| Pinata
+  API         -->|"ethers.js JSON-RPC"| EVMNode
+  EVMNode     <-->|"call / deploy"| Contract
+  Prom        -->|"scrape"| API
+  Prom        --> Graf
+  API         -->|"OTEL spans"| Jaeger
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="swatch" style="background:#E1F5EE;border:1px solid #0F6E56"></span>Application &amp; client</div>
+      <div class="legend-item"><span class="swatch" style="background:#E6F1FB;border:1px solid #185FA5"></span>Data stores</div>
+      <div class="legend-item"><span class="swatch" style="background:#FAEEDA;border:1px solid #854F0B"></span>Payment &amp; external APIs</div>
+      <div class="legend-item"><span class="swatch" style="background:#FBEAF0;border:1px solid #993556"></span>Blockchain</div>
+      <div class="legend-item"><span class="swatch" style="background:#EEEDFE;border:1px solid #534AB7"></span>Observability</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Deployment Node Summary</h2>
+    <table style="width:100%;font-size:13px;border-collapse:collapse">
+      <thead>
+        <tr style="background:#F5F3EE">
+          <th style="text-align:left;padding:8px 10px;border-bottom:1px solid #E0DDD6">Component</th>
+          <th style="text-align:left;padding:8px 10px;border-bottom:1px solid #E0DDD6">Technology</th>
+          <th style="text-align:left;padding:8px 10px;border-bottom:1px solid #E0DDD6">Criticality</th>
+          <th style="text-align:left;padding:8px 10px;border-bottom:1px solid #E0DDD6">Key env vars</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">Next.js App Server</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">Next.js 15.2 · Node.js 18+</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6"><span style="color:#085041;font-weight:600">Critical</span></td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">NEXTAUTH_URL, NEXTAUTH_SECRET</td></tr>
+        <tr><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">PostgreSQL</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">PostgreSQL 12+ · Prisma ORM 6.18</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6"><span style="color:#085041;font-weight:600">Critical</span></td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">DATABASE_URL</td></tr>
+        <tr><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">Redis</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">Redis 6+ · ioredis 5.3 · BullMQ 5.78</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6"><span style="color:#085041;font-weight:600">Critical</span></td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">REDIS_URL</td></tr>
+        <tr><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">Fapshi API</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">REST · MTN &amp; Orange aggregator</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6"><span style="color:#085041;font-weight:600">Critical</span></td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">FAPSHI_API_USER, FAPSHI_API_KEY, FAPSHI_WEBHOOK_SECRET</td></tr>
+        <tr><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">SMTP Server</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">Nodemailer · SendGrid / custom SMTP</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6"><span style="color:#633806;font-weight:600">Important</span></td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS</td></tr>
+        <tr><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">Pinata IPFS</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">IPFS · Pinata gateway</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6"><span style="color:#633806;font-weight:600">Important</span></td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">PINATA_JWT, PINATA_GATEWAY</td></tr>
+        <tr><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">EVM Blockchain</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">Polygon Amoy · Solidity · Hardhat · ethers.js 6</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6"><span style="color:#444;font-weight:600">Optional</span></td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">BLOCKCHAIN_RPC_URL, FACTORY_CONTRACT_ADDRESS, DEPLOYER_PRIVATE_KEY</td></tr>
+        <tr><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">Google OAuth</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6">NextAuth.js OAuth2 provider</td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6"><span style="color:#444;font-weight:600">Optional</span></td><td style="padding:7px 10px;border-bottom:1px solid #F0EDE6;font-family:monospace;font-size:11px">GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET</td></tr>
+        <tr><td style="padding:7px 10px">Prometheus / Grafana / Jaeger</td><td style="padding:7px 10px">prom-client · OpenTelemetry · Jaeger</td><td style="padding:7px 10px"><span style="color:#444;font-weight:600">Optional</span></td><td style="padding:7px 10px;font-family:monospace;font-size:11px">OTEL_ENABLED, OTEL_EXPORTER_OTLP_ENDPOINT</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, securityLevel: 'loose' });
+  </script>
+</body>
+</html>

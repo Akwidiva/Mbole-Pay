@@ -12,8 +12,9 @@ import { AnalyticsDashboard } from "@/components/analytics";
 import { MemberManagement } from "@/components/groups/member-management";
 import { GroupSettingsPage } from "@/components/groups/group-settings-page";
 import { CycleCard } from "@/components/groups/cycle-card";
-import { Users, TrendingUp, Settings, ChevronLeft, DollarSign, Calendar, Mail } from "lucide-react";
+import { Users, TrendingUp, Settings, ChevronLeft, DollarSign, Calendar, Mail, FileText, LogOut } from "lucide-react";
 import Link from "next/link";
+import { GroupReportsTab } from "@/components/groups/group-reports-tab";
 
 interface GroupData {
   id: string;
@@ -25,7 +26,7 @@ interface GroupData {
   cycleType: string;
   memberships?: Array<{
     userId: string;
-    role: "ADMIN" | "TREASURER" | "MEMBER";
+    role: "ADMIN" | "MEMBER";
     user: {
       id: string;
       name: string | null;
@@ -47,7 +48,7 @@ interface AnalyticsMetrics {
   nextPayoutAmount?: number;
 }
 
-const VALID_TABS = ["overview", "members", "analytics", "settings"];
+const VALID_TABS = ["overview", "members", "analytics", "reports", "settings"];
 
 export default function GroupDetailPage() {
   const router = useRouter();
@@ -183,8 +184,10 @@ export default function GroupDetailPage() {
     }).format(amount || 0);
   };
 
+  const currentUserId = session?.user?.id;
   const currentUserRole =
-    group?.memberships?.find((membership) => membership.userId === session?.user?.id)?.role || "MEMBER";
+    group?.memberships?.find((membership) => membership.userId === currentUserId)?.role || "MEMBER";
+  const isAdmin = currentUserRole === "ADMIN";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
@@ -258,6 +261,10 @@ export default function GroupDetailPage() {
             <TabsTrigger value="analytics" className="min-w-[140px] flex-1 rounded-lg data-[state=active]:bg-background">
               <TrendingUp className="h-4 w-4 mr-2" />
               Analytics
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="min-w-[120px] flex-1 rounded-lg data-[state=active]:bg-background">
+              <FileText className="h-4 w-4 mr-2" />
+              Reports
             </TabsTrigger>
             <TabsTrigger value="settings" className="min-w-[130px] flex-1 rounded-lg data-[state=active]:bg-background">
               <Settings className="h-4 w-4 mr-2" />
@@ -395,22 +402,39 @@ export default function GroupDetailPage() {
                   <TrendingUp className="mr-2 h-4 w-4" />
                   View Analytics
                 </Button>
-                <Button variant="outline" className="w-full justify-start gap-2 px-3 sm:col-span-2 lg:col-span-1" onClick={() => setActiveTab("settings")}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Group Settings
+                <Button variant="outline" className="w-full justify-start gap-2 px-3" onClick={() => setActiveTab("reports")}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Reports &amp; Downloads
                 </Button>
+                {currentUserRole === "ADMIN" && (
+                  <Button variant="outline" className="w-full justify-start gap-2 px-3 sm:col-span-2 lg:col-span-1" onClick={() => setActiveTab("settings")}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Group Settings
+                  </Button>
+                )}
+                {currentUserRole !== "ADMIN" && (
+                  <Button variant="outline" className="w-full justify-start gap-2 px-3 sm:col-span-2 lg:col-span-1 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30" onClick={() => setActiveTab("members")}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Leave Group
+                  </Button>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
           {/* Members Tab */}
           <TabsContent value="members" className="space-y-4">
-            <MemberManagement groupId={groupId} currentUserRole={currentUserRole} />
+            <MemberManagement groupId={groupId} currentUserRole={currentUserRole} currentUserId={currentUserId} />
           </TabsContent>
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-4">
             <AnalyticsDashboard groupId={groupId} />
+          </TabsContent>
+
+          {/* Reports Tab */}
+          <TabsContent value="reports" className="space-y-4">
+            <GroupReportsTab groupId={groupId} isAdmin={isAdmin} />
           </TabsContent>
 
           {/* Settings Tab */}

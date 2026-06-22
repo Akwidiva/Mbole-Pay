@@ -3,6 +3,7 @@ import type { NotificationEvent } from "@/lib/services/notification-event-handle
 export type QueueJobName =
   | "notification.process"
   | "payment.retry"
+  | "payout.retry"
   | "report.generate"
   | "scheduler.tick";
 
@@ -24,9 +25,17 @@ export interface SchedulerTickJobPayload {
   requestedAt?: string;
 }
 
+export interface PayoutRetryJobPayload {
+  payoutId: string;
+  groupId: string;
+  cycle: number;
+  requestedAt?: string;
+}
+
 export interface QueueJobPayloadMap {
   "notification.process": NotificationEvent;
   "payment.retry": PaymentRetryJobPayload;
+  "payout.retry": PayoutRetryJobPayload;
   "report.generate": ReportGenerateJobPayload;
   "scheduler.tick": SchedulerTickJobPayload;
 }

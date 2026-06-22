@@ -23,11 +23,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    // MFA required for any ADMIN or TREASURER, regardless of group amount
     const privilegedMembership = await prisma.membership.findFirst({
       where: {
         userId: user.id,
-        role: { in: ["ADMIN", "TREASURER"] },
+        role: "ADMIN",
       },
     })
 

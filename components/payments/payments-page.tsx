@@ -142,7 +142,7 @@ export function PaymentsPage({ initialPhoneNumber = "" }: PaymentsPageProps) {
             <p>4. Return here to see the live payment status.</p>
 
             <div className="rounded-2xl border bg-muted/30 p-4 text-xs">
-              If you are the treasurer or admin for a group, use the Group Members tab to change roles and keep
+              If you are the admin for a group, use the Group Members tab to change roles and keep
               collection duties organized.
             </div>
           </CardContent>

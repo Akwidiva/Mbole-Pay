@@ -5,18 +5,17 @@ import bcrypt from "bcryptjs"
 const prisma = new PrismaClient()
 
 async function main() {
-  // Create super admin (app creator)
   const superAdmin = await prisma.user.upsert({
     where: { email: "admin@mbolepay.com" },
     update: {},
     create: {
       email: "admin@mbolepay.com",
-      name: "Super Admin",
+      name: "Admin",
       password: await bcrypt.hash("Admin123456!", 10),
-      role: "SUPER_ADMIN",
+      role: "ADMIN",
     },
   })
-  console.log("✓ Created Super Admin:", superAdmin.name, superAdmin.email, `(${superAdmin.role})`)
+  console.log("✓ Created Admin:", superAdmin.name, superAdmin.email, `(${superAdmin.role})`)
 
   // Create test user
   const user = await prisma.user.upsert({

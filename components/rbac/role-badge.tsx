@@ -16,8 +16,6 @@ export function RoleBadge({ role, variant = "default" }: RoleBadgeProps) {
     switch (role) {
       case GroupRole.ADMIN:
         return "default"
-      case GroupRole.TREASURER:
-        return "secondary"
       case GroupRole.MEMBER:
         return "outline"
       default:
@@ -42,7 +40,7 @@ interface RoleSelectProps {
  * Component for admin to select a role
  */
 export function RoleSelect({ value, onChange, disabled = false }: RoleSelectProps) {
-  const roles = [GroupRole.ADMIN, GroupRole.TREASURER, GroupRole.MEMBER]
+  const roles = [GroupRole.ADMIN, GroupRole.MEMBER]
 
   return (
     <div className="flex gap-2">

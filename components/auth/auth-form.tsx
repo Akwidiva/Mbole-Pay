@@ -52,7 +52,7 @@ export function AuthForm({ mode, redirectPath = "/dashboard", onSuccess, classNa
     try {
       const sessionResponse = await fetch("/api/auth/session")
       const session = await sessionResponse.json().catch(() => null)
-      const targetPath = session?.user?.role === "SUPER_ADMIN" ? "/admin" : redirectPath
+      const targetPath = session?.user?.role === "ADMIN" ? "/admin" : redirectPath
       window.location.assign(targetPath)
     } catch {
       finish()

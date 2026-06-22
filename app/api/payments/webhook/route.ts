@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { PaymentFactory } from "@/lib/payments/payment-factory";
 import { PaymentStatus, PaymentProvider, ApiResponse } from "@/types/payments";
-import crypto from "crypto";
 import { createLogger } from "@/lib/observability/logger";
 import { paymentWebhookEvents, recordApiError } from "@/lib/observability/metrics";
-import { notifyPaymentReceived } from "@/lib/services/reminder-service";
 import { triggerPayoutIfComplete } from "@/lib/services/payout-service"
-import { recordContributionOnChain } from "@/lib/blockchain/factory";
+import { notifyPayoutCompleted, notifyContributorsPayoutComplete } from "@/lib/services/reminder-service"
+import { recordContributionOnChain, recordCycleOnChain } from "@/lib/blockchain/factory"
+import { enqueueDelayedPaymentAutoRetry, enqueuePayoutRetry } from "@/lib/queue/enqueue";
 
 const logger = createLogger("payments.webhook")
 
@@ -70,6 +69,63 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── Payout webhook ────────────────────────────────────────────────────────
+    // Fapshi sends payout callbacks with externalId = "payout-{groupId}-cycle-{n}"
+    const payoutMatch = externalId?.match(/^payout-(.+)-cycle-(\d+)$/)
+    if (payoutMatch) {
+      const groupId = payoutMatch[1]
+      const cycle = parseInt(payoutMatch[2], 10)
+
+      const payout = await prisma.payout.findFirst({ where: { groupId, cycle } })
+      if (!payout) {
+        logger.warn("Payout webhook: no payout record found", { groupId, cycle })
+        return NextResponse.json<ApiResponse>({ success: false, error: { code: "PAYOUT_NOT_FOUND", message: "Payout not found" }, timestamp: new Date() }, { status: 404 })
+      }
+
+      const isSuccess = transactionStatus === "SUCCESSFUL" || transactionStatus === "COMPLETED"
+      const isFailed  = transactionStatus === "FAILED" || transactionStatus === "EXPIRED"
+
+      if (isSuccess && payout.status !== "COMPLETED") {
+        await prisma.payout.update({ where: { id: payout.id }, data: { status: "COMPLETED", processedDate: new Date() } })
+        logger.info("Payout confirmed via webhook", { groupId, cycle, amount: payout.amount })
+        paymentWebhookEvents.inc({ provider, result: "payout_completed" })
+
+        // Advance the group cycle
+        const group = await prisma.group.findUnique({
+          where: { id: groupId },
+          include: { memberships: { include: { user: { select: { id: true, name: true, email: true, phone: true } } }, orderBy: { createdAt: "asc" } } },
+        })
+        if (group) {
+          const memberCount = group.memberships.length
+          await prisma.group.update({
+            where: { id: groupId },
+            data: { currentCycle: group.currentCycle + 1, currentRecipientIndex: (group.currentRecipientIndex + 1) % memberCount },
+          })
+
+          const recipient = group.memberships.find((m) => m.userId === payout.recipientId)
+
+          notifyPayoutCompleted({ userId: payout.recipientId, userEmail: recipient?.user.email ?? "", amount: payout.amount, groupId, groupName: group.name }).catch(() => {})
+          notifyContributorsPayoutComplete({ groupId, groupName: group.name, cycle, totalPool: payout.amount, recipientName: recipient?.user.name ?? undefined }).catch(() => {})
+
+          const contributions = await prisma.contribution.findMany({ where: { groupId, cycle, status: "PAID" } })
+          for (const c of contributions) {
+            recordContributionOnChain({ dbGroupId: groupId, cycle, dbMemberId: c.userId, amount: c.amount, isRecipientOffset: false }).catch(() => {})
+          }
+          recordCycleOnChain({ dbGroupId: groupId, cycle, dbRecipientId: payout.recipientId, amount: payout.amount, memberCount }).catch(() => {})
+        }
+      } else if (isFailed && payout.status !== "COMPLETED") {
+        await prisma.payout.update({ where: { id: payout.id }, data: { status: "FAILED", errorMessage: "Payout failed at provider" } })
+        logger.error("Payout failed via webhook", { groupId, cycle })
+        paymentWebhookEvents.inc({ provider, result: "payout_failed" })
+        enqueuePayoutRetry({ payoutId: payout.id, groupId, cycle, requestedAt: new Date().toISOString() }).catch(() => {})
+      } else {
+        logger.info("Payout webhook received — no action needed", { groupId, cycle, status: transactionStatus, payoutStatus: payout.status })
+      }
+
+      return NextResponse.json<ApiResponse>({ success: true, data: { payoutId: payout.id, status: transactionStatus }, timestamp: new Date() }, { status: 200 })
+    }
+
+    // ── Collection payment webhook ─────────────────────────────────────────────
     // Find the payment record using externalId (which is the paymentId)
     const payment = await prisma.payment.findUnique({
       where: { id: externalId },
@@ -136,7 +192,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update payment record
-    const updatedPayment = await prisma.payment.update({
+    await prisma.payment.update({
       where: { id: payment.id },
       data: {
         status: updatedStatus,
@@ -156,50 +212,31 @@ export async function POST(request: NextRequest) {
       paymentWebhookEvents.inc({ provider, result: "completed" })
       logger.info("Contribution marked as PAID", { contributionId: payment.contributionId, userId: payment.userId })
 
-      // In-app notification
-      const paymentWithDetails = await prisma.payment.findUnique({
-        where: { id: payment.id },
-        include: { user: { select: { id: true, email: true, name: true } }, group: { select: { id: true, name: true } } },
-      })
-      if (paymentWithDetails) {
-        notifyPaymentReceived({
-          userId: paymentWithDetails.user.id,
-          userEmail: paymentWithDetails.user.email,
-          userName: paymentWithDetails.user.name ?? undefined,
-          amount: paymentWithDetails.amount,
-          groupId: paymentWithDetails.group.id,
-          groupName: paymentWithDetails.group.name,
-        }).catch(() => {})
-      }
-
-      // Record this contribution on-chain (non-blocking)
-      recordContributionOnChain({
-        dbGroupId: payment.groupId,
-        cycle: contribution.cycle,
-        dbMemberId: payment.userId,
-        amount: payment.amount,
-        isRecipientOffset: false,
-      }).catch((err) => logger.warn("blockchain contribution record failed (non-fatal):", { error: err.message }))
-
+      // Trigger payout check — notifications + blockchain happen after payout completes
       triggerPayoutIfComplete(payment.groupId, contribution.cycle).catch((err) =>
         logger.error("Auto-payout check failed", { groupId: payment.groupId, error: String(err) })
       )
     }
 
-    // If payment failed, increment retry count and log error
+    // FR-08: payment failed — increment retry count, schedule 24h auto-retry if < 3 attempts
     if (updatedStatus === PaymentStatus.FAILED) {
-      const newRetryCount = payment.retryCount + 1;
+      const newRetryCount = (payment.retryCount ?? 0) + 1;
       paymentWebhookEvents.inc({ provider, result: "failed" })
       await prisma.payment.update({
         where: { id: payment.id },
-        data: {
-          retryCount: newRetryCount,
-          lastRetry: new Date(),
-        },
+        data: { retryCount: newRetryCount, lastRetry: new Date() },
       });
 
-      if (newRetryCount >= 3) {
-        logger.error("Payment failed after 3 retries", { paymentId: payment.id, provider, retryCount: newRetryCount })
+      if (newRetryCount < 3) {
+        // Auto-debit retry after 24h — payment worker will re-initiate with Fapshi
+        enqueueDelayedPaymentAutoRetry({
+          paymentId: payment.id,
+          reason: `auto_retry_${newRetryCount}_of_3`,
+          requestedAt: new Date().toISOString(),
+        }).catch((err) => logger.error("Failed to enqueue 24h auto-retry", { paymentId: payment.id, error: String(err) }))
+        logger.info("Scheduled 24h auto-retry for failed payment", { paymentId: payment.id, retryCount: newRetryCount })
+      } else {
+        logger.error("Payment failed after 3 retries — member will be marked delinquent", { paymentId: payment.id, provider, retryCount: newRetryCount })
       }
     }
 

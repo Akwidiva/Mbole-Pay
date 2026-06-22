@@ -113,15 +113,16 @@ export class PaymentFactory {
    * Get the best payment provider (first available)
    */
   static async getDefaultProvider(): Promise<PaymentProvider> {
+    const supported = this.getSupportedProviders()
     const validation = await this.validateAllProviders()
 
-    for (const provider of this.getSupportedProviders()) {
-      if (validation[provider]) {
-        return provider
-      }
+    for (const provider of supported) {
+      if (validation[provider]) return provider
     }
 
-    throw new Error('No payment providers are available')
+    // Fallback: return first configured provider even if env-var ping failed
+    if (supported.length > 0) return supported[0]
+    throw new Error('No payment providers configured')
   }
 }
 

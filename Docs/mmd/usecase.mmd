@@ -1,0 +1,105 @@
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#E1F5EE", "primaryBorderColor": "#0F6E56", "primaryTextColor": "#085041", "secondaryColor": "#E6F1FB", "tertiaryColor": "#FAEEDA", "lineColor": "#555", "fontSize": "13px"}}}%%
+flowchart LR
+
+  Guest(["👤 Guest"])
+  Member(["👤 Member"])
+  Admin(["👤 Admin"])
+  FapshiAPI(["🏦 Fapshi API"])
+  Blockchain(["⛓️ Blockchain"])
+
+  subgraph System["Mbole Pay Platform"]
+    direction TB
+
+    subgraph Auth["Authentication"]
+      UC1["Register Account"]
+      UC2["Log In"]
+      UC3["Verify Email"]
+      UC4["MFA via OTP"]
+      UC5["Reset Password"]
+    end
+
+    subgraph KYC["KYC & Onboarding"]
+      UC6["Submit KYC Documents"]
+      UC7["Review & Approve KYC"]
+    end
+
+    subgraph Groups["Group Management"]
+      UC8["Create Njangi Group"]
+      UC9["Invite Members"]
+      UC10["Join Group via Invite"]
+      UC11["Assign Member Roles"]
+      UC12["Broadcast Message"]
+      UC13["Lock Rules on Blockchain"]
+      UC14["Request to Exit Group"]
+      UC15["Dissolve Group"]
+    end
+
+    subgraph Payments["Contributions & Payments"]
+      UC16["Make Contribution"]
+      UC17["Retry Failed Payment"]
+      UC18["View Transaction History"]
+      UC19["View Dashboard"]
+    end
+
+    subgraph Payouts["Payouts & Withdrawals"]
+      UC20["Receive Payout"]
+      UC21["Request Withdrawal"]
+      UC22["Manage Deferred Payouts"]
+    end
+
+    subgraph Disputes["Disputes & Voting"]
+      UC23["File Dispute"]
+      UC24["Vote on Dispute"]
+      UC25["Force-Resolve Dispute"]
+    end
+
+    subgraph Reports["Reports"]
+      UC26["Download Personal Statement"]
+      UC27["Download Group Report"]
+    end
+
+    subgraph AdminOps["Platform Administration"]
+      UC28["Manage Users"]
+      UC29["Administer All Groups"]
+      UC30["Administer Disputes"]
+    end
+  end
+
+  Guest --- UC1
+  Guest --- UC2
+  Guest --- UC3
+  Guest --- UC5
+
+  Member --- UC2
+  Member --- UC4
+  Member --- UC6
+  Member --- UC8
+  Member --- UC10
+  Member --- UC16
+  Member --- UC17
+  Member --- UC18
+  Member --- UC19
+  Member --- UC20
+  Member --- UC21
+  Member --- UC23
+  Member --- UC24
+  Member --- UC14
+  Member --- UC26
+
+  Admin --- UC4
+  Admin --- UC9
+  Admin --- UC11
+  Admin --- UC12
+  Admin --- UC13
+  Admin --- UC15
+  Admin --- UC27
+  Admin --- UC25
+  Admin --- UC7
+  Admin --- UC22
+  Admin --- UC28
+  Admin --- UC29
+  Admin --- UC30
+
+  FapshiAPI -. "processes payment" .-> UC16
+  FapshiAPI -. "executes payout" .-> UC20
+  Blockchain -. "records rules on-chain" .-> UC13

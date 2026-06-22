@@ -1,0 +1,70 @@
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#E1F5EE", "primaryBorderColor": "#0F6E56", "primaryTextColor": "#085041", "noteBkgColor": "#FAEEDA", "noteTextColor": "#633806", "activationBkgColor": "#E1F5EE", "lineColor": "#555", "fontSize": "13px"}}}%%
+sequenceDiagram
+  autonumber
+
+  actor Member
+  participant Browser
+  participant NextJS as Next.js API
+  participant DB as PostgreSQL
+  participant Queue as BullMQ / Redis
+  participant Fapshi as Fapshi API
+  participant MoMo as MTN MoMo / Orange Money
+  participant Blockchain as Polygon Contract
+
+  Note over Member,Blockchain: Payment Contribution Flow
+
+  Member->>Browser: Click "Pay Now"
+  Browser->>NextJS: POST /api/payments/initialize
+  NextJS->>DB: Create Payment (PENDING)
+  NextJS->>DB: Create Contribution (PENDING)
+  NextJS->>Queue: Enqueue payment-retry job (120s delay)
+  NextJS->>Fapshi: POST /initiate-pay
+  Fapshi-->>NextJS: 200 OK { transId }
+  NextJS->>DB: Store providerRef = transId
+  NextJS-->>Browser: 200 OK { paymentId }
+  Browser-->>Member: "Check your phone for USSD prompt"
+
+  Fapshi->>MoMo: Push USSD to member's phone
+  MoMo-->>Member: USSD menu appears
+
+  alt Member approves on phone
+    Member->>MoMo: Approve payment
+    MoMo-->>Fapshi: SUCCESSFUL
+    Fapshi->>NextJS: POST /api/payments/webhook { status: SUCCESSFUL }
+    NextJS->>DB: Payment → COMPLETED
+    NextJS->>DB: Contribution → PAID
+    NextJS->>Queue: Enqueue notification
+  else Member ignores — BullMQ polls after 120s
+    Queue->>NextJS: Fire payment-retry job
+    NextJS->>Fapshi: GET /payment-status/{transId}
+    Fapshi-->>NextJS: FAILED
+    alt retryCount < 3
+      NextJS->>Queue: Re-enqueue with backoff
+    else retryCount = 3
+      NextJS->>DB: Payment → FAILED
+      NextJS->>DB: Membership.isDelinquent = true
+      NextJS->>Queue: Notify delinquency
+    end
+  end
+
+  Note over Member,Blockchain: Payout Trigger
+
+  NextJS->>DB: All Contributions PAID this cycle?
+  DB-->>NextJS: Yes
+  NextJS->>DB: Get current recipient (rotation)
+  NextJS->>DB: Create Payout (PENDING)
+  NextJS->>Fapshi: POST /transfer { phone, amount }
+
+  alt Transfer succeeds
+    Fapshi-->>NextJS: SUCCESSFUL
+    NextJS->>DB: Payout → COMPLETED
+    NextJS->>DB: Increment cycle & recipientIndex
+    NextJS->>Blockchain: recordCycleComplete()
+    Blockchain-->>NextJS: txHash
+    NextJS->>Queue: Notify recipient
+  else Transfer fails (up to 3 retries)
+    Fapshi-->>NextJS: Error
+    NextJS->>Queue: Enqueue payout-retry
+    NextJS->>DB: Payout → HELD (escrow)
+    NextJS->>Queue: Notify admin + recipient
+  end

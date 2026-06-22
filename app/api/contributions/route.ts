@@ -75,8 +75,8 @@ export async function GET(req: NextRequest) {
 
 /**
  * POST /api/contributions
- * Create new contribution (treasurer only)
- * Requires: contributions:create permission (TREASURER+)
+ * Create new contribution (admin only)
+ * Requires: contributions:create permission (ADMIN)
  */
 export async function POST(req: NextRequest) {
   try {
