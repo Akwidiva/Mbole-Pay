@@ -86,40 +86,50 @@ export async function POST(request: NextRequest) {
       const isFailed  = transactionStatus === "FAILED" || transactionStatus === "EXPIRED"
 
       if (isSuccess && payout.status !== "COMPLETED") {
+        // Mark COMPLETED — cycle was already advanced when transfer was accepted in payout-service
         await prisma.payout.update({ where: { id: payout.id }, data: { status: "COMPLETED", processedDate: new Date() } })
-        logger.info("Payout confirmed via webhook", { groupId, cycle, amount: payout.amount })
+        logger.info("Payout delivery confirmed via webhook", { groupId, cycle, amount: payout.amount })
         paymentWebhookEvents.inc({ provider, result: "payout_completed" })
 
-        // Advance the group cycle
+        // Load recipient + group for notifications
         const group = await prisma.group.findUnique({
           where: { id: groupId },
-          include: { memberships: { include: { user: { select: { id: true, name: true, email: true, phone: true } } }, orderBy: { createdAt: "asc" } } },
+          select: { name: true, memberships: { include: { user: { select: { id: true, name: true, email: true } } } } },
         })
-        if (group) {
-          const memberCount = group.memberships.length
-          await prisma.group.update({
-            where: { id: groupId },
-            data: { currentCycle: group.currentCycle + 1, currentRecipientIndex: (group.currentRecipientIndex + 1) % memberCount },
-          })
+        const recipient = group?.memberships.find((m) => m.userId === payout.recipientId)
+        const memberCount = group?.memberships.length ?? 0
 
-          const recipient = group.memberships.find((m) => m.userId === payout.recipientId)
+        // Notify recipient and all contributors — money is confirmed delivered
+        notifyPayoutCompleted({
+          userId: payout.recipientId,
+          userEmail: recipient?.user.email ?? "",
+          amount: payout.amount,
+          groupId,
+          groupName: group?.name ?? "",
+        }).catch(() => {})
 
-          notifyPayoutCompleted({ userId: payout.recipientId, userEmail: recipient?.user.email ?? "", amount: payout.amount, groupId, groupName: group.name }).catch(() => {})
-          notifyContributorsPayoutComplete({ groupId, groupName: group.name, cycle, totalPool: payout.amount, recipientName: recipient?.user.name ?? undefined }).catch(() => {})
+        notifyContributorsPayoutComplete({
+          groupId,
+          groupName: group?.name ?? "",
+          cycle,
+          totalPool: payout.amount,
+          recipientName: recipient?.user.name ?? undefined,
+        }).catch(() => {})
 
-          const contributions = await prisma.contribution.findMany({ where: { groupId, cycle, status: "PAID" } })
-          for (const c of contributions) {
-            recordContributionOnChain({ dbGroupId: groupId, cycle, dbMemberId: c.userId, amount: c.amount, isRecipientOffset: false }).catch(() => {})
-          }
-          recordCycleOnChain({ dbGroupId: groupId, cycle, dbRecipientId: payout.recipientId, amount: payout.amount, memberCount }).catch(() => {})
+        // Record on-chain now that delivery is confirmed
+        const contributions = await prisma.contribution.findMany({ where: { groupId, cycle, status: "PAID" } })
+        for (const c of contributions) {
+          recordContributionOnChain({ dbGroupId: groupId, cycle, dbMemberId: c.userId, amount: c.amount, isRecipientOffset: false }).catch(() => {})
         }
+        recordCycleOnChain({ dbGroupId: groupId, cycle, dbRecipientId: payout.recipientId, amount: payout.amount, memberCount }).catch(() => {})
+
       } else if (isFailed && payout.status !== "COMPLETED") {
         await prisma.payout.update({ where: { id: payout.id }, data: { status: "FAILED", errorMessage: "Payout failed at provider" } })
         logger.error("Payout failed via webhook", { groupId, cycle })
         paymentWebhookEvents.inc({ provider, result: "payout_failed" })
         enqueuePayoutRetry({ payoutId: payout.id, groupId, cycle, requestedAt: new Date().toISOString() }).catch(() => {})
       } else {
-        logger.info("Payout webhook received — no action needed", { groupId, cycle, status: transactionStatus, payoutStatus: payout.status })
+        logger.info("Payout webhook: no action needed", { groupId, cycle, status: transactionStatus, payoutStatus: payout.status })
       }
 
       return NextResponse.json<ApiResponse>({ success: true, data: { payoutId: payout.id, status: transactionStatus }, timestamp: new Date() }, { status: 200 })

@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
 import { runReminderTick } from "@/lib/services/reminder-service"
 
-// Called hourly by Vercel Cron or an external scheduler.
-// Secured by a shared secret in the Authorization header.
+function authorized(req: NextRequest) {
+  const secret = process.env.CRON_SECRET
+  if (!secret) return true
+  return req.headers.get("authorization") === `Bearer ${secret}`
+}
+
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get("authorization")?.replace("Bearer ", "")
-  if (process.env.NODE_ENV === "production" && secret !== process.env.CRON_SECRET) {
+  if (!authorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
     await runReminderTick()
     return NextResponse.json({ ok: true, ran: new Date().toISOString() })
-  } catch (err) {
-    console.error("[cron/reminders]", err)
-    return NextResponse.json({ error: "Reminder tick failed" }, { status: 500 })
+  } catch (err: any) {
+    console.error("[cron][reminders]", err)
+    return NextResponse.json({ ok: false, error: err.message }, { status: 500 })
   }
 }

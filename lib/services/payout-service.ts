@@ -1,8 +1,6 @@
 import prisma from "@/lib/db"
 import { PaymentFactory } from "@/lib/payments/payment-factory"
-import { recordCycleOnChain, recordContributionOnChain } from "@/lib/blockchain/factory"
 import { enqueuePayoutRetry } from "@/lib/queue/enqueue"
-import { notifyPayoutCompleted, notifyContributorsPayoutComplete } from "@/lib/services/reminder-service"
 
 /**
  * Returns memberships in payout rotation order: non-admin members first (by
@@ -91,11 +89,13 @@ export async function triggerPayoutIfComplete(groupId: string, cycle: number) {
       description: `Njangi payout — ${group.name} cycle ${cycle}`,
     })
 
+    // Mark PROCESSING (transfer accepted by Fapshi) — webhook will confirm actual delivery
     await prisma.payout.update({
       where: { id: payout.id },
-      data: { status: "COMPLETED", processedDate: new Date() },
+      data: { status: "PROCESSING", processedDate: new Date() },
     })
 
+    // Advance the cycle now so the group isn't blocked waiting for the delivery webhook
     const nextCycle = group.currentCycle + 1
     const nextRecipientIndex = (group.currentRecipientIndex + 1) % memberCount
     await prisma.group.update({
@@ -103,49 +103,12 @@ export async function triggerPayoutIfComplete(groupId: string, cycle: number) {
       data: { currentCycle: nextCycle, currentRecipientIndex: nextRecipientIndex },
     })
 
-    console.log(`[payout] cycle ${cycle} complete — paid ${totalPool} XAF to ${recipientPhone}`)
+    console.log(`[payout] cycle ${cycle} transfer accepted — awaiting Fapshi delivery webhook`)
 
-    // Notify recipient that money was sent
-    notifyPayoutCompleted({
-      userId: recipientMembership.userId,
-      userEmail: recipientMembership.user.email,
-      amount: totalPool,
-      groupId,
-      groupName: group.name,
-    }).catch(() => {})
+    // Notifications + blockchain fire when Fapshi sends the payout webhook (SUCCESSFUL status)
+    // See: app/api/payments/webhook/route.ts payout branch
 
-    // Notify every contributor that their payment is confirmed + payout went out
-    notifyContributorsPayoutComplete({
-      groupId,
-      groupName: group.name,
-      cycle,
-      totalPool,
-      recipientName: recipientMembership.user.name ?? undefined,
-    }).catch(() => {})
-
-    // Record all contributions on-chain now that payout is confirmed
-    const contributions = await prisma.contribution.findMany({ where: { groupId, cycle, status: "PAID" } })
-    for (const c of contributions) {
-      recordContributionOnChain({
-        dbGroupId: groupId,
-        cycle,
-        dbMemberId: c.userId,
-        amount: c.amount,
-        isRecipientOffset: false,
-      }).catch((err) => console.warn("[blockchain] contribution record failed (non-fatal):", err.message))
-    }
-
-    // Record the completed cycle on-chain
-    recordCycleOnChain({
-      dbGroupId: groupId,
-      cycle,
-      dbRecipientId: recipientMembership.userId,
-      amount: totalPool,
-      memberCount,
-    }).catch((err) => console.warn("[blockchain] recordCycleComplete failed (non-fatal):", err.message))
-
-    // Auto-start the next cycle: create contributions for all members immediately
-    // with a due date based on the group's frequency
+    // Auto-start the next cycle immediately so members can begin contributing
     autoStartNextCycle(groupId, nextCycle, group.frequency, group.memberships, group.contributionAmount, nextRecipientIndex, group.payoutOrder).catch(
       (err) => console.error("[payout] auto-start next cycle failed:", err.message)
     )
