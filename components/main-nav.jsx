@@ -11,6 +11,7 @@ export function MainNav() {
   const pathname = usePathname()
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN"
 
   const protectedLinks = [
     {
@@ -86,6 +87,27 @@ export function MainNav() {
               </Link>
             </motion.div>
           ))}
+        {isAdmin && (
+          <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+            <Link
+              href="/admin"
+              className={cn(
+                "transition-colors hover:text-foreground/80 relative font-semibold",
+                pathname?.startsWith("/admin") ? "text-primary font-bold" : "text-emerald-600 dark:text-emerald-400",
+              )}
+            >
+              Admin
+              {pathname?.startsWith("/admin") && (
+                <motion.div
+                  layoutId="underline"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
+            </Link>
+          </motion.div>
+        )}
       </nav>
     </div>
   )

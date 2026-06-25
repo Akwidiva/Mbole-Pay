@@ -18,7 +18,7 @@ export const metadata = {
 export default async function RootLayout({ children }) {
   const session = await getServerSession(authOptions)
   const isAuthenticated = Boolean(session?.user)
-  const isAdmin = session?.user?.role === "ADMIN"
+  const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN"
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -26,9 +26,9 @@ export default async function RootLayout({ children }) {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider session={session}>
             <div className="flex min-h-screen flex-col">
-              {isAuthenticated && !isAdmin && <ConditionalHeader />}
+              {isAuthenticated && <ConditionalHeader />}
               <main className="flex-1">{children}</main>
-              {isAuthenticated && !isAdmin && <SiteFooter />}
+              {isAuthenticated && <SiteFooter />}
             </div>
           </AuthProvider>
           <Toaster />

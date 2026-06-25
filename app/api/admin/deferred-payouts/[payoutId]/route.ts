@@ -45,7 +45,7 @@ export async function POST(
   }
 
   // Verify the caller is an admin of this group or a system admin
-  const isSystemAdmin = user.role === "ADMIN"
+  const isSystemAdmin = ["ADMIN", "SUPER_ADMIN"].includes(user.role)
   if (!isSystemAdmin) {
     const membership = await prisma.membership.findUnique({
       where: { userId_groupId: { userId: user.id, groupId: payout.groupId } },
@@ -57,10 +57,6 @@ export async function POST(
 
   if (payout.status === "COMPLETED") {
     return NextResponse.json({ success: false, error: "Payout already completed" }, { status: 409 })
-  }
-
-  if (payout.status === "PROCESSING") {
-    return NextResponse.json({ success: false, error: "Payout already processing — wait for webhook or try again in a minute" }, { status: 409 })
   }
 
   // Mark as PROCESSING before calling Fapshi

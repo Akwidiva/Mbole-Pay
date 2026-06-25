@@ -24,7 +24,7 @@ export async function GET() {
       where: { email: session.user.email },
     })
 
-    if (user?.role !== "ADMIN") {
+    if (!["ADMIN","SUPER_ADMIN"].includes(user?.role)) {
       logger.warn("Admin groups request rejected: forbidden", { email: session.user.email, role: user?.role })
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }

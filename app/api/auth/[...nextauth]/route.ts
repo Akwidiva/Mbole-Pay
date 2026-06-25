@@ -102,14 +102,15 @@ export const authOptions: NextAuthOptions = {
         token.kycStatus = user.kycStatus ?? "NONE"
         token.picture = user.image ?? null
       }
-      // Refresh kycStatus and image from DB when session.update() is called
+      // Refresh role, kycStatus, and image from DB when session.update() is called
       if (trigger === "update" && token.id) {
         try {
           const fresh = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { kycStatus: true, image: true } as any,
+            select: { role: true, kycStatus: true, image: true } as any,
           })
           if (fresh) {
+            token.role = (fresh as any).role ?? token.role
             token.kycStatus = (fresh as any).kycStatus ?? "NONE"
             token.picture = (fresh as any).image ?? token.picture
           }

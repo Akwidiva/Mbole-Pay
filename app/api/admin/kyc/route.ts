@@ -6,7 +6,7 @@ import prisma from "@/lib/db"
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
-    if (session?.user?.role !== "ADMIN") {
+    if (!["ADMIN", "SUPER_ADMIN"].includes(session?.user?.role as string)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 

@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     select: { groupId: true },
   })
 
-  const isSystemAdmin = user.role === "ADMIN"
+  const isSystemAdmin = ["ADMIN", "SUPER_ADMIN"].includes(user.role)
   const adminGroupIds = adminMemberships.map((m) => m.groupId)
 
   if (!isSystemAdmin && adminGroupIds.length === 0) {
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
   const [deferredPayouts, delinquentMembers] = await Promise.all([
     prisma.payout.findMany({
-      where: { status: { in: ["FAILED", "HELD"] }, ...groupFilter },
+      where: { status: { in: ["FAILED", "HELD", "PROCESSING"] }, ...groupFilter },
       include: {
         recipient: { select: { id: true, name: true, email: true, phone: true } },
         group: { select: { id: true, name: true } },

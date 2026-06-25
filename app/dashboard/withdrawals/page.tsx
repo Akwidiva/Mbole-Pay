@@ -14,7 +14,7 @@ export default async function WithdrawalsPage() {
   }
 
   const user = await prisma.user.findUnique({ where: { email: session.user.email }, select: { role: true } })
-  const isAdmin = user?.role === "ADMIN"
+  const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(user?.role ?? "")
 
   return (
     <DashboardShell>

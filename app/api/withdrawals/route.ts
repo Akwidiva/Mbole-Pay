@@ -179,7 +179,7 @@ export async function GET(request: NextRequest) {
     const take = Number(q.get("take") || 50)
     const skip = Number(q.get("skip") || 0)
 
-    const isAdmin = user.role === "ADMIN"
+    const isAdmin = ["ADMIN","SUPER_ADMIN"].includes(user.role)
 
     let targetUserId: string | null = null
     if (emailFilter) {
