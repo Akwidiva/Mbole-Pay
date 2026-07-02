@@ -1,0 +1,59 @@
+import { getToken } from "next-auth/jwt"
+import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+
+const PUBLIC_PATHS = [
+  "/signin",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+  "/invite",
+]
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
+
+  // Skip API routes, static files, and public pages
+  if (
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/public/") ||
+    PUBLIC_PATHS.some(p => pathname.startsWith(p))
+  ) {
+    return NextResponse.next()
+  }
+
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+
+  console.log("[middleware]", pathname, "| token:", token ? `role=${token.role} email=${token.email}` : "null")
+
+  // Not authenticated → sign in
+  if (!token) {
+    const url = req.nextUrl.clone()
+    url.pathname = "/signin"
+    return NextResponse.redirect(url)
+  }
+
+  const isAdmin = token.role === "ADMIN" || token.role === "SUPER_ADMIN"
+
+  // Admin hitting user-side pages → /admin
+  if (isAdmin && (pathname === "/" || pathname.startsWith("/dashboard"))) {
+    const url = req.nextUrl.clone()
+    url.pathname = "/admin"
+    return NextResponse.redirect(url)
+  }
+
+  // Regular user hitting admin pages → /dashboard
+  if (!isAdmin && pathname.startsWith("/admin")) {
+    const url = req.nextUrl.clone()
+    url.pathname = "/dashboard"
+    return NextResponse.redirect(url)
+  }
+
+  return NextResponse.next()
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon\\.ico).*)"],
+}
