@@ -33,6 +33,7 @@ export async function checkUserRole(requiredRole) {
 
     // Check role hierarchy
     const roleHierarchy = {
+      SUPER_ADMIN: 3,
       ADMIN: 2,
       USER: 1,
     };

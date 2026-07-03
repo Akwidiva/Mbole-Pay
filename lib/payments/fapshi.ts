@@ -76,7 +76,7 @@ export class FapshiService implements IPaymentProvider {
       return {
         referenceId,
         transactionId: res.data?.transId || res.data?.transactionId || res.data?.id,
-        checkoutLink: null, // Direct Pay pushes USSD to phone — no web redirect
+        checkoutLink: res.data?.link || null, // Fapshi's hosted checkout page — must redirect here to actually complete payment
         status: res.data?.status || "INITIATED",
         message: res.data?.message || "Payment request sent",
         data: res.data,

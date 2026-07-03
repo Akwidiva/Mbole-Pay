@@ -42,6 +42,12 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid email or password")
         }
 
+        if ((user as any).suspended) {
+          authSignInEvents.inc({ provider: "credentials", result: "failed", role: user.role })
+          logger.warn("Credentials sign-in rejected: account suspended", { email: credentials.email })
+          throw new Error("This account has been suspended. Contact support for assistance.")
+        }
+
         authSignInEvents.inc({ provider: "credentials", result: "success", role: user.role })
         logger.info("Credentials sign-in succeeded", { email: credentials.email, role: user.role })
 
@@ -77,6 +83,10 @@ export const authOptions: NextAuthOptions = {
             name: user.name ?? undefined,
           },
         });
+        if ((dbUser as any).suspended) {
+          logger.warn("SignIn callback rejected: account suspended", { email: user.email })
+          return false
+        }
         // Store user id, username, role, and kycStatus in token
         (user as any).id = dbUser.id;
         (user as any).username = (dbUser as any).username ?? null;

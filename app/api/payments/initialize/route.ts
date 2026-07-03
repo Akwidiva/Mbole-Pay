@@ -360,12 +360,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Queue a safety retry check to avoid blocking API latency.
-    await enqueuePaymentRetry({
+    // Queue a safety retry check — fire-and-forget so a slow/unreachable queue
+    // backend can never block returning the payment response to the user.
+    enqueuePaymentRetry({
       paymentId: paymentRecord.id,
       reason: "post_initialize_safety_check",
       requestedAt: new Date().toISOString(),
-    });
+    }).catch((err) => logger.error("Failed to enqueue post-initialize safety check", { paymentId: paymentRecord.id, error: String(err) }));
 
     paymentInitializationEvents.inc({ provider: String(resolvedProvider), result: "success" });
     logger.info("Payment initialization succeeded", { paymentId: paymentRecord.id, provider: resolvedProvider });

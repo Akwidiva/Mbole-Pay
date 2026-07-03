@@ -23,6 +23,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
+    if (user.suspended) {
+      return NextResponse.json({ error: "This account has been suspended. Contact support for assistance." }, { status: 403 })
+    }
+
     const privilegedMembership = await prisma.membership.findFirst({
       where: {
         userId: user.id,

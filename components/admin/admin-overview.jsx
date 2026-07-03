@@ -26,11 +26,11 @@ export function AdminOverview() {
 
         // Handle array responses
         const disputesArray = Array.isArray(disputes) ? disputes : disputes.disputes || []
-        
+
         setStats({
-          totalUsers: Array.isArray(users) ? users.length : 0,
+          totalUsers: typeof users.total === "number" ? users.total : (Array.isArray(users) ? users.length : 0),
           totalGroups: Array.isArray(groups) ? groups.length : 0,
-          activeDisputes: disputesArray.filter(d => d.status === "ACTIVE").length,
+          activeDisputes: disputesArray.filter(d => d.status === "OPEN").length,
           resolvedDisputes: disputesArray.filter(d => d.status === "RESOLVED").length,
         })
       } catch (error) {

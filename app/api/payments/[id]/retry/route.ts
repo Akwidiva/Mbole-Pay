@@ -197,12 +197,13 @@ export async function POST(
       },
     });
 
-    // Queue a safety retry check to avoid blocking API latency.
-    await enqueuePaymentRetry({
+    // Queue a safety retry check — fire-and-forget so a slow/unreachable queue
+    // backend can never block returning the payment response to the user.
+    enqueuePaymentRetry({
       paymentId: paymentId,
       reason: "post_retry_safety_check",
       requestedAt: new Date().toISOString(),
-    });
+    }).catch((err) => console.error("Failed to enqueue post-retry safety check", { paymentId, error: String(err) }));
 
     return NextResponse.json<ApiResponse<InitializePaymentResponse>>(
       {

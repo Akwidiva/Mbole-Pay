@@ -11,11 +11,13 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
+  notifyEmail String? // real address to actually deliver mail to, if different from `email`
   name      String?
   username  String?  @unique
   password  String?  // Hashed password (optional for Google OAuth users)
   phone     String?
   role      String   @default("USER") // "ADMIN" | "USER"
+  suspended Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   memberships   Membership[]

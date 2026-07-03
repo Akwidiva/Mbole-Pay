@@ -4,7 +4,8 @@ import prisma from '@/lib/db';
 
 /**
  * POST /api/admin/disputes/[disputeId]/resolve
- * ADMIN - Resolve a dispute
+ * ADMIN - Manually resolve a dispute
+ * body: { resolution: "UPHELD" | "REJECTED" }
  */
 export async function POST(request, { params }) {
   const roleCheck = await checkUserRole('ADMIN');
@@ -14,17 +15,25 @@ export async function POST(request, { params }) {
   }
 
   try {
-    const { resolution, status } = await request.json(); // resolution: "UPHELD" or "REJECTED", status: "RESOLVED"
+    const { resolution } = await request.json();
 
-    if (!['OPEN', 'RESOLVED'].includes(status)) {
-      return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+    if (!['UPHELD', 'REJECTED'].includes(resolution)) {
+      return NextResponse.json({ error: 'Resolution must be UPHELD or REJECTED' }, { status: 400 });
     }
 
-    // Update dispute status
+    const dispute = await prisma.dispute.findUnique({ where: { id: params.disputeId } });
+    if (!dispute) {
+      return NextResponse.json({ error: 'Dispute not found' }, { status: 404 });
+    }
+    if (dispute.status !== 'OPEN') {
+      return NextResponse.json({ error: 'Only OPEN disputes can be resolved' }, { status: 400 });
+    }
+
     const updatedDispute = await prisma.dispute.update({
       where: { id: params.disputeId },
       data: {
-        status,
+        status: 'RESOLVED',
+        resolution,
       },
       include: {
         votes: true,
@@ -32,10 +41,7 @@ export async function POST(request, { params }) {
       },
     });
 
-    return NextResponse.json({
-      ...updatedDispute,
-      resolution,
-    });
+    return NextResponse.json(updatedDispute);
   } catch (error) {
     console.error('Error resolving dispute:', error);
     return roleErrorResponse('Internal Server Error', 500);

@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import prisma from "@/lib/db";
 
 // Email service using nodemailer (works with any SMTP provider)
 // For production, use SendGrid or AWS SES
@@ -32,16 +33,30 @@ export const emailService = {
    * Send raw email
    */
   async sendEmail(options: EmailOptions): Promise<boolean> {
+    let deliverTo = options.to;
     try {
-      console.log(`[emailService] Sending email to: ${options.to}, subject: ${options.subject}`);
+      const recipient = await prisma.user.findUnique({
+        where: { email: options.to },
+        select: { notifyEmail: true },
+      });
+      if (recipient?.notifyEmail) {
+        deliverTo = recipient.notifyEmail;
+      }
+    } catch {
+      // lookup failed — fall back to the requested address
+    }
+
+    try {
+      console.log(`[emailService] Sending email to: ${deliverTo} (account: ${options.to}), subject: ${options.subject}`);
       const info = await transporter.sendMail({
         from: getEnv("SMTP_FROM", "EMAIL_FROM") || "noreply@mbolepay.com",
         ...options,
+        to: deliverTo,
       });
-      console.log("✅ Email sent successfully:", { to: options.to, messageId: info.messageId, response: info.response });
+      console.log("✅ Email sent successfully:", { to: deliverTo, messageId: info.messageId, response: info.response });
       return true;
     } catch (error) {
-      console.error("❌ Email send failed:", { to: options.to, error: String(error) });
+      console.error("❌ Email send failed:", { to: deliverTo, error: String(error) });
       return false;
     }
   },

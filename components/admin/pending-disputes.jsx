@@ -1,36 +1,56 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
-import { ShieldAlert } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { ShieldAlert, CheckCircle2, XCircle } from "lucide-react"
 import { motion } from "framer-motion"
+import { toast } from "sonner"
 import { containerVariants, itemVariants } from "@/lib/animations"
 
 export function PendingDisputes() {
   const [disputes, setDisputes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [actionLoading, setActionLoading] = useState(null)
 
-  useEffect(() => {
-    async function fetchDisputes() {
-      try {
-        const res = await fetch("/api/admin/disputes")
-        const data = await res.json()
-        
-        // Handle array response
-        const disputesArray = Array.isArray(data) ? data : data.disputes || []
-        setDisputes(disputesArray.filter(d => d.status === "ACTIVE").slice(0, 5))
-      } catch (error) {
-        console.error("Failed to fetch disputes:", error)
-        setDisputes([])
-      } finally {
-        setLoading(false)
-      }
+  const fetchDisputes = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/disputes")
+      const data = await res.json()
+
+      // Handle array response
+      const disputesArray = Array.isArray(data) ? data : data.disputes || []
+      setDisputes(disputesArray.filter((d) => d.status === "OPEN").slice(0, 5))
+    } catch (error) {
+      console.error("Failed to fetch disputes:", error)
+      setDisputes([])
+    } finally {
+      setLoading(false)
     }
-
-    fetchDisputes()
   }, [])
+
+  useEffect(() => { fetchDisputes() }, [fetchDisputes])
+
+  const handleResolve = async (disputeId, resolution) => {
+    setActionLoading(disputeId + resolution)
+    try {
+      const res = await fetch(`/api/admin/disputes/${disputeId}/resolve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resolution }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast.success(resolution === "UPHELD" ? "Dispute upheld" : "Dispute rejected")
+      setDisputes((prev) => prev.filter((d) => d.id !== disputeId))
+    } catch (err) {
+      toast.error(err.message || "Failed to resolve dispute")
+    } finally {
+      setActionLoading(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -70,6 +90,25 @@ export function PendingDisputes() {
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
                   <Badge variant="outline" className="rounded-full">{dispute.group?.name}</Badge>
                   <Badge className="rounded-full bg-amber-500/10 text-amber-700 hover:bg-amber-500/10">{dispute.status}</Badge>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    size="sm"
+                    className="flex-1"
+                    disabled={actionLoading !== null}
+                    onClick={() => handleResolve(dispute.id, "UPHELD")}
+                  >
+                    <CheckCircle2 className="mr-1 h-3.5 w-3.5" />Uphold
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="flex-1"
+                    disabled={actionLoading !== null}
+                    onClick={() => handleResolve(dispute.id, "REJECTED")}
+                  >
+                    <XCircle className="mr-1 h-3.5 w-3.5" />Reject
+                  </Button>
                 </div>
               </motion.div>
             ))

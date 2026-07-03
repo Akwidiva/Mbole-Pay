@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { UserDetailActions } from "@/components/admin/user-detail-actions"
 
 export default async function AdminUserPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
@@ -48,11 +50,18 @@ export default async function AdminUserPage({ params }: { params: { id: string }
 
       <Card>
         <CardHeader>
-          <CardTitle>{user.name || user.email}</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              {user.name || user.email}
+              {(user as any).suspended && <Badge variant="destructive">SUSPENDED</Badge>}
+            </CardTitle>
+            <UserDetailActions userId={user.id} suspended={(user as any).suspended} isSelf={user.id === adminUser.id} />
+          </div>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">Email: {user.email}</p>
           <p className="text-sm text-muted-foreground">Role: {user.role}</p>
+          <p className="text-sm text-muted-foreground">KYC Status: {(user as any).kycStatus}</p>
 
           <div className="mt-4">
             <h3 className="font-semibold">Memberships</h3>
