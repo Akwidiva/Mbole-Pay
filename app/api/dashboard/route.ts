@@ -38,7 +38,7 @@ export async function GET() {
 
     // Get user's payouts
     const payouts = await prisma.payout.findMany({
-      where: { recipient_id: user.id },
+      where: { recipientId: user.id },
       include: { group: true },
     })
 

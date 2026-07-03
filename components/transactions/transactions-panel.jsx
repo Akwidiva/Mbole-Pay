@@ -18,17 +18,33 @@ function withinDateRange(dateStr, range) {
   return date >= cutoff
 }
 
-function toCsv(rows) {
-  const header = ["Date", "Group", "Type", "Amount (XAF)", "Status", "Reference"]
-  const lines = rows.map((t) => [
-    new Date(t.createdAt).toISOString(),
-    t.group?.name ?? "Unknown",
-    t.type,
-    t.amount,
-    t.status,
-    t.reference,
-  ].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
-  return [header.join(","), ...lines].join("\n")
+async function exportToPdf(rows) {
+  const { jsPDF } = await import("jspdf")
+  const autoTable = (await import("jspdf-autotable")).default
+
+  const doc = new jsPDF()
+  doc.setFontSize(16)
+  doc.text("Mbole Pay — Transaction History", 14, 18)
+  doc.setFontSize(10)
+  doc.setTextColor(100)
+  doc.text(`Generated ${new Date().toLocaleString()} — ${rows.length} transaction(s)`, 14, 25)
+
+  autoTable(doc, {
+    startY: 32,
+    head: [["Date", "Group", "Type", "Amount (XAF)", "Status", "Reference"]],
+    body: rows.map((t) => [
+      new Date(t.createdAt).toLocaleDateString(),
+      t.group?.name ?? "Unknown",
+      t.type,
+      (t.type === "payout" ? "+" : "-") + t.amount.toLocaleString(),
+      t.status,
+      t.reference,
+    ]),
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [16, 42, 67] },
+  })
+
+  doc.save(`transactions-${new Date().toISOString().slice(0, 10)}.pdf`)
 }
 
 export function TransactionsPanel() {
@@ -70,20 +86,18 @@ export function TransactionsPanel() {
     })
   }, [transactions, filters])
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (filtered.length === 0) {
       toast.error("No transactions to export")
       return
     }
-    const csv = toCsv(filtered)
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `transactions-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-    toast.success(`Exported ${filtered.length} transaction(s)`)
+    try {
+      await exportToPdf(filtered)
+      toast.success(`Exported ${filtered.length} transaction(s)`)
+    } catch (error) {
+      console.error("PDF export failed:", error)
+      toast.error("Failed to generate PDF")
+    }
   }
 
   return (
