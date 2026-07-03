@@ -68,7 +68,8 @@ export async function GET() {
       groupId: group.id,
       groupName: group.name,
       cycle: group.currentCycle,
-      totalPool: group.contributionAmount * memberCount,
+      // Excludes the recipient's own offset contribution — only real money collected from others.
+      totalPool: group.contributionAmount * (memberCount - 1),
       cycleStarted: !!myContribution,
       paidCount,
       totalCount,

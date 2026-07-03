@@ -1,6 +1,47 @@
 import prisma from "@/lib/db"
 import { PaymentFactory } from "@/lib/payments/payment-factory"
 import { enqueuePayoutRetry } from "@/lib/queue/enqueue"
+import { notifyPayoutCompleted, notifyContributorsPayoutComplete } from "@/lib/services/reminder-service"
+import { recordContributionOnChain, recordCycleOnChain } from "@/lib/blockchain/factory"
+
+/**
+ * Notifications + blockchain recording that must happen exactly once, the
+ * moment a payout is confirmed delivered — whether that confirmation comes
+ * from the Fapshi webhook or from a manual/cron retry succeeding.
+ */
+export async function completePayoutSideEffects(payoutId: string, groupId: string, cycle: number) {
+  const payout = await prisma.payout.findUnique({ where: { id: payoutId } })
+  if (!payout) return
+
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    select: { name: true, memberships: { include: { user: { select: { id: true, name: true, email: true } } } } },
+  })
+  const recipient = group?.memberships.find((m) => m.userId === payout.recipientId)
+  const memberCount = group?.memberships.length ?? 0
+
+  notifyPayoutCompleted({
+    userId: payout.recipientId,
+    userEmail: recipient?.user.email ?? "",
+    amount: payout.amount,
+    groupId,
+    groupName: group?.name ?? "",
+  }).catch(() => {})
+
+  notifyContributorsPayoutComplete({
+    groupId,
+    groupName: group?.name ?? "",
+    cycle,
+    totalPool: payout.amount,
+    recipientName: recipient?.user.name ?? undefined,
+  }).catch(() => {})
+
+  const contributions = await prisma.contribution.findMany({ where: { groupId, cycle, status: "PAID" } })
+  for (const c of contributions) {
+    recordContributionOnChain({ dbGroupId: groupId, cycle, dbMemberId: c.userId, amount: c.amount, isRecipientOffset: false }).catch(() => {})
+  }
+  recordCycleOnChain({ dbGroupId: groupId, cycle, dbRecipientId: payout.recipientId, amount: payout.amount, memberCount }).catch(() => {})
+}
 
 /**
  * Returns memberships in payout rotation order: non-admin members first (by
@@ -39,7 +80,9 @@ export async function triggerPayoutIfComplete(groupId: string, cycle: number) {
   if (!contributions.every((c) => c.status === "PAID")) return
 
   const memberCount = group.memberships.length
-  const totalPool = group.contributionAmount * memberCount
+  // Real money collected this cycle excludes the recipient's own contribution,
+  // which is auto-offset (never actually paid in) — only the other members' payments are real.
+  const totalPool = group.contributionAmount * (memberCount - 1)
   const ordered = payoutOrderedMemberships(group.memberships)
 
   let recipientMembership
@@ -215,7 +258,8 @@ async function autoStartNextCycle(
       data: {
         groupId,
         recipientId: recipientUserId,
-        amount: contributionAmount * memberships.length,
+        // Excludes the recipient's own offset contribution — only real money collected from others.
+        amount: contributionAmount * (memberships.length - 1),
         currency: "XAF",
         status: "SCHEDULED",
         provider: "FAPSHI",

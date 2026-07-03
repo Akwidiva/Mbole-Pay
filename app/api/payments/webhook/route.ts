@@ -3,9 +3,7 @@ import prisma from "@/lib/db";
 import { PaymentStatus, PaymentProvider, ApiResponse } from "@/types/payments";
 import { createLogger } from "@/lib/observability/logger";
 import { paymentWebhookEvents, recordApiError } from "@/lib/observability/metrics";
-import { triggerPayoutIfComplete } from "@/lib/services/payout-service"
-import { notifyPayoutCompleted, notifyContributorsPayoutComplete } from "@/lib/services/reminder-service"
-import { recordContributionOnChain, recordCycleOnChain } from "@/lib/blockchain/factory"
+import { triggerPayoutIfComplete, completePayoutSideEffects } from "@/lib/services/payout-service"
 import { enqueueDelayedPaymentAutoRetry, enqueuePayoutRetry } from "@/lib/queue/enqueue";
 
 const logger = createLogger("payments.webhook")
@@ -91,37 +89,11 @@ export async function POST(request: NextRequest) {
         logger.info("Payout delivery confirmed via webhook", { groupId, cycle, amount: payout.amount })
         paymentWebhookEvents.inc({ provider, result: "payout_completed" })
 
-        // Load recipient + group for notifications
-        const group = await prisma.group.findUnique({
-          where: { id: groupId },
-          select: { name: true, memberships: { include: { user: { select: { id: true, name: true, email: true } } } } },
-        })
-        const recipient = group?.memberships.find((m) => m.userId === payout.recipientId)
-        const memberCount = group?.memberships.length ?? 0
-
-        // Notify recipient and all contributors — money is confirmed delivered
-        notifyPayoutCompleted({
-          userId: payout.recipientId,
-          userEmail: recipient?.user.email ?? "",
-          amount: payout.amount,
-          groupId,
-          groupName: group?.name ?? "",
-        }).catch(() => {})
-
-        notifyContributorsPayoutComplete({
-          groupId,
-          groupName: group?.name ?? "",
-          cycle,
-          totalPool: payout.amount,
-          recipientName: recipient?.user.name ?? undefined,
-        }).catch(() => {})
-
-        // Record on-chain now that delivery is confirmed
-        const contributions = await prisma.contribution.findMany({ where: { groupId, cycle, status: "PAID" } })
-        for (const c of contributions) {
-          recordContributionOnChain({ dbGroupId: groupId, cycle, dbMemberId: c.userId, amount: c.amount, isRecipientOffset: false }).catch(() => {})
-        }
-        recordCycleOnChain({ dbGroupId: groupId, cycle, dbRecipientId: payout.recipientId, amount: payout.amount, memberCount }).catch(() => {})
+        // Notifications + blockchain recording — shared with the cron retry path
+        // so a payout confirmed either way gets the exact same side effects.
+        completePayoutSideEffects(payout.id, groupId, cycle).catch((err) =>
+          logger.error("completePayoutSideEffects failed", { payoutId: payout.id, error: String(err) })
+        )
 
       } else if (isFailed && payout.status !== "COMPLETED") {
         await prisma.payout.update({ where: { id: payout.id }, data: { status: "FAILED", errorMessage: "Payout failed at provider" } })

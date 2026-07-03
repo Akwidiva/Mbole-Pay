@@ -61,6 +61,12 @@ export async function lockGroupRulesOnChain(params: {
 
   const onChainGroupId = dbIdToBytes32(params.dbGroupId)
 
+  // Contract requires maxMembers to be 0 (unlimited) or strictly greater than
+  // minMembers — a group with maxMembers === minMembers (e.g. a fixed-size
+  // group) must be represented as "unlimited" on-chain since there's no way
+  // to express "exactly N" separately from "at least N" in this schema.
+  const chainMaxMembers = params.maxMembers && params.maxMembers > params.minMembers ? params.maxMembers : 0
+
   const tx = await contract.lockGroupRules(
     onChainGroupId,
     params.name,
@@ -68,7 +74,7 @@ export async function lockGroupRulesOnChain(params: {
     params.frequency,
     params.payoutOrder,
     BigInt(params.minMembers),
-    BigInt(params.maxMembers ?? 0)
+    BigInt(chainMaxMembers)
   )
 
   const receipt = await tx.wait()

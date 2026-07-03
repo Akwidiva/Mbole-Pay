@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       .map((p) => ({
         id: p.id,
         createdAt: p.createdAt,
-        group: { name: p.group?.name ?? "Unknown", imageUrl: null },
+        group: { id: p.group?.id ?? null, name: p.group?.name ?? "Unknown", imageUrl: null },
         type: "contribution",
         amount: p.amount,
         status: p.status.toLowerCase(),
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     const payoutTxns = payouts.map((p) => ({
       id: p.id,
       createdAt: p.createdAt,
-      group: { name: p.group?.name ?? "Unknown", imageUrl: null },
+      group: { id: p.group?.id ?? null, name: p.group?.name ?? "Unknown", imageUrl: null },
       type: "payout",
       amount: p.amount,
       status: p.status.toLowerCase(),

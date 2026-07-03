@@ -57,7 +57,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const myContribution = contributions.find((c) => c.userId === user.id) ?? null
   const paidCount = contributions.filter((c) => c.status === "PAID").length
-  const totalPool = group.contributionAmount * memberCount
+  // Real money paid out excludes the recipient's own auto-offset contribution.
+  const totalPool = group.contributionAmount * (memberCount - 1)
 
   // Tell the UI if the current user is the recipient so it can show the offset button
   const isRecipient = recipient ? recipient.id === user.id : false
@@ -206,7 +207,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       data: {
         groupId,
         recipientId: recipientUserId,
-        amount: group.contributionAmount * group.memberships.length,
+        // Excludes the recipient's own offset contribution — only real money collected from others.
+        amount: group.contributionAmount * (group.memberships.length - 1),
         currency: "XAF",
         status: "SCHEDULED",
         provider: "FAPSHI",

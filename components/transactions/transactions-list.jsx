@@ -59,32 +59,13 @@ function TransactionRowSkeleton() {
   )
 }
 
-export function TransactionsList() {
-  const [transactions, setTransactions] = useState([])
-  const [loading, setLoading] = useState(true)
+export function TransactionsList({ transactions = [], loading = false }) {
   const [page, setPage] = useState(1)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState(null)
   const transactionsPerPage = 7
 
-  useEffect(() => {
-    async function fetchTransactions() {
-      setLoading(true)
-      try {
-        const response = await fetch("/api/transactions")
-        if (response.ok) {
-          const data = await response.json()
-          setTransactions(data)
-        } else {
-          console.error("Failed to fetch transactions")
-        }
-      } catch (error) {
-        console.error("Error fetching transactions:", error)
-      }
-      setLoading(false)
-    }
-    fetchTransactions()
-  }, [])
+  useEffect(() => { setPage(1) }, [transactions])
 
   const getStatusBadge = (status) => {
     switch (status.toLowerCase()) {

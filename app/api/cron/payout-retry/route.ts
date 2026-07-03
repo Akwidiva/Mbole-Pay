@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/db"
 import { PaymentFactory } from "@/lib/payments/payment-factory"
 import { notifyPayoutHeld } from "@/lib/services/reminder-service"
+import { completePayoutSideEffects } from "@/lib/services/payout-service"
 
 const MAX_PAYOUT_RETRIES = 3
 
@@ -62,11 +63,16 @@ export async function GET(req: NextRequest) {
         await fapshi.transfer({
           amount: payout.amount,
           phoneNumber: payout.phoneNumber,
-          externalId: `payout-${payout.groupId}-cycle-${payout.cycle}-retry-${retryCount + 1}`,
+          // Must match the webhook's /^payout-(.+)-cycle-(\d+)$/ parser exactly —
+          // a "-retry-N" suffix here would make the webhook fail to find this payout.
+          externalId: `payout-${payout.groupId}-cycle-${payout.cycle}`,
           description: `Njangi payout — ${payout.group.name} cycle ${payout.cycle}`,
         })
 
         await prisma.payout.update({ where: { id: payout.id }, data: { status: "COMPLETED", processedDate: new Date() } })
+        completePayoutSideEffects(payout.id, payout.groupId, payout.cycle).catch((err) =>
+          console.error("[cron][payout-retry] completePayoutSideEffects failed", payout.id, err.message)
+        )
         results.retried++
       } catch (err: any) {
         await prisma.payout.update({ where: { id: payout.id }, data: { status: "FAILED", errorMessage: err.message } })
