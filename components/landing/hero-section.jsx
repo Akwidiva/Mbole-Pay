@@ -84,7 +84,7 @@ export function HeroSection() {
               </p>
             </motion.div>
             <motion.div variants={itemVariants} className="flex flex-col gap-2 min-[400px]:flex-row">
-              <Link href="/dashboard">
+              <Link href={session?.user ? "/dashboard" : "/signup"}>
                 <Button
                   size="lg"
                   className="flex flex-col items-center justify-center gap-1.5 px-8 py-4 text-base min-w-[200px]"

@@ -4,8 +4,11 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import { containerVariants, itemVariants } from "@/lib/animations"
+import { useSession } from "next-auth/react"
 
 export function CTASection() {
+  const { data: session } = useSession()
+
   return (
     <section className="w-full py-12 md:py-24 lg:py-32 bg-primary text-primary-foreground">
       <div className="container px-4 md:px-6">
@@ -25,7 +28,7 @@ export function CTASection() {
             </p>
           </motion.div>
           <motion.div variants={itemVariants} className="flex flex-col gap-2 min-[400px]:flex-row">
-            <Link href="/dashboard">
+            <Link href={session?.user ? "/dashboard" : "/signup"}>
               <Button
                 size="lg"
                 variant="secondary"
