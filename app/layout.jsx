@@ -26,7 +26,7 @@ export default async function RootLayout({ children }) {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider session={session}>
             <div className="flex min-h-screen flex-col">
-              {isAuthenticated && <ConditionalHeader />}
+              <ConditionalHeader isAuthenticated={isAuthenticated} />
               <main className="flex-1">{children}</main>
               {isAuthenticated && <SiteFooter />}
             </div>

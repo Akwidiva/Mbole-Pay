@@ -4,12 +4,18 @@ import { usePathname } from "next/navigation"
 import { MainNav } from "@/components/main-nav"
 import { UserNav } from "@/components/user-nav"
 
-export function ConditionalHeader() {
+export function ConditionalHeader({ isAuthenticated }) {
   const pathname = usePathname()
   const isAdmin = pathname?.startsWith("/admin")
 
   // Don't show header on admin routes (admin layout has its own navbar)
   if (isAdmin) {
+    return null
+  }
+
+  // Logged-out visitors only see the header on the landing page (for Sign in / Sign up);
+  // the auth pages have their own full-screen layout.
+  if (!isAuthenticated && pathname !== "/") {
     return null
   }
 
