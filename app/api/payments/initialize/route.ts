@@ -253,7 +253,23 @@ export async function POST(request: NextRequest) {
         existingPayment.status === PaymentStatus.PENDING ||
         existingPayment.status === PaymentStatus.PROCESSING
       ) {
-        if (existingPayment.createdAt > timeoutThreshold) {
+        // If the member opened the Fapshi checkout and closed it without paying, let them
+        // start a fresh checkout instead of waiting out the timeout. Ask Fapshi first: only an
+        // untouched (CREATED) or dead (FAILED/EXPIRED) checkout is released. If money is moving
+        // or the status can't be checked, keep blocking so nobody is charged twice.
+        let abandonedCheckout = false
+        if (existingPayment.createdAt > timeoutThreshold && existingPayment.provider === "FAPSHI" && existingPayment.providerRef) {
+          try {
+            const fapshi = PaymentFactory.getProvider("FAPSHI" as any) as any
+            const { status: fapshiStatus } = await fapshi.getTransactionStatus(existingPayment.providerRef)
+            abandonedCheckout = ["CREATED", "FAILED", "EXPIRED"].includes(String(fapshiStatus).toUpperCase())
+            logger.info("Checked pending Fapshi checkout before blocking", { contributionId, existingPaymentId: existingPayment.id, fapshiStatus })
+          } catch (statusError) {
+            logger.warn("Could not check pending Fapshi checkout; keeping duplicate block", { contributionId, error: String(statusError) })
+          }
+        }
+
+        if (existingPayment.createdAt > timeoutThreshold && !abandonedCheckout) {
           paymentInitializationEvents.inc({ provider: String(provider || "unknown"), result: "duplicate" })
           logger.warn("Duplicate pending payment blocked", { contributionId, existingPaymentId: existingPayment.id })
           return NextResponse.json<ApiResponse>(
@@ -269,10 +285,13 @@ export async function POST(request: NextRequest) {
             { status: 409 }
           );
         }
-        // Stale — mark failed so we can reuse the record
+        // Stale or abandoned — mark failed so we can reuse the record
         await prisma.payment.update({
           where: { id: existingPayment.id },
-          data: { status: PaymentStatus.FAILED, errorMessage: "Payment timed out" },
+          data: {
+            status: PaymentStatus.FAILED,
+            errorMessage: abandonedCheckout ? "Checkout closed without paying" : "Payment timed out",
+          },
         });
       }
     }
